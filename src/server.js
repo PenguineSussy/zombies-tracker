@@ -48,9 +48,9 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
         const content=await readFile(resolve(root,'downloads/Zombies-Tracker-LiveSplit.zip'));
         res.writeHead(200,{'Content-Type':'application/zip','Content-Disposition':'attachment; filename="Zombies-Tracker-LiveSplit.zip"'});res.end(content);return;
       }
-      if(req.method==='GET' && ['/','/app.js','/watch.js','/style.css'].includes(path)) {
+      if(req.method==='GET' && ['/','/app.js','/watch.js','/style.css','/monty-logo.png'].includes(path)) {
         const file=path==='/'?'index.html':path.slice(1);const content=await readFile(resolve(root,file));
-        res.writeHead(200,{'Content-Type':file.endsWith('.js')?'text/javascript; charset=utf-8':file.endsWith('.css')?'text/css; charset=utf-8':'text/html; charset=utf-8'});res.end(content);return;
+        res.writeHead(200,{'Content-Type':file.endsWith('.png')?'image/png':file.endsWith('.js')?'text/javascript; charset=utf-8':file.endsWith('.css')?'text/css; charset=utf-8':'text/html; charset=utf-8'});res.end(content);return;
       }
       if(req.method==='GET' && path==='/health')return send({ok:true,version:'0.4.0'});
       limit(req,'all',600);
@@ -123,5 +123,6 @@ if(process.argv[1] && import.meta.url===pathToFileURL(resolve(process.argv[1])).
   app.server.listen(port,host,()=>console.log(`Zombies Tracker: http://${host}:${port}\nPlatform connectors activate only when configured. No OBS integration.`));
   process.on('SIGINT',()=>app.stop());process.on('SIGTERM',()=>app.stop());
 }
+
 
 
