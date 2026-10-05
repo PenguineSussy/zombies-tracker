@@ -154,3 +154,13 @@ You do not need Excel. Exported history is JSON; spreadsheet/CSV import/export c
 If gettimingmethod is unavailable, the companion probes it once and uses the configured profile timing with a compatibility warning. Select Real Time in LiveSplit. Close and reopen the companion after updating its files. Split and timer reads continue normally; automatic timing-method verification is unavailable in this mode.
 
 
+# Runner-managed chatbot connections
+
+Set `PUBLIC_ORIGIN=https://doctormonty.beer` on the hosted server. Keep the bot account credentials already configured. Add these exact redirect URLs to the existing developer applications, preserving the local helper callbacks:
+
+* Twitch: `https://doctormonty.beer/api/chatbot/callback/twitch`
+* Google OAuth web client: `https://doctormonty.beer/api/chatbot/callback/youtube`
+
+Runners sign in with their runner key, open Chatbot, and connect their own channel. Twitch requests `channel:bot`; YouTube requests `youtube.readonly` for channel ownership and broadcast selection. The separate bot account continues to supply chat writing permissions. Google Testing mode restricts access to configured test users; public onboarding needs the consent application's production/verification requirements completed.
+
+Connections start disabled. Enable replies and save a 5–300 second channel cooldown (default 15). YouTube requires an active broadcast with live chat, selected again for each new broadcast. Disconnect disables replies and removes stored runner OAuth tokens locally; users can also revoke the app in provider settings. Twitch channel additions currently use the existing EventSub WebSocket bot and its platform limits. Saving connection settings restarts chat connectors to apply membership changes; YouTube skips historical messages after restart. Discord installation remains deferred.

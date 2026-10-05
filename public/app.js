@@ -70,6 +70,30 @@ $('map').addEventListener('change',()=>updateCategories());
 function json(id){try{return JSON.parse($(id).value);}catch{throw new Error(`${id}: enter valid JSON.`);}}
 function requireLogin(){if(!me)throw new Error('Register or sign in with your runner key first.');}
 function saveKey(value){token=value;sessionStorage.setItem('runnerKey',value);$('runner-key').value='';}
+let chatConfig=null;
+async function loadChatbot(){
+  if(!me){chatConfig=null;$('chatbot-login').textContent='Sign in with your runner key in LiveSplit to manage your channels.';}
+  else {chatConfig=await api('/api/me/chatbot');$('chatbot-login').textContent=`Managing channels for ${me.name}`;}
+  for(const provider of ['twitch','youtube']){
+    const c=chatConfig?.[provider];
+    $('connect-'+provider).disabled=!c?.available;
+    $('connect-'+provider).textContent=c?.connected?'Reconnect '+(provider==='twitch'?'Twitch':'YouTube'):'Connect '+(provider==='twitch'?'Twitch':'YouTube');
+    $('disconnect-'+provider).hidden=!c?.connected;
+    $(provider+'-chat-form').hidden=!c?.connected;
+    $(provider+'-status').textContent=c?.connected?`${c.name} · ${c.status}`:c&&!c.available?'Awaiting server setup':'Not connected';
+    $(provider+'-enabled').checked=!!c?.enabled;
+    $(provider+'-cooldown').value=c?.cooldownSeconds??15;
+    if(provider==='youtube'){
+      const option=node('option',c?.broadcastId?'Selected broadcast: '+c.broadcastId:'Find your active broadcast first');option.value=c?.broadcastId??'';$('youtube-broadcast').replaceChildren(option);
+    }
+  }
+}
+for(const provider of ['twitch','youtube']){
+  action('connect-'+provider,async()=>{requireLogin();const r=await api(`/api/me/chatbot/${provider}/connect`,{method:'POST',body:{}});location.assign(r.url);});
+  action('disconnect-'+provider,async()=>{requireLogin();await api(`/api/me/chatbot/${provider}`,{method:'DELETE'});await loadChatbot();notice('Disconnected. Bot replies have been disabled for this connection.');});
+  action(provider+'-chat-form',async()=>{requireLogin();await api(`/api/me/chatbot/${provider}/settings`,{method:'POST',body:{enabled:$(provider+'-enabled').checked,cooldownSeconds:Number($(provider+'-cooldown').value),...(provider==='youtube'?{broadcastId:$('youtube-broadcast').value}:{})}});await loadChatbot();notice('Chatbot settings saved. Connection status updates after the bot joins.');},'submit');
+}
+action('load-broadcasts',async()=>{requireLogin();const broadcasts=await api('/api/me/chatbot/youtube/broadcasts');const opts=broadcasts.map(b=>{const o=node('option',b.title);o.value=b.id;return o;});if(!opts.length){const o=node('option','No active broadcasts with live chat');o.value='';opts.push(o);}$('youtube-broadcast').replaceChildren(...opts);});
 function revealKey(value){$('new-key').textContent=value;$('new-key-box').hidden=false;}
 function download(name,data){const link=node('a');const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 async function loadMe(){
@@ -79,11 +103,11 @@ async function loadMe(){
   $('source-status').textContent=`Source: ${me.source?.type??'direct'}${me.sourceError?' · '+me.sourceError:''}. Session: ${me.sessionStarted?new Date(me.sessionStarted).toLocaleString():'not started'}.`;
 }
 function showTab(id){document.querySelectorAll('.panel').forEach(p=>p.hidden=p.id!==id);document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('selected',t.dataset.tab===id));}
-document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>showTab(t.dataset.tab)));
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{showTab(t.dataset.tab);if(t.dataset.tab==='integrations')void loadChatbot().catch(e=>notice(e.message,true));}));
 document.querySelectorAll('input[name="source"]').forEach(r=>r.addEventListener('change',()=>{$('direct-fields').hidden=r.value!=='direct';$('therun-fields').hidden=r.value!=='therun';}));
 async function refresh(){
   const players=await api('/api/players');const list=$('runner-list');list.replaceChildren();
-  if(!players.length){const box=node('div',null,'empty');box.append(node('h3','Your community starts here.'),node('p','Register a runner in Runner setup, or run the local demo from the project folder.'));list.append(box);}
+  if(!players.length){const box=node('div',null,'empty');box.append(node('h3','Your community starts here.'),node('p','Register a runner in LiveSplit, or run the local demo from the project folder.'));list.append(box);}
   for(const p of players){const b=node('button',null,'runner');const state=p.status==='Running'?'RUNNING':p.status==='NotRunning'?'IDLE':p.status.toUpperCase();b.append(node('span',state,'pill'+(p.status==='Running'?' live':'')),node('strong',p.name),node('small',(catalog.allMaps??catalog.maps).find(m=>m.id===p.profile?.map)?.name??'Waiting for first connection'),node('small',`${p.source==='therun'?'therun.gg':'LiveSplit'}${p.profile?' · '+(p.profile.category?'Solo · '+p.profile.category+' · RTA':'Legacy category'):''}`));b.addEventListener('click',()=>void details(p.id).catch(e=>notice(e.message,true)));list.append(b);}
   updateStreams(players);if(selected)await details(selected);
 }
@@ -108,8 +132,11 @@ for(const mode of ['start','end'])action(mode+'-session',async()=>{requireLogin(
 action('privacy',async()=>{requireLogin();await api('/api/me/privacy',{method:'POST',body:{public:!me.public}});await loadMe();await refresh();notice(me.public?'Public tracking enabled.':'Tracking is private; chat queries and new role alerts are hidden.');});
 action('export',async()=>{requireLogin();download(me.id+'-history.json',await api('/api/me/history'));});
 action('rotate',async()=>{requireLogin();const r=await api('/api/me/rotate',{method:'POST',body:{}});saveKey(r.token);revealKey(r.token);notice('Key rotated. Old keys no longer work. Update your key in the LiveSplit addon.');});
-action('logout',async()=>{token='';me=null;sessionStorage.removeItem('runnerKey');$('new-key').textContent='';$('new-key-box').hidden=true;$('account-state').textContent='Not signed in';$('source-status').textContent='';notice('Signed out of this tab.');});
+action('logout',async()=>{token='';me=null;sessionStorage.removeItem('runnerKey');$('new-key').textContent='';$('new-key-box').hidden=true;$('account-state').textContent='Not signed in';$('source-status').textContent='';await loadChatbot();notice('Signed out of this tab.');});
 action('delete',async()=>{requireLogin();if($('delete-name').value.toLowerCase()!==me.id)throw new Error('Type your tracker username to confirm deletion.');await api('/api/me',{method:'DELETE'});$('logout').click();await refresh();notice('Account and recorded history deleted.');});
-async function init(){catalog=await api('/api/catalog');for(const m of catalog.maps){const o=node('option',m.name);o.value=m.id;$('map').append(o);}$('map').value='der-eisendrache';updateCategories();$('server-state').textContent='Tracker online';for(const id of ['twitch','discord','youtube'])$(id+'-status').textContent=catalog.integrations[id]?'Configured — check authorization':'Not configured';if(token)try{await loadMe();fillStreams();}catch{token='';sessionStorage.removeItem('runnerKey');}await refresh();}
-void init().catch(e=>notice(e.message,true));
+async function init(){catalog=await api('/api/catalog');for(const m of catalog.maps){const o=node('option',m.name);o.value=m.id;$('map').append(o);}$('map').value='der-eisendrache';updateCategories();$('server-state').textContent='Tracker online';if(token)try{await loadMe();fillStreams();}catch{token='';sessionStorage.removeItem('runnerKey');}await refresh();}
+void init().then(async()=>{await loadChatbot();if(location.hash==='#integrations')showTab('integrations');const q=new URLSearchParams(location.search);if(q.has('chatbot')){notice(q.get('chatbot')==='connected'?'Channel connected. Enable replies when ready.':q.get('reason')??'Connection failed.',q.get('chatbot')!=='connected');history.replaceState(null,'','/#integrations');}}).catch(e=>notice(e.message,true));
 setInterval(()=>{if(!document.hidden&&catalog){void refresh().catch(()=>{$('server-state').textContent='Connection unavailable';});if(me)void loadMe().catch(()=>{});}},10000);
+
+
+

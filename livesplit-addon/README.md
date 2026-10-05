@@ -13,7 +13,7 @@ Windows desktop LiveSplit component for https://doctormonty.beer. Tracks Solo Bl
 ## Install
 
 1. Finish/reset your timer, save your splits/layout, and close LiveSplit.
-2. Extract the addon ZIP. Copy `LiveSplit.ZombiesTracker.dll` into your LiveSplit `Components` folder. On this computer that is `C:\Program Files (x86)\Livesplit\Components`. Windows may request administrator permission for that folder.
+2. Extract the addon ZIP. Copy `LiveSplit.ZombiesTracker.dll` into your LiveSplit `Components` folder. On this computer that is `C:\livesplit\Components`. Windows may request administrator permission for that folder.
 3. Reopen LiveSplit. Right-click > Edit Layout > + > Other > Zombies Tracker. Add it only once. It is a background component with no visual timer area.
 4. Double-click Zombies Tracker to open its settings (or select it in Layout Settings).
 5. On https://doctormonty.beer, open Runner setup and register/sign in. A runner key from the old localhost installation is not valid here. Click **Enable LiveSplit addon source**.
@@ -36,7 +36,7 @@ All ten enabled maps support detection from their names. Nacht, Verruckt, Shi No
 
 Gum categories are detected from the category/file title and gum/category variables. Include `No Gums`, `Classic Gums`, `Mega Gums`, or `Any%`. The addon always reads `RealTime` from LiveSplit, irrespective of the display's selected timing method. RTA here means LiveSplit Real Time (which follows LiveSplit's pause behavior), not a game-memory-derived clock. Never pause the timer if your category disallows it.
 
-Split names must be unique and 1–80 characters without `<`, `>` or `@`. Aliases map local names to shared milestone names. Changing run details during a run stops uploads until reset. Save the split file so its filename can participate in detection.
+Split names must be unique and 1–80 characters without `<`, `>` or `@`. The addon uses the runner's split names, with the tracker's normal case and whitespace normalization. Version 0.2.3 removes split aliases and ignores alias settings in older layouts or imported configurations. Changing run details during a run stops uploads until reset. Save the split file so its filename can participate in detection.
 
 ## Offline behavior and troubleshooting
 
@@ -53,7 +53,7 @@ For Super Easter Egg, use one continuous LiveSplit file with category `Super Eas
 5. `GK - Complete`
 6. `Revelations - Complete`
 
-Do not reset between maps. All checkpoint and elapsed times are cumulative LiveSplit Real Time values. The tracker never creates an independent clock or adds separate map timers. The website shows the latest received RTA sample; the five-second addon heartbeat and ten-second page refresh can introduce a short display delay. Pauses, skips, undo and reset follow LiveSplit. If using aliases, preserve the map prefixes and completion markers. A finished run without all six map completions is marked incomplete.
+Do not reset between maps. All checkpoint and elapsed times are cumulative LiveSplit Real Time values. The tracker never creates an independent clock or adds separate map timers. The website shows the latest received RTA sample; the five-second addon heartbeat and ten-second page refresh can introduce a short display delay. Pauses, skips, undo and reset follow LiveSplit. Preserve the map prefixes and completion markers in your split names. A finished run without all six map completions is marked incomplete.
 
 ## Connection recovery
 
@@ -75,3 +75,4 @@ Source is included. Run `build.ps1 -LiveSplitDir 'path to LiveSplit'` from a ter
 Built against the local LiveSplit installation. Automated tests use the actual LiveSplit TimerModel and a local tracker HTTP/SQLite fixture. The test-only binary substitutes the DPAPI codec because the development sandbox cannot access the interactive Windows user's DPAPI profile. **The shipped `dist` DLL uses real DPAPI and fails closed if encryption is unavailable.** Interactive layout installation and DPAPI persistence still need a check in your normal LiveSplit session. Do not install a DLL from `test-bin`.
 
 Source API reference: https://github.com/LiveSplit/LiveSplit/tree/master/src/LiveSplit.Core
+

@@ -43,7 +43,7 @@ namespace LiveSplit.ZombiesTracker
                 throw new InvalidOperationException("Use names of 1-80 characters without <, > or @. Rename invalid split names in LiveSplit.");
             return value;
         }
-        public static Snapshot Capture(LiveSplitState state, RunProfile profile, string id, long sequence, bool practice, bool suppress, IDictionary<string,string> aliases)
+        public static Snapshot Capture(LiveSplitState state, RunProfile profile, string id, long sequence, bool practice, bool suppress)
         {
             bool idle = state.CurrentPhase == TimerPhase.NotRunning;
             var timing = TimingMethod.RealTime;
@@ -60,9 +60,8 @@ namespace LiveSplit.ZombiesTracker
             var unique = new HashSet<string>();
             for (int i = 0; i < state.Run.Count; i++)
             {
-                string name = Clean(state.Run[i].Name), alias;
-                if (aliases.TryGetValue(name, out alias)) name = Clean(alias);
-                if (!unique.Add(name)) throw new InvalidOperationException("Split names must be unique. Use distinct names or aliases for repeated milestones.");
+                string name = Clean(state.Run[i].Name);
+                if (!unique.Add(name)) throw new InvalidOperationException("Split names must be unique. Use distinct names for repeated milestones.");
                 if (i == index) snapshot.current = name;
                 if (i >= index) continue;
                 var time = state.Run[i].SplitTime[timing];
@@ -73,3 +72,4 @@ namespace LiveSplit.ZombiesTracker
         }
     }
 }
+

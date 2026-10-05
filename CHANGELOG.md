@@ -21,3 +21,9 @@ Validation: 35 Node tests, 52 addon assertions and 10 local HTTP/SQLite events. 
 * Super Easter Egg uses one continuous six-map file, including The Giant and ending on Revelations. Map-prefixed checkpoints identify the current stage. Elapsed and checkpoint values come from LiveSplit Real Time; there is no independent tracker clock.
 
 Validation: 31 Node tests, 47 addon assertions including actual LiveSplit TimerModel events and 11 accepted local HTTP/SQLite uploads. Offline replay/503 retention, exact paused RTA, map restrictions and six-map completion tested. DPAPI is used in the production DLL; interactive Windows DPAPI/layout persistence remains a manual check because the development sandbox cannot access the normal user's encryption profile. Test binaries are excluded from distribution.
+# 0.4.0 — Runner chatbot connections
+
+* Home, LiveSplit and Chatbot navigation; Twitch/YouTube channel ownership authorization, enable/disable/disconnect controls and per-channel cooldowns from 5 to 300 seconds (15 default).
+* YouTube selects an active broadcast belonging to the connected channel. Runner tokens remain server-side, with browser-bound expiring OAuth state and single-use callbacks. Discord setup remains deferred.
+* Includes LiveSplit addon 0.2.3 with split aliases removed and stable encrypted settings. User confirmed their layout works after this update.
+* 40 Node tests pass. Real provider callback and live chat smoke tests remain required after deployment. Google Testing restrictions still apply.
