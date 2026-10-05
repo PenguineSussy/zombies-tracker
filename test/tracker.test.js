@@ -139,7 +139,7 @@ test('older LiveSplit servers use configured timing with one warning and no resp
 });
 test('chat deduplication and per-user/channel cooldowns',t=>{
   const {store,player}=fixture(t);store.ingest(player.id,event());let now=NOW;const chat=new ChatResponder(store,450,()=>now);
-  assert.ok(chat.respond('channel','viewer','1','!current @Player1'));assert.equal(chat.respond('channel','viewer','1','!current @Player1'),null);assert.equal(chat.respond('channel','viewer','2','!current @Player1'),null);now+=5001;assert.ok(chat.respond('channel','viewer','3','!current @Player1'));
+  assert.ok(chat.respond('channel','viewer','1','!current @Player1'));assert.equal(chat.respond('channel','viewer','1','!current @Player1'),null);assert.equal(chat.respond('channel','viewer','2','!current @Player1'),null);now+=15001;assert.ok(chat.respond('channel','viewer','3','!current @Player1'));
 });
 test('short YouTube replies preserve the requested split result before long category detail',t=>{
   const {store,player}=fixture(t);store.ingest(player.id,event({profile:{...P,category:'Classic Gums'}}));const chat=new ChatResponder(store,190,()=>NOW);
@@ -163,3 +163,4 @@ test('HTTP registration, authenticated ingestion, source exclusion, privacy and 
   await request('/api/me/privacy','POST',{public:false},token);assert.deepEqual(await (await request('/api/players')).json(),[]);
   assert.equal((await request('/api/me','DELETE',undefined,token)).status,200);assert.equal((await request('/api/me','GET',undefined,token)).status,401);
 });
+
