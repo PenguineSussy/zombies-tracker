@@ -1,6 +1,6 @@
-See [0.3 changes](CHANGELOG.md) and [LiveSplit compatibility update](livesplit-addon/README.md). The addon settings fixes are tested, but interactive layout rendering still needs verification. The optional therun.gg connection remains available.
+See [0.4 changes](CHANGELOG.md) and [LiveSplit compatibility update](livesplit-addon/README.md). The addon settings fixes are tested, but interactive layout rendering still needs verification. The optional therun.gg connection remains available.
 
-# Dr Monty Bot — Solo Easter Egg alpha 0.3
+# Dr Monty Bot — Solo Easter Egg alpha 0.4
 
 A working first build of a shared BO3 Zombies run tracker. LiveSplit or optional therun.gg supplies checkpoints; Twitch, Discord, and YouTube Live expose the same recorded stats. No OBS integration and no spreadsheet dependency.
 
@@ -20,7 +20,7 @@ Detailed platform authorization and LiveSplit instructions: **[SETUP.md](SETUP.m
 
 - Self-service tracker username registration with revocable bearer keys; public/private visibility; account/history deletion and JSON export.
 - Ten enabled official BO3 Zombies maps. Nacht der Untoten, Verrückt, Shi No Numa, and Kino der Toten are disabled for new runs; their existing history remains readable. New runs are Solo Easter Egg RTA only. Categories are No Gums, Classic Gums, Mega Gums and Any%. Legacy history remains separate.
-- Direct LiveSplit TCP reader, split-name aliases, local persistent upload queue, resets, undo/skips, paused state and stale-connection detection.
+- Native LiveSplit addon using original split names, local persistent upload queue, resets, undo/skips, paused state and stale-connection detection.
 - Optional therun.gg public live-feed reader with exact game/category/variable matching; no therun.gg upload key needed.
 - Session and all-time **recorded cumulative checkpoint** bests; full-attempt PBs when complete data is available; practice exclusion.
 - Twitch EventSub chat-command connector and optional YouTube Live polling connector, OAuth setup helper and token refresh.
@@ -32,7 +32,7 @@ Detailed platform authorization and LiveSplit instructions: **[SETUP.md](SETUP.m
 
 This is an alpha for local/pilot use, with a hosted community pilot. No real platform bot credentials are included. Chat adapters have automated tests around shared command/auth/delivery logic but still need real-account end-to-end testing. No messages were posted during development.
 
-- Tracker usernames and therun.gg mappings are **self-declared**, not verified platform identities. One-click public Twitch/Google onboarding, identity ownership verification, account recovery, moderation and abuse prevention beyond basic limits remain launch work. For a pilot, the operator provisions the allowed chat channels.
+- Tracker usernames and therun.gg mappings are **self-declared**, not verified platform identities. The Chatbot tab verifies Twitch/YouTube channel ownership through OAuth, with enable/disconnect controls and a 5-300 second cooldown (15 seconds by default). Google Testing restricts YouTube onboarding to approved test users. Public Google launch and account recovery remain follow-up work.
 - All-time records begin when this service observes a checkpoint. It does not import historical `.lss` files or therun.gg lifetime history. Session boundaries belong to this tracker, not therun.gg's session calculations.
 - The legacy TCP companion polls LiveSplit. A reset/split sequence occurring entirely between polls or while LiveSplit is disconnected may be missed. The reader marks observed gaps as partial and never fabricates intermediate checkpoint times. The new native addon captures timer events instead; see livesplit-addon/README.md for its recovery limits.
 - The server must support `getattemptcount` and the split/time commands. Older servers without `gettimingmethod` are supported in compatibility mode: the companion uses the configured profile timing and warns that LiveSplit must match it. Keep the configured timing method and timer method aligned. The legacy companion requires Real Time selected in LiveSplit. The native addon reads Real Time directly.
@@ -40,7 +40,7 @@ This is an alpha for local/pilot use, with a hosted community pilot. No real pla
 - WR benchmarks are manually maintained. None are bundled as real records; no automatic WR verification or record scraping is implemented. A checkpoint lead is not a finish prediction.
 - Scope is the 14 official maps. Custom-map registration, global leaderboards, PB-pace subscriptions, segment-duration commands and editable Discord run-status messages are not in this version.
 - SQLite and a single process keep pilot hosting simple. Public scale needs operational review, persistent backups, TLS, better registration abuse controls, normalized/indexed history queries, privacy/legal pages and load tests. A process restart should preserve data, not delete `data/`.
-- YouTube needs live chat, OAuth and available Google API quota. Broadcast chat IDs change; the operator updates them. The current connector uses documented polling rather than streaming.
+- YouTube needs live chat, OAuth and available Google API quota. Broadcast chat IDs change; runners select their active broadcast in Chatbot. The current connector uses documented polling rather than streaming.
 
 ## Commands
 
@@ -93,5 +93,6 @@ Data and OAuth refresh credentials are stored locally in `data/`; `.env`, runner
 - [YouTube live chat insert](https://developers.google.com/youtube/v3/live/docs/liveChatMessages/insert)
 
 Independent community software, not affiliated with Activision, Treyarch, LiveSplit, therun.gg, Twitch, Discord or YouTube.
+
 
 
