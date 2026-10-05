@@ -51,3 +51,6 @@ Compatibility fix: a read-only connection to the user's running LiveSplit succes
 
 ## 0.2.0 validation
 31 Node tests passed. 47 addon assertions passed, including event delivery to local HTTP/SQLite and offline replay. Tests cover map/category restrictions, six-map completion including The Giant, cumulative RTA, and exact paused timer synchronization. See CHANGELOG.md for the DPAPI/manual integration boundary. No live run data was posted by these tests.
+# 0.4.0 validation
+
+40 Node tests pass, including ownership isolation, browser-bound OAuth state, callback replay rejection, runner-key rotation, YouTube broadcast ownership, token redaction/removal, authenticated HTTP routes and channel-specific cooldowns. Provider responses use fixtures; successful real-account onboarding and live replies are not yet claimed. LiveSplit addon 0.2.3 previously passed 58 integration assertions and the user confirmed the layout display now works.
