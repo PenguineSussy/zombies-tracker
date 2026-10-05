@@ -4,8 +4,8 @@ import {profile,profileKey,CATEGORIES,categoriesForMap,snapshot} from '../src/do
 import {Store} from '../src/store.js';
 
 test('map-specific categories reject invalid input across profile consumers',()=>{
-  for(const map of ['ascension','shangri-la','zetsubou-no-shima','moon']) {
-    const expected=map==='moon'?CATEGORIES:map==='zetsubou-no-shima'?['Classic Gums','Mega Gums','Any%']:['Any%'];
+  for(const map of ['ascension','shangri-la','zetsubou-no-shima','super-easter-egg','moon']) {
+    const expected=map==='moon'?CATEGORIES:['zetsubou-no-shima','super-easter-egg'].includes(map)?['Classic Gums','Mega Gums','Any%']:['Any%'];
     assert.deepEqual(categoriesForMap(map),expected);
     for(const category of CATEGORIES) {
       if(expected.includes(category)) assert.equal(profile({map,category}).category,category);

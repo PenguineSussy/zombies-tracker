@@ -1,3 +1,11 @@
+# Component 0.2.1 compatibility update
+
+Unchanged settings no longer rebuild the uploader or reset its attempt ID. Temporary layout-editor clones do not acquire upload connections. LiveSplit's OK saves valid settings without requiring Apply. Invalid changes during a run preserve the prior configuration, and key-serialization errors remain inside the addon.
+
+The reported split-background/display issue has not been reproduced in a normal interactive LiveSplit session. These fixes address identified settings defects, not every possible layout issue. Save your layout before replacing the DLL. If it interferes with your layout, remove it and use the optional therun.gg source.
+
+Tests include confirming unchanged settings during an active run and serializing an inactive editor clone. Production DPAPI and interactive layout rendering still require verification under your normal Windows account.
+
 # Zombies Tracker for LiveSplit 0.2
 
 Windows desktop LiveSplit component for https://doctormonty.beer. Tracks Solo Black Ops 3 Easter Egg speedruns in RTA, in No Gums, Classic Gums, Mega Gums, or Any%. No TCP server, PowerShell window, Node installation, or separate companion is needed to use this DLL.
@@ -34,7 +42,7 @@ Split names must be unique and 1–80 characters without `<`, `>` or `@`. Aliase
 
 ## Map category limits and Super Easter Egg
 
-Zetsubou No Shima allows Classic Gums, Mega Gums, or Any%. Ascension and Shangri-La allow only Any%. Other maps and the separate Super Easter Egg category offer all four categories. Invalid combinations stop uploads; rename the LiveSplit category or choose a permitted override before starting.
+Zetsubou No Shima and Super Easter Egg allow Classic Gums, Mega Gums, or Any%. Ascension and Shangri-La allow only Any%. Other maps offer all four categories. Invalid combinations stop uploads; rename the LiveSplit category or choose a permitted override before starting.
 
 For Super Easter Egg, use one continuous LiveSplit file with category `Super Easter Egg - Classic Gums - Solo` (substitute your gum category). Include Shadows of Evil, The Giant, Der Eisendrache, Zetsubou No Shima, Gorod Krovi, and Revelations. The first five may be in your chosen order; Revelations must be last. Keep each map's splits together, prefix each checkpoint with its map (for example `DE - Bow`), and end each map block with `Map - Complete`. A minimal file has these six splits:
 

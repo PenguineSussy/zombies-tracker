@@ -24,6 +24,7 @@ class Tests
         {
             foreach (var map in Detector.Maps.Where(m => m.Enabled && m.Id != "super-easter-egg")) Check(Detect(map.Name + " Any% Solo").Map == map.Id, "map " + map.Name);
             Check(!Detector.CategoriesForMap("zetsubou-no-shima").Contains("No Gums"), "ZNS category restriction");
+            Check(!Detector.CategoriesForMap("super-easter-egg").Contains("No Gums"), "Super EE category restriction");
             Check(Detector.CategoriesForMap("ascension").SequenceEqual(new[]{"Any%"}) && Detector.CategoriesForMap("shangri-la").SequenceEqual(new[]{"Any%"}), "Any percent only maps");
             var superSplits = new[]{"SOE - Complete", "The Giant - Complete", "DE - Bow", "DE - Complete", "ZNS - Complete", "GK - Complete", "Revelations - Complete"};
             Check(Detect("Super Easter Egg - Classic Gums - Solo", superSplits).Map == "super-easter-egg", "six map detection");
@@ -77,11 +78,27 @@ class Tests
                     set("Enabled","True"); set("Server",args[0]);
                     set("ProtectedToken",Convert.ToBase64String(Protection.Protect(Encoding.UTF8.GetBytes(args[1]))));
                     set("Aliases","{\"Bow Done\":\"bow\"}"); component.SetSettings(root);
-                    Pump(200); model.Start(); Pump(100); model.Split(); model.Pause(); Pump(100); model.Pause();
+                    using(var editorClone = new TrackerComponent(state)) {
+                        editorClone.SetSettings(root);
+                        Check(editorClone.GetSettings(new XmlDocument())["Enabled"].InnerText == "True", "editor clone keeps enabled settings without claiming uploader");
+                    }
+                    component.Update(null,state,0,0,LiveSplit.UI.LayoutMode.Vertical);
+                    Pump(200); model.Start(); Pump(100);
+                    var idField=typeof(TrackerComponent).GetField("id",BindingFlags.NonPublic|BindingFlags.Instance);
+                    string beforeSettings=(string)idField.GetValue(component);
+                    component.SetSettings(component.GetSettings(new XmlDocument()));
+                    Check((string)idField.GetValue(component)==beforeSettings, "confirming unchanged settings preserves active attempt");
+                    Check(state.CurrentPhase==TimerPhase.Running && state.CurrentSplitIndex==0, "settings roundtrip never changes timer state");
+                    using(var replacement=new TrackerComponent(state)) {
+                    replacement.SetSettings(component.GetSettings(new XmlDocument()));
+                    replacement.Update(null,state,0,0,LiveSplit.UI.LayoutMode.Vertical);
+                    Check((string)idField.GetValue(replacement)==beforeSettings, "layout replacement preserves attempt identity");
+                    model.Split(); model.Pause(); Pump(100); model.Pause();
                     model.SkipSplit(); model.UndoSplit(); Pump(100); model.Split(); Pump(100); model.Split(); Pump(300);
                     var exported = component.GetSettings(new XmlDocument()).OuterXml;
                     Check(!exported.Contains(args[1]), "key not stored as raw text in layout");
                     model.Reset(false); Pump(500);
+                    }
                 }
                 string queueDir = Path.Combine(Path.GetTempPath(), "ZombiesTracker-Tests-Replay");
                 using (var queue = new UploadQueue(args[0], args[1], queueDir))

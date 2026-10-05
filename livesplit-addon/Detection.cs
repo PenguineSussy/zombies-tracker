@@ -29,7 +29,7 @@ namespace LiveSplit.ZombiesTracker
         public static string[] CategoriesForMap(string map)
         {
             if (map == "ascension" || map == "shangri-la") return new[]{"Any%"};
-            return map == "zetsubou-no-shima" ? Categories.Where(c => c != "No Gums").ToArray() : Categories;
+            return map == "zetsubou-no-shima" || map == "super-easter-egg" ? Categories.Where(c => c != "No Gums").ToArray() : Categories;
         }
         public static string Category(IEnumerable<string> texts, string manual)
         {

@@ -14,7 +14,7 @@ export const ENABLED_MAPS = MAPS.filter(map => map.enabled);
 export const CATEGORIES = ['No Gums', 'Classic Gums', 'Mega Gums', 'Any%'];
 export function categoriesForMap(map) {
   if (['ascension', 'shangri-la'].includes(map)) return ['Any%'];
-  return map === 'zetsubou-no-shima' ? CATEGORIES.filter(c => c !== 'No Gums') : [...CATEGORIES];
+  return ['zetsubou-no-shima','super-easter-egg'].includes(map) ? CATEGORIES.filter(c => c !== 'No Gums') : [...CATEGORIES];
 }
 const CORE_MAP_ALIASES = {
   'shadows-of-evil':['shadows of evil','soe'], 'the-giant':['the giant','giant'],

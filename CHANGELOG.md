@@ -1,3 +1,13 @@
+# 0.3.0 — Dr Monty Bot community dashboard
+
+* New branding and an original Widow's Wine-inspired spider/web emblem, requested copy and runner setup labels. Public operator forms and legacy companion references removed; admin APIs remain protected.
+* Session statistics group maps/categories, current run, observed resets, duration, fastest complete finish, average cumulative checkpoint times and fastest checkpoints with sample counts. Practice and missing splits are excluded from time statistics; unobserved endings are not invented as resets. Short chat replies link to full runner statistics.
+* Two selectable stream slots with one slot per runner and no chat. Runners add Twitch channel/YouTube broadcast links on the website. The bot verifies Twitch live status with Get Streams every minute; results expire after two minutes. Missing credentials/errors mean unknown. YouTube live status is runner-reported and expires after 12 hours. Stream links do not require LiveSplit.
+* Versioned frontend assets and map-specific category fallback prevent blank lists when assets/catalogs overlap during deployment.
+* Addon 0.2.1: unchanged settings preserve uploader and attempt; editor clones stay inactive; settings serialization errors cannot escape into the layout editor. The user's visual rendering issue still requires normal LiveSplit verification.
+
+Validation: 35 Node tests, 52 addon assertions and 10 local HTTP/SQLite events. Twitch checks tested with API fixtures. No real chat messages or public test runs sent.
+
 # 0.2.0 — Solo Easter Egg tracker
 
 * New native LiveSplit component, with map/category detection from run metadata and split labels, explicit overrides, event capture and persistent retry queue.

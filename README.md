@@ -1,6 +1,6 @@
-See [0.2 changes](CHANGELOG.md) and [LiveSplit addon installation](livesplit-addon/README.md). The native addon is the recommended connection; the TCP companion remains optional.
+See [0.3 changes](CHANGELOG.md) and [LiveSplit compatibility update](livesplit-addon/README.md). The addon settings fixes are tested, but interactive layout rendering still needs verification. The optional therun.gg connection remains available.
 
-# Zombies Tracker — Solo Easter Egg alpha 0.2
+# Dr Monty Bot — Solo Easter Egg alpha 0.3
 
 A working first build of a shared BO3 Zombies run tracker. LiveSplit or optional therun.gg supplies checkpoints; Twitch, Discord, and YouTube Live expose the same recorded stats. No OBS integration and no spreadsheet dependency.
 

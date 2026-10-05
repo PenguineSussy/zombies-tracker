@@ -1,3 +1,9 @@
+# 0.3.0 validation
+
+35 Node tests pass: session aggregation, observed resets, practice exclusion, category isolation, stream URL validation, authenticated settings, privacy, Twitch live/offline/stale responses and multistream deduplication. Component 0.2.1 passes 52 assertions with 10 local HTTP/SQLite events, including settings confirmation and inactive editor clones.
+
+Live Twitch/YouTube broadcasts and the reported interactive LiveSplit rendering issue are not yet verified. See CHANGELOG.md and livesplit-addon/README.md.
+
 # Validation report
 
 Build: 0.1.0 local alpha. Development session: October 4, 2026 (America/Chicago).

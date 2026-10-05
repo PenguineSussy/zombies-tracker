@@ -13,6 +13,10 @@ export class ChatResponder {
     if(now-(this.cooldowns.get(userKey)??-Infinity)<5000 || now-(this.cooldowns.get(channelKey)??-Infinity)<1600 || now-(this.cooldowns.get('global')??-Infinity)<1600) return null;
     this.cooldowns.set(userKey,now); this.cooldowns.set(channelKey,now); this.cooldowns.set('global',now);
     let result=this.store.answer(command);
+    if(command.command==='session' && result?.length>this.limit) {
+      const p=this.store.view(command.player);
+      if(!p.private)result=this.store.sessionAnswer(p,true);
+    }
     if(result?.length>this.limit && result.includes(' | ')) {
       const parts=result.split(' | ');
       result=parts[0]+' | '+parts[1].split(' · ').slice(0,2).join(' · ')+' | '+parts.slice(2).join(' | ');
@@ -43,11 +47,17 @@ export class OAuthToken {
   }
 }
 
-export function startTwitch(store,env,log=console.log) {
-  if(!env.TWITCH_CLIENT_ID || !env.TWITCH_ACCESS_TOKEN || !env.TWITCH_BOT_USER_ID || !env.TWITCH_CHANNEL_IDS) return ()=>{};
+const twitchTokens=new WeakMap();
+export function twitchToken(store,env) {
+  if(twitchTokens.has(store))return twitchTokens.get(store);
   const saved=store.get('metadata','twitch-oauth')??{};
   const token=new OAuthToken({accessToken:saved.accessToken??env.TWITCH_ACCESS_TOKEN,refreshToken:saved.refreshToken??env.TWITCH_REFRESH_TOKEN,clientId:env.TWITCH_CLIENT_ID,clientSecret:env.TWITCH_CLIENT_SECRET,provider:'twitch'});
   token.onRefresh=value=>store.put('metadata','twitch-oauth',value);
+  twitchTokens.set(store,token);return token;
+}
+export function startTwitch(store,env,log=console.log) {
+  if(!env.TWITCH_CLIENT_ID || !env.TWITCH_ACCESS_TOKEN || !env.TWITCH_BOT_USER_ID || !env.TWITCH_CHANNEL_IDS) return ()=>{};
+  const token=twitchToken(store,env);
   const responder=new ChatResponder(store), channels=env.TWITCH_CHANNEL_IDS.split(',').map(v=>v.trim()).filter(v=>/^\d+$/.test(v));
   const headers={'Client-Id':env.TWITCH_CLIENT_ID,'Content-Type':'application/json'};
   let stopped=false, socket, pendingSocket, retryTimer, watchdog, failures=0, validationTimer;
