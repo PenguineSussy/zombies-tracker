@@ -10,7 +10,7 @@ import { ChatResponder, OAuthToken } from '../src/chat.js';
 import { verifyDiscord, discordInteraction, deliverAlerts } from '../src/discord.js';
 import { createApp } from '../src/server.js';
 
-const P={map:'der-eisendrache',objective:'main easter egg',players:1,rules:'classic',route:'standard',timing:'RealTime'};
+const P={map:'der-eisendrache',category:'No Gums',players:1,timing:'RealTime'};
 const NOW=1791170000000;
 function fixture(t){let now=NOW;const store=new Store(':memory:',()=>now);t.after(()=>store.close());const {player,token}=store.register('Player1');return {store,player,token,tick:(ms)=>now+=ms};}
 function event(overrides={}){return {attemptId:'attempt-001',sequence:1,profile:P,phase:'Running',index:1,elapsedMs:285000,current:'Crackle',splits:[{index:0,name:'Bow',ms:283000}],complete:true,observedAt:NOW,...overrides};}
@@ -80,7 +80,7 @@ test('WR comparison is frozen per attempt and wrong categories never match',t=>{
   store.ingest(player.id,event());assert.match(store.answer('!pace @Player1'),/0:07 ahead/);
   tick(1);store.benchmark({profile:P,splits:{bow:280000},source:'https://example.org/new',holder:'Runner2',verifiedDate:'2026-10-04'});
   store.ingest(player.id,event({sequence:2}));assert.match(store.answer('!pace @Player1'),/0:07 ahead/);
-  store.ingest(player.id,event({attemptId:'attempt-002',profile:{...P,players:2}}));assert.match(store.answer('!pace @Player1'),/unavailable/);
+  store.ingest(player.id,event({attemptId:'attempt-002',profile:{...P,category:'Mega Gums'}}));assert.match(store.answer('!pace @Player1'),/unavailable/);
 });
 test('outage replay records history but cannot send old milestone pings or look online',t=>{
   const {store,player,tick}=fixture(t);store.subscribe({guild:'123456',channel:'234567',player:player.id,profile:P,split:'bow',mode:'milestone'});tick(200000);
@@ -142,7 +142,7 @@ test('chat deduplication and per-user/channel cooldowns',t=>{
   assert.ok(chat.respond('channel','viewer','1','!current @Player1'));assert.equal(chat.respond('channel','viewer','1','!current @Player1'),null);assert.equal(chat.respond('channel','viewer','2','!current @Player1'),null);now+=5001;assert.ok(chat.respond('channel','viewer','3','!current @Player1'));
 });
 test('short YouTube replies preserve the requested split result before long category detail',t=>{
-  const {store,player}=fixture(t);store.ingest(player.id,event({profile:{...P,rules:'r'.repeat(80),route:'s'.repeat(80)}}));const chat=new ChatResponder(store,190,()=>NOW);
+  const {store,player}=fixture(t);store.ingest(player.id,event({profile:{...P,category:'Classic Gums'}}));const chat=new ChatResponder(store,190,()=>NOW);
   const reply=chat.respond('chat','viewer','message','!best @Player1 bow session');assert.match(reply,/4:43/);assert.match(reply,/Der Eisendrache/);assert.ok(reply.length<=190);
 });
 test('OAuth refresh retries unauthorized calls and preserves rotated refresh token',async()=>{

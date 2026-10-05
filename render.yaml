@@ -5,7 +5,7 @@ services:
     name: zombies-tracker
     runtime: node
     plan: 0.5c-512mb
-    buildCommand: node --version
+    buildCommand: node --test test/*.test.js
     startCommand: node src/server.js
     healthCheckPath: /health
     envVars:
@@ -21,3 +21,4 @@ services:
       name: tracker-data
       mountPath: /var/data
       sizeGB: 1
+

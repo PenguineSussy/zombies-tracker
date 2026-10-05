@@ -3,3 +3,6 @@ data/
 companion/config.json
 companion/state.json
 *.log
+
+livesplit-addon/test-bin/
+livesplit-addon/dist/
