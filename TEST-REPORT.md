@@ -44,4 +44,4 @@ No real chat messages or role pings were sent. The packaged archive excludes loc
 Compatibility fix: a read-only connection to the user's running LiveSplit successfully read NotRunning, index -1, and elapsed time 0 using configured RealTime when gettimingmethod was unavailable. A socket regression test verifies one-time fallback and intact subsequent split responses.
 
 ## 0.2.0 validation
-29 Node tests passed. 38 addon assertions passed, including event delivery to local HTTP/SQLite and offline replay. See CHANGELOG.md for the DPAPI/manual integration boundary. No live run data was posted by these tests.
+31 Node tests passed. 47 addon assertions passed, including event delivery to local HTTP/SQLite and offline replay. Tests cover map/category restrictions, six-map completion including The Giant, cumulative RTA, and exact paused timer synchronization. See CHANGELOG.md for the DPAPI/manual integration boundary. No live run data was posted by these tests.

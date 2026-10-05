@@ -7,4 +7,7 @@
 * Old history is preserved as Legacy rather than guessed into a new category. Existing companion configs/therun mappings must be regenerated with a category. No old stats are automatically reassigned.
 * LiveSplit addon DLL requires installation and a valid key from the hosted tracker; the localhost key is a different account. See livesplit-addon/README.md.
 
-Validation: 29 Node tests, 38 addon assertions including actual LiveSplit TimerModel events and 11 accepted local HTTP/SQLite uploads. Offline replay/503 retention and duplicate addon ownership tested. DPAPI is used in the production DLL; interactive Windows DPAPI/layout persistence remains a manual check because the development sandbox cannot access the normal user's encryption profile. Test binaries are excluded from distribution.
+* Map-specific categories: Zetsubou excludes No Gums; Ascension and Shangri-La are Any% only. The website filters choices and the server/addon reject unsupported combinations.
+* Super Easter Egg uses one continuous six-map file, including The Giant and ending on Revelations. Map-prefixed checkpoints identify the current stage. Elapsed and checkpoint values come from LiveSplit Real Time; there is no independent tracker clock.
+
+Validation: 31 Node tests, 47 addon assertions including actual LiveSplit TimerModel events and 11 accepted local HTTP/SQLite uploads. Offline replay/503 retention, exact paused RTA, map restrictions and six-map completion tested. DPAPI is used in the production DLL; interactive Windows DPAPI/layout persistence remains a manual check because the development sandbox cannot access the normal user's encryption profile. Test binaries are excluded from distribution.
