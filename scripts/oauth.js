@@ -8,7 +8,7 @@ if(!clientId||!clientSecret)throw new Error(`Set ${prefix}_CLIENT_ID and ${prefi
 const state=randomBytes(32).toString('hex'),redirect='http://localhost:8787/callback';
 const url=new URL(provider==='twitch'?'https://id.twitch.tv/oauth2/authorize':'https://accounts.google.com/o/oauth2/v2/auth');
 for(const [k,v] of Object.entries({client_id:clientId,redirect_uri:redirect,response_type:'code',state,scope:provider==='twitch'?'user:read:chat user:write:chat':'https://www.googleapis.com/auth/youtube.force-ssl'}))url.searchParams.set(k,v);
-if(provider==='youtube'){url.searchParams.set('access_type','offline');url.searchParams.set('prompt','consent');}
+if(provider==='youtube'){url.searchParams.set('access_type','offline');url.searchParams.set('prompt','select_account consent');}
 let used=false;
 const server=http.createServer(async(req,res)=>{
   res.setHeader('Content-Type','text/plain; charset=utf-8');res.setHeader('Cache-Control','no-store');
