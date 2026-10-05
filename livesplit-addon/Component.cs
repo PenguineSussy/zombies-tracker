@@ -14,7 +14,7 @@ using LiveSplit.Model;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;
 
-[assembly: AssemblyVersion("0.2.1.0")]
+[assembly: AssemblyVersion("0.2.3.0")]
 [assembly: ComponentFactory(typeof(LiveSplit.ZombiesTracker.Factory))]
 
 namespace LiveSplit.ZombiesTracker
@@ -28,14 +28,13 @@ namespace LiveSplit.ZombiesTracker
         public string UpdateName { get { return ComponentName; } }
         public string XMLURL { get { return ""; } }
         public string UpdateURL { get { return ""; } }
-        public Version Version { get { return new Version(0, 2, 1); } }
+        public Version Version { get { return new Version(0, 2, 3); } }
     }
     public sealed class AddonOptions
     {
         public bool Enabled;
         public string Server = "https://doctormonty.beer", Token = "", Map = "", Category = "";
         public bool Practice;
-        public string Aliases = "{\"Bow Done\":\"bow\",\"Crackle\":\"crackle\"}";
     }
     public sealed class TrackerComponent : LogicComponent
     {
@@ -54,13 +53,13 @@ namespace LiveSplit.ZombiesTracker
         AddonOptions options = new AddonOptions();
         UploadQueue uploader;
         readonly JavaScriptSerializer json = new JavaScriptSerializer();
-        IDictionary<string,string> aliases = new Dictionary<string,string>();
         string id = Guid.NewGuid().ToString(), identity, lastPhase, frozen;
         long sequence;
         DateTime lastHeartbeat = DateTime.MinValue;
         bool first = true, forceNew = true, disposed, suppressNext = true;
         bool activated;
         string protectedToken = "";
+        string protectedTokenFor = "";
         public override string ComponentName { get { return "Zombies Tracker"; } }
         public TrackerComponent(LiveSplitState state)
         {
@@ -125,7 +124,7 @@ namespace LiveSplit.ZombiesTracker
                     throw new InvalidOperationException("Run details changed during an attempt. Reset LiveSplit to resume tracking in the new category.");
                 bool fresh = forceNew || identity != fingerprint || (lastPhase != phase && (idle || lastPhase == "NotRunning"));
                 if (fresh) { id = Guid.NewGuid().ToString(); sequence = 0; identity = fingerprint; frozen = idle ? null : fingerprint; }
-                var snapshot = Protocol.Capture(state, profile, id, sequence + 1, options.Practice, suppressNext || first, aliases);
+                var snapshot = Protocol.Capture(state, profile, id, sequence + 1, options.Practice, suppressNext || first);
                 uploader.Enqueue(snapshot);
                 sequence++; first = false; forceNew = false; suppressNext = false; lastPhase = phase; lastHeartbeat = DateTime.UtcNow;
                 runtime.Config=json.Serialize(options); runtime.Id=id; runtime.Identity=identity; runtime.LastPhase=lastPhase; runtime.Frozen=frozen;
@@ -145,11 +144,8 @@ namespace LiveSplit.ZombiesTracker
         {
             if (json.Serialize(value) == json.Serialize(options)) return;
             UploadQueue.ValidateServer(value.Server);
-            var parsed = json.Deserialize<Dictionary<string,string>>(value.Aliases);
-            var validated = new Dictionary<string,string>();
-            foreach (var v in parsed) validated.Add(Protocol.Clean(v.Key), Protocol.Clean(v.Value));
             if (uploader != null) { uploader.Dispose(); uploader = null; }
-            options = value; aliases = validated;
+            options = value;
             forceNew = true; first = true; suppressNext = true; frozen = null;
         }
         void EnsureUploader()
@@ -169,6 +165,9 @@ namespace LiveSplit.ZombiesTracker
             forceNew = true;
         }
         public override Control GetSettingsControl(LayoutMode mode) { return panel; }
+        // LiveSplit polls this during rendering. Do not apply UI edits, encrypt a
+        // key, or change runtime state from its layout-change detection path.
+        public int GetSettingsHashCode() { return json.Serialize(options).GetHashCode(); }
         public override XmlNode GetSettings(XmlDocument doc)
         {
             // LiveSplit serializes/clones components while editing layouts. Never start
@@ -178,23 +177,31 @@ namespace LiveSplit.ZombiesTracker
             var root = doc.CreateElement("Settings");
             Action<string,string> put = (key, val) => { var node = doc.CreateElement(key); node.InnerText = val; root.AppendChild(node); };
             bool canSave = true;
-            try { protectedToken = options.Token.Length == 0 ? "" : Convert.ToBase64String(Protection.Protect(Encoding.UTF8.GetBytes(options.Token))); }
+            try {
+                // DPAPI uses random ciphertext. Re-encrypt only when the key changes;
+                // otherwise LiveSplit's XML fallback hash sees a new layout every frame.
+                if (protectedTokenFor != options.Token) {
+                    protectedToken = options.Token.Length == 0 ? "" : Convert.ToBase64String(Protection.Protect(Encoding.UTF8.GetBytes(options.Token)));
+                    protectedTokenFor = options.Token;
+                }
+            }
             catch (Exception ex) { canSave = false; panel.StatusText = "Cannot save key: " + ex.Message; }
-            put("Version", "0.2.1"); put("Enabled", (options.Enabled && canSave).ToString()); put("Server", options.Server);
+            put("Version", "0.2.3"); put("Enabled", (options.Enabled && canSave).ToString()); put("Server", options.Server);
             put("ProtectedToken", protectedToken);
-            put("Map", options.Map); put("Category", options.Category); put("Practice", options.Practice.ToString()); put("Aliases", options.Aliases);
+            put("Map", options.Map); put("Category", options.Category); put("Practice", options.Practice.ToString());
             return root;
         }
         public override void SetSettings(XmlNode root)
         {
             Func<string,string,string> read = (key, fallback) => root[key] == null ? fallback : root[key].InnerText;
             var value = new AddonOptions { Enabled = read("Enabled", "False") == "True", Server = read("Server", "https://doctormonty.beer"),
-                Map = read("Map", ""), Category = read("Category", ""), Practice = read("Practice", "False") == "True", Aliases = read("Aliases", "{}") };
+                Map = read("Map", ""), Category = read("Category", ""), Practice = read("Practice", "False") == "True" };
             try
             {
                 string encrypted = read("ProtectedToken", "");
                 value.Token = encrypted == "" ? "" : Encoding.UTF8.GetString(Protection.Unprotect(Convert.FromBase64String(encrypted)));
                 protectedToken = encrypted;
+                protectedTokenFor = value.Token;
                 Configure(value);
             }
             catch (Exception ex) { value.Enabled = false; options = value; panel.StatusText = "Settings need attention: " + ex.Message; }
@@ -231,7 +238,6 @@ namespace LiveSplit.ZombiesTracker
         readonly ComboBox map = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
         readonly ComboBox category = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
         readonly CheckBox practice = new CheckBox { Text = "Practice (excluded from records and alerts)", AutoSize = true };
-        readonly TextBox aliases = new TextBox { Multiline = true, Height = 55 };
         readonly Label detection = new Label { AutoSize = true, MaximumSize = new Size(450, 0) };
         readonly Label status = new Label { AutoSize = true, MaximumSize = new Size(450, 0) };
         public string DetectionText { set { detection.Text = value; } }
@@ -248,14 +254,13 @@ namespace LiveSplit.ZombiesTracker
             add(new Label { Text = "Map", AutoSize = true }); map.Items.Add("Automatic detection"); foreach (var m in Detector.Maps.Where(m => m.Enabled)) map.Items.Add(m); map.SelectedIndex = 0; add(map);
             add(new Label { Text = "Gum category", AutoSize = true }); category.Items.Add("Automatic detection"); category.Items.AddRange(Detector.Categories); category.SelectedIndex = 0; add(category);
             map.SelectedIndexChanged += delegate { RefreshCategories(); };
-            add(practice); add(new Label { Text = "Split aliases (JSON)", AutoSize = true }); add(aliases);
+            add(practice);
             var import = new Button { Text = "Import downloaded config.json", AutoSize = true };
             import.Click += delegate {
                 using (var dialog = new OpenFileDialog { Filter = "Tracker configuration|*.json" })
                     if (dialog.ShowDialog() == DialogResult.OK) Try(delegate {
                         var data = new JavaScriptSerializer().Deserialize<Dictionary<string,object>>(File.ReadAllText(dialog.FileName));
                         server.Text = Convert.ToString(data["server"]); token.Text = Convert.ToString(data["token"]);
-                        if (data.ContainsKey("aliases")) aliases.Text = new JavaScriptSerializer().Serialize(data["aliases"]);
                         // Imports identity, not a forced map: detection remains the default.
                         map.SelectedIndex = 0; category.SelectedIndex = 0; enabled.Checked = false;
                         status.Text = "Imported. Stop the old companion, enable upload, then Apply. Select Direct LiveSplit on the website.";
@@ -283,14 +288,15 @@ namespace LiveSplit.ZombiesTracker
         {
             return new AddonOptions { Enabled = enabled.Checked, Server = server.Text.Trim(), Token = token.Text.Trim(),
                 Map = map.SelectedItem is MapInfo ? ((MapInfo)map.SelectedItem).Id : "", Category = category.SelectedIndex > 0 ? (string)category.SelectedItem : "",
-                Practice = practice.Checked, Aliases = aliases.Text };
+                Practice = practice.Checked };
         }
         public void LoadOptions(AddonOptions value)
         {
-            enabled.Checked = value.Enabled; server.Text = value.Server; token.Text = value.Token; practice.Checked = value.Practice; aliases.Text = value.Aliases;
+            enabled.Checked = value.Enabled; server.Text = value.Server; token.Text = value.Token; practice.Checked = value.Practice;
             map.SelectedIndex = 0; foreach (var item in map.Items) if (item is MapInfo && ((MapInfo)item).Id == value.Map) map.SelectedItem = item;
             category.SelectedIndex = Math.Max(0, category.Items.IndexOf(value.Category));
         }
     }
 }
+
 

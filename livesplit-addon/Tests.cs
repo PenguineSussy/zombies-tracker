@@ -52,22 +52,40 @@ class Tests
             run.Add(new Segment("Bow Done")); run.Add(new Segment("Crackle")); run.Add(new Segment("Boss"));
             var state = new LiveSplitState(run, null, null, null, null);
             var model = new TimerModel { CurrentState = state };
+            using(var settingsProbe=new TrackerComponent(state)) {
+                var settingsDoc=new XmlDocument(); settingsDoc.LoadXml("<Settings><Enabled>False</Enabled><ProtectedToken>" + Convert.ToBase64String(Protection.Protect(Encoding.UTF8.GetBytes("synthetic-test-key"))) + "</ProtectedToken></Settings>");
+                settingsProbe.SetSettings(settingsDoc.DocumentElement);
+                string saved=settingsProbe.GetSettings(new XmlDocument()).OuterXml;
+                Check(saved==settingsProbe.GetSettings(new XmlDocument()).OuterXml, "unchanged settings keep identical encrypted XML across render checks");
+                settingsProbe.SetSettings(settingsProbe.GetSettings(new XmlDocument()));
+                Check(saved==settingsProbe.GetSettings(new XmlDocument()).OuterXml, "layout settings roundtrip preserves encrypted XML");
+                var layout=new LiveSplit.UI.Layout { Settings=new LiveSplit.Options.SettingsFactories.StandardLayoutSettingsFactory().Create() };
+                layout.LayoutComponents.Add(new LiveSplit.UI.Components.LayoutComponent("LiveSplit.ZombiesTracker.dll",settingsProbe));
+                var saver=new LiveSplit.UI.LayoutSavers.XMLLayoutSaver();
+                int hash=saver.CreateLayoutNode(null,null,layout);
+                for(int i=0;i<60;i++) if(hash!=saver.CreateLayoutNode(null,null,layout)) throw new Exception("Layout hash changed on render poll");
+                Check(true,"LiveSplit layout hash stable across 60 render polls");
+                settingsDoc.DocumentElement["ProtectedToken"].InnerText=Convert.ToBase64String(Protection.Protect(Encoding.UTF8.GetBytes("replacement-test-key")));
+                settingsProbe.SetSettings(settingsDoc.DocumentElement);
+                Check(hash!=saver.CreateLayoutNode(null,null,layout),"changed key invalidates settings hash");
+                var replacementXml=settingsProbe.GetSettings(new XmlDocument());
+                Check(Encoding.UTF8.GetString(Protection.Unprotect(Convert.FromBase64String(replacementXml["ProtectedToken"].InnerText)))=="replacement-test-key","saved key updates correctly");
+            }
             var profile = new RunProfile { map = "der-eisendrache", category = "No Gums", players = 1, timing = "RealTime" };
-            var aliases = new Dictionary<string,string>{{"bow done","bow"}};
             model.Start(); Pump(40); model.Split();
             state.CurrentTimingMethod = TimingMethod.GameTime;
-            var sample = Protocol.Capture(state, profile, "test-attempt", 1, false, false, aliases);
-            Check(sample.splits.Count == 1 && sample.splits[0].name == "bow" && sample.splits[0].ms > 0, "actual split / alias / RTA despite GameTime display");
+            var sample = Protocol.Capture(state, profile, "test-attempt", 1, false, false);
+            Check(sample.splits.Count == 1 && sample.splits[0].name == "bow done" && sample.splits[0].ms > 0, "original split name / RTA despite GameTime display");
             model.Pause();
-            sample = Protocol.Capture(state, profile, "test-attempt", 2, false, false, aliases);
+            sample = Protocol.Capture(state, profile, "test-attempt", 2, false, false);
             Check(sample.elapsedMs == (long)Math.Round(state.CurrentTime.RealTime.Value.TotalMilliseconds), "paused elapsed equals LiveSplit RTA exactly");
-            Pump(40); Check(Protocol.Capture(state, profile, "test-attempt", 3, false, false, aliases).elapsedMs == sample.elapsedMs, "no independent clock during pause");
+            Pump(40); Check(Protocol.Capture(state, profile, "test-attempt", 3, false, false).elapsedMs == sample.elapsedMs, "no independent clock during pause");
             model.Pause();
-            model.SkipSplit(); sample = Protocol.Capture(state, profile, "test-attempt", 2, false, false, aliases);
+            model.SkipSplit(); sample = Protocol.Capture(state, profile, "test-attempt", 2, false, false);
             Check(!sample.complete && sample.splits.Count == 1, "skip incomplete");
-            model.UndoSplit(); model.UndoSplit(); sample = Protocol.Capture(state, profile, "test-attempt", 3, false, false, aliases);
+            model.UndoSplit(); model.UndoSplit(); sample = Protocol.Capture(state, profile, "test-attempt", 3, false, false);
             Check(sample.splits.Count == 0, "undo removes checkpoints");
-            model.Reset(false); sample = Protocol.Capture(state, profile, "test-reset", 1, false, false, aliases);
+            model.Reset(false); sample = Protocol.Capture(state, profile, "test-reset", 1, false, false);
             Check(sample.phase == "NotRunning" && sample.splits.Count == 0 && sample.index == -1, "reset");
             if (args.Length == 2)
             {
@@ -78,6 +96,7 @@ class Tests
                     set("Enabled","True"); set("Server",args[0]);
                     set("ProtectedToken",Convert.ToBase64String(Protection.Protect(Encoding.UTF8.GetBytes(args[1]))));
                     set("Aliases","{\"Bow Done\":\"bow\"}"); component.SetSettings(root);
+                    Check(component.GetSettings(new XmlDocument())["Aliases"] == null, "legacy aliases are discarded on save");
                     using(var editorClone = new TrackerComponent(state)) {
                         editorClone.SetSettings(root);
                         Check(editorClone.GetSettings(new XmlDocument())["Enabled"].InnerText == "True", "editor clone keeps enabled settings without claiming uploader");
@@ -106,7 +125,7 @@ class Tests
                     bool duplicate = false;
                     try { using (var other = new UploadQueue(args[0], args[1], queueDir)) { } } catch { duplicate = true; }
                     Check(duplicate, "duplicate component blocked");
-                    var pending = Protocol.Capture(state, profile, "offline-attempt", 1, false, false, aliases);
+                    var pending = Protocol.Capture(state, profile, "offline-attempt", 1, false, false);
                     queue.Enqueue(pending); Pump(200); Check(queue.Count == 1, "503 keeps event in queue");
                 }
                 using (var recovered = new UploadQueue(args[0], args[1], queueDir))
@@ -120,5 +139,6 @@ class Tests
         catch (Exception ex) { Console.Error.WriteLine(ex); return 1; }
     }
 }
+
 
 
