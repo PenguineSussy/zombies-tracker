@@ -1,0 +1,5 @@
+.env
+data/
+companion/config.json
+companion/state.json
+*.log

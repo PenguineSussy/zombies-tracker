@@ -1,0 +1,23 @@
+# Optional paid hosting configuration. Deploy only after reviewing Render's charges.
+# Put the contents of zombies-tracker/ at your repository root.
+services:
+  - type: web
+    name: zombies-tracker
+    runtime: node
+    plan: 0.5c-512mb
+    buildCommand: node --version
+    startCommand: node src/server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 24.19.0
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATA_PATH
+        value: /var/data/tracker.sqlite
+      - key: ADMIN_KEY
+        generateValue: true
+    disk:
+      name: tracker-data
+      mountPath: /var/data
+      sizeGB: 1
