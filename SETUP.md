@@ -1,3 +1,15 @@
+# Dr Monty Bot 0.3 operator notes
+
+Twitch live detection uses the existing TWITCH_CLIENT_ID and TWITCH_ACCESS_TOKEN bot configuration (and refresh credentials). It shares the bot's token refresh state. It checks registered public runners' channel links, independent of LiveSplit. No Twitch credentials means status remains unknown and Twitch embeds are not listed as live. YouTube uses a runner-provided broadcast URL and an explicit live marker, not automatic verification.
+
+The public dashboard no longer exposes bot-credential instructions or the benchmark form. Configuration stays in the host environment. POST /api/admin/benchmarks still requires the ADMIN_KEY bearer token; WR alerts require a matching benchmark. A runner key does not grant admin privileges.
+
+Session averages are cumulative RTA checkpoint values grouped by full run profile, not individual segment durations. Only observed resets are counted. Historical resets without evidence cannot be reconstructed. Ended session duration is frozen. Short Twitch/YouTube command replies link to the full website report.
+
+Stream embeds use official Twitch and YouTube players, load on request, and do not display chat. A YouTube link must identify the broadcast itself. Public player links are self-declared, not proof of ownership.
+
+References: https://dev.twitch.tv/docs/api/reference/#get-streams ; https://dev.twitch.tv/docs/embed/video-and-clips/ ; https://developers.google.com/youtube/player_parameters
+
 For the recommended native component, see [LiveSplit addon instructions](livesplit-addon/README.md). No TCP server or companion window is needed with the addon.
 
 # Setup guide
