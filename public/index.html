@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dr Monty Bot</title><link rel="stylesheet" href="/style.css?v=0.3.0"><script type="module" src="/app.js?v=0.3.0"></script></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dr Monty Bot</title><link rel="stylesheet" href="/style.css?v=0.4.0"><script type="module" src="/app.js?v=0.4.0"></script></head>
 <body>
 <header><a class="brand" href="/"><svg class="brandmark" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29"/><path d="M32 3v58M3 32h58M11 11l42 42M11 53l42-42M18 18q14 9 28 0M18 46q14-9 28 0M18 18q9 14 0 28M46 18q-9 14 0 28"/><ellipse class="spider" cx="32" cy="35" rx="6" ry="9"/><circle class="spider" cx="32" cy="23" r="4"/><path class="legs" d="M28 29l-8-7-3-9m11 19l-11-2-7-7m18 13l-10 5-4 10m14-11l-4 12v7m12-30l8-7 3-9m-11 19l11-2 7-7m-18 13l10 5 4 10m-14-11l4 12v7"/></svg> DR MONTY BOT</a><span class="version">COMMUNITY ALPHA · 0.3</span></header>
 <main>
 <section class="hero"><div><p class="eyebrow">CALL OF DUTY ZOMBIES | SOLO EASTER EGG SPEEDRUNS</p><h1>Never miss another<br><em>@HeaterPal</em></h1><p class="intro">Live runs, runs statistics, and the heaters worth keeping.<br>One tool for Twitch, Youtube, and Discord.</p></div><div class="hero-side"><span class="signal"></span><span id="server-state">Connecting to tracker</span><p>Powered by your timer.<br>LiveSplit addon or optional therun.gg.</p></div></section>
-<nav aria-label="Dashboard sections"><button class="tab selected" data-tab="runners">Runners</button><button class="tab" data-tab="setup">Runner setup</button><button class="tab" data-tab="integrations">Chat & alerts</button></nav>
+<nav aria-label="Dashboard sections"><button class="tab selected" data-tab="runners">Home</button><button class="tab" data-tab="setup">LiveSplit</button><button class="tab" data-tab="integrations">Chatbot</button></nav>
 <div id="notice" role="status" aria-live="polite" hidden></div>
 <section id="runners" class="panel">
   <div class="section-head"><div><p class="eyebrow">THE COMMUNITY</p><h2>Run activity</h2></div><button id="refresh" class="secondary">Refresh</button></div>
@@ -30,9 +30,24 @@
   <article class="card lower"><h3>Session & account controls</h3><div class="actions"><button id="start-session" class="secondary">New session</button><button id="end-session" class="secondary">End session</button><button id="privacy" class="secondary">Toggle public tracking</button><button id="export" class="secondary">Export history</button><button id="rotate" class="secondary">Rotate runner key</button><button id="logout" class="secondary">Sign out</button></div><p id="source-status" class="small muted"></p><details><summary>Delete account</summary><p>Deletes this tracker account and its recorded history. Type your tracker username to confirm.</p><input id="delete-name" placeholder="Tracker username"><button id="delete" class="danger">Delete account and history</button></details></article>
 </section>
 <section id="integrations" class="panel" hidden>
-  <div class="section-head"><div><p class="eyebrow">BRING IT TO CHAT</p><h2>Connections & pace alerts</h2></div></div>
-  <div class="three-col"><article class="card"><span class="service twitch">TWITCH</span><h3>Commands in chat</h3><span id="twitch-status" class="pill">Not configured</span><p>Ask about any public runner from an enabled channel.</p><code>!current @name<br>!best @name bow session<br>!best @name bow alltime</code></article><article class="card"><span class="service discord">DISCORD</span><h3>Commands + role pings</h3><span id="discord-status" class="pill">Not configured</span><p>Server managers can create milestone and WR-checkpoint alerts.</p><code>/current player:name<br>/best player:name split:bow<br>/track-alert</code></article><article class="card"><span class="service youtube">YOUTUBE LIVE</span><h3>Optional live chat</h3><span id="youtube-status" class="pill">Not configured</span><p>Use the same text commands during a live broadcast with chat enabled.</p><p class="small muted">Requires Google OAuth, a live chat ID, and available API quota.</p></article></div>
-  <article class="card lower"><h3>About pace alerts</h3><p>Server managers configure Discord alerts. WR comparisons use an operator-maintained checkpoint benchmark for the exact map and category; if none is configured, WR pace is unavailable.</p></article>
+  <div class="section-head"><div><p class="eyebrow">BRING IT TO CHAT</p><h2>Your chatbot</h2></div></div>
+  <p id="chatbot-login" class="muted">Sign in with your runner key in LiveSplit to manage your channels.</p>
+  <div class="two-col">
+    <article class="card"><span class="service twitch">TWITCH</span><h3>LittleMontyBot in your chat</h3><p id="twitch-status" class="pill">Not connected</p>
+      <p>Connect your own Twitch channel, then enable replies. Viewers can ask about any public runner.</p>
+      <button id="connect-twitch">Connect Twitch</button><button id="disconnect-twitch" class="secondary" hidden>Disconnect</button>
+      <form id="twitch-chat-form" hidden><label class="check"><input id="twitch-enabled" type="checkbox">Enable command replies</label><label for="twitch-cooldown">Seconds between command replies</label><input id="twitch-cooldown" type="number" min="5" max="300" step="1" value="15" required><button>Save Twitch settings</button></form>
+    </article>
+    <article class="card"><span class="service youtube">YOUTUBE LIVE</span><h3>LittleMontyBot on your broadcast</h3><p id="youtube-status" class="pill">Not connected</p>
+      <p>Connect the YouTube channel you stream on. Choose its Google or Brand Account, then select an active broadcast with live chat.</p>
+      <button id="connect-youtube">Connect YouTube</button><button id="disconnect-youtube" class="secondary" hidden>Disconnect</button>
+      <form id="youtube-chat-form" hidden><button type="button" id="load-broadcasts" class="secondary">Find active broadcasts</button><label for="youtube-broadcast">Live broadcast</label><select id="youtube-broadcast"><option value="">Find your active broadcast first</option></select><label class="check"><input id="youtube-enabled" type="checkbox">Enable command replies</label><label for="youtube-cooldown">Seconds between command replies</label><input id="youtube-cooldown" type="number" min="5" max="300" step="1" value="15" required><button>Save YouTube settings</button></form>
+    </article>
+  </div>
+  <article class="card lower"><h3>Commands and cooldowns</h3><code>!current @name<br>!session @name<br>!best @name bow session<br>!best @name bow alltime</code><p>Cooldowns default to 15 seconds and apply to all command replies in your channel. Each channel has its own setting. Platform rate limits also apply.</p></article>
+  <article class="card lower"><h3>Discord — later</h3><p id="discord-status">Discord setup is paused while we finish Twitch and YouTube.</p></article>
 </section>
 <footer><span>DR MONTY BOT / COMMUNITY ALPHA</span><span>Self-reported timer data · Not an official leaderboard · No OBS required</span></footer>
 </main></body></html>
+
+
