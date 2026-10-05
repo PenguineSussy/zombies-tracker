@@ -1,3 +1,5 @@
+For the recommended native component, see [LiveSplit addon instructions](livesplit-addon/README.md). No TCP server or companion window is needed with the addon.
+
 # Setup guide
 
 ## 1. Start locally
@@ -19,7 +21,7 @@ The local URL works only on the machine running the server. Other runners need a
 
 1. Use the desktop version of LiveSplit, with a recent built-in command server. In LiveSplit's server controls, start the **TCP** server on port **16834**. The exact UI wording depends on the version. Do not select WebSocket mode for this companion.
 2. Load the run's splits. Set Real Time or Game Time consistently with the dashboard profile. If using game time, ensure it is initialized by your timer/autosplitter.
-3. Select map, objective, player count, ruleset and route in Runner setup. These fields separate statistics. Use a reviewed community naming convention for real comparisons.
+3. Select map and gum category in Runner setup. New runs are Solo Easter Egg RTA only. For automatic map/category detection, use the native LiveSplit addon instead of the TCP companion.
 4. Add split aliases if necessary, e.g. `{"Bow Done":"bow","Crackle":"crackle"}`. Names default to their normalized original when not mapped.
 5. Choose Direct LiveSplit and download the configuration. Move it into this project's `companion` folder with the name **config.json**.
 6. In a second terminal, run `npm run companion` or use `Start-Companion.cmd`. Keep it running alongside LiveSplit.
@@ -137,5 +139,6 @@ You do not need Excel. Exported history is JSON; spreadsheet/CSV import/export c
 
 ## Older LiveSplit servers
 
-If gettimingmethod is unavailable, the companion probes it once and uses the configured profile timing with a compatibility warning. Select the matching Real Time or Game Time method in LiveSplit. Close and reopen the companion after updating its files. Split and timer reads continue normally; automatic timing-method verification is unavailable in this mode.
+If gettimingmethod is unavailable, the companion probes it once and uses the configured profile timing with a compatibility warning. Select Real Time in LiveSplit. Close and reopen the companion after updating its files. Split and timer reads continue normally; automatic timing-method verification is unavailable in this mode.
+
 

@@ -42,3 +42,6 @@ Covered behavior:
 No real chat messages or role pings were sent. The packaged archive excludes local runtime data, runner credentials, `.env`, and companion state/configuration.
 
 Compatibility fix: a read-only connection to the user's running LiveSplit successfully read NotRunning, index -1, and elapsed time 0 using configured RealTime when gettimingmethod was unavailable. A socket regression test verifies one-time fallback and intact subsequent split responses.
+
+## 0.2.0 validation
+29 Node tests passed. 38 addon assertions passed, including event delivery to local HTTP/SQLite and offline replay. See CHANGELOG.md for the DPAPI/manual integration boundary. No live run data was posted by these tests.

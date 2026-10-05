@@ -1,4 +1,6 @@
-# Zombies Tracker — local alpha
+See [0.2 changes](CHANGELOG.md) and [LiveSplit addon installation](livesplit-addon/README.md). The native addon is the recommended connection; the TCP companion remains optional.
+
+# Zombies Tracker — Solo Easter Egg alpha 0.2
 
 A working first build of a shared BO3 Zombies run tracker. LiveSplit or optional therun.gg supplies checkpoints; Twitch, Discord, and YouTube Live expose the same recorded stats. No OBS integration and no spreadsheet dependency.
 
@@ -17,7 +19,7 @@ Detailed platform authorization and LiveSplit instructions: **[SETUP.md](SETUP.m
 ## Implemented
 
 - Self-service tracker username registration with revocable bearer keys; public/private visibility; account/history deletion and JSON export.
-- Ten enabled official BO3 Zombies maps. Nacht der Untoten, Verrückt, Shi No Numa, and Kino der Toten are disabled for new runs; their existing history remains readable. Objectives, 1–4 player categories, rules, routes and timing methods are configurable and stored separately.
+- Ten enabled official BO3 Zombies maps. Nacht der Untoten, Verrückt, Shi No Numa, and Kino der Toten are disabled for new runs; their existing history remains readable. New runs are Solo Easter Egg RTA only. Categories are No Gums, Classic Gums, Mega Gums and Any%. Legacy history remains separate.
 - Direct LiveSplit TCP reader, split-name aliases, local persistent upload queue, resets, undo/skips, paused state and stale-connection detection.
 - Optional therun.gg public live-feed reader with exact game/category/variable matching; no therun.gg upload key needed.
 - Session and all-time **recorded cumulative checkpoint** bests; full-attempt PBs when complete data is available; practice exclusion.
@@ -33,7 +35,7 @@ This is an alpha for local/pilot use, **not a deployed public service**. No real
 - Tracker usernames and therun.gg mappings are **self-declared**, not verified platform identities. One-click public Twitch/Google onboarding, identity ownership verification, account recovery, moderation and abuse prevention beyond basic limits remain launch work. For a pilot, the operator provisions the allowed chat channels.
 - All-time records begin when this service observes a checkpoint. It does not import historical `.lss` files or therun.gg lifetime history. Session boundaries belong to this tracker, not therun.gg's session calculations.
 - Direct tracking polls LiveSplit. A reset/split sequence occurring entirely between polls or while LiveSplit is disconnected may be missed. The reader marks observed gaps as partial and never fabricates intermediate checkpoint times. A native event-driven LiveSplit component would improve capture guarantees.
-- The server must support `getattemptcount` and the split/time commands. Older servers without `gettimingmethod` are supported in compatibility mode: the companion uses the configured profile timing and warns that LiveSplit must match it. Keep the configured timing method and timer method aligned. With game time, initialize it correctly in LiveSplit; its server can otherwise fall back to real time.
+- The server must support `getattemptcount` and the split/time commands. Older servers without `gettimingmethod` are supported in compatibility mode: the companion uses the configured profile timing and warns that LiveSplit must match it. Keep the configured timing method and timer method aligned. The legacy companion requires Real Time selected in LiveSplit. The native addon reads Real Time directly.
 - therun.gg's public live endpoint is an upstream dependency, not a guaranteed stable third-party contract. It is polled at roughly 15-second intervals. Missing/old updates mean **unknown freshness**, not proof that a runner stopped playing. Pause state is not exposed by the consumed schema. Attempts entirely between polls can be missed. Existing historical best-comparison fields are not interpreted as newly achieved checkpoints.
 - WR benchmarks are manually maintained. None are bundled as real records; no automatic WR verification or record scraping is implemented. A checkpoint lead is not a finish prediction.
 - Scope is the 14 official maps. Custom-map registration, global leaderboards, PB-pace subscriptions, segment-duration commands and editable Discord run-status messages are not in this version.
@@ -91,3 +93,4 @@ Data and OAuth refresh credentials are stored locally in `data/`; `.env`, runner
 - [YouTube live chat insert](https://developers.google.com/youtube/v3/live/docs/liveChatMessages/insert)
 
 Independent community software, not affiliated with Activision, Treyarch, LiveSplit, therun.gg, Twitch, Discord or YouTube.
+
