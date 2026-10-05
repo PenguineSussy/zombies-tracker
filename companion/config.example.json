@@ -1,0 +1,11 @@
+{
+  "server": "http://127.0.0.1:3000",
+  "token": "PASTE_YOUR_RUNNER_KEY_HERE",
+  "livesplit": { "host": "127.0.0.1", "port": 16834 },
+  "profile": {
+    "map": "der-eisendrache", "objective": "main easter egg", "players": 1,
+    "rules": "community-defined", "route": "standard", "timing": "RealTime"
+  },
+  "practice": false,
+  "aliases": { "Bow Done": "bow", "Crackle": "crackle" }
+}
