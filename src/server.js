@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
 import { timingSafeEqual, randomUUID } from 'node:crypto';
 import { Store } from './store.js';
-import { MAPS, ENABLED_MAPS, CATEGORIES, check } from './domain.js';
+import { MAPS, ENABLED_MAPS, CATEGORIES, categoriesForMap, check } from './domain.js';
 import { verifyDiscord, discordInteraction, deliverAlerts } from './discord.js';
 import { sourceConfig, startTheRun } from './therun.js';
 import { startTwitch, startYouTube } from './chat.js';
@@ -41,13 +41,13 @@ export function createApp({store=new Store(),env={},connectors=false}={}) {
       }
       if(req.method==='GET' && path==='/health')return send({ok:true,version:'0.2.0'});
       limit(req,'all',600);
-      if(req.method==='GET' && path==='/api/catalog')return send({maps:ENABLED_MAPS,allMaps:MAPS,categories:CATEGORIES,integrations:{discord:!!env.DISCORD_PUBLIC_KEY,twitch:!!env.TWITCH_CHANNEL_IDS,youtube:!!env.YOUTUBE_LIVE_CHAT_IDS,therun:true}});
+      if(req.method==='GET' && path==='/api/catalog')return send({maps:ENABLED_MAPS,allMaps:MAPS,categories:CATEGORIES,categoriesByMap:Object.fromEntries(ENABLED_MAPS.map(m=>[m.id,categoriesForMap(m.id)])),integrations:{discord:!!env.DISCORD_PUBLIC_KEY,twitch:!!env.TWITCH_CHANNEL_IDS,youtube:!!env.YOUTUBE_LIVE_CHAT_IDS,therun:true}});
       if(req.method==='GET' && path==='/api/players')return send(store.list('players').filter(p=>p.public).slice(0,200).map(p=>({id:p.id,name:p.name,status:store.view(p.id).status,profile:p.profile,source:p.source?.type??'direct'})));
       if(req.method==='GET' && path.startsWith('/api/players/')) {
         const v=store.view(decodeURIComponent(path.slice('/api/players/'.length)));
         // Do not expose private source configuration, benchmark internals, or alert metadata.
         return send({id:v.id,name:v.name,private:v.private,status:v.status,lastSeen:v.lastSeen,profile:v.profile,
-          attempt:v.attempt?{phase:v.attempt.phase,current:v.attempt.current,elapsedMs:v.attempt.elapsedMs,splits:v.attempt.splits,complete:v.attempt.complete,practice:v.attempt.practice}:null});
+          attempt:v.attempt?{phase:v.attempt.phase,current:v.attempt.current,stageMap:v.attempt.stageMap,elapsedMs:v.attempt.elapsedMs,splits:v.attempt.splits,complete:v.attempt.complete,practice:v.attempt.practice}:null});
       }
       const raw=await body(req);let data={};
       if(raw.length){try{data=JSON.parse(raw);}catch{check(false,'Invalid JSON.');}}
