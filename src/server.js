@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
 import { timingSafeEqual, randomUUID } from 'node:crypto';
 import { Store } from './store.js';
-import { MAPS, ENABLED_MAPS, check } from './domain.js';
+import { MAPS, ENABLED_MAPS, CATEGORIES, check } from './domain.js';
 import { verifyDiscord, discordInteraction, deliverAlerts } from './discord.js';
 import { sourceConfig, startTheRun } from './therun.js';
 import { startTwitch, startYouTube } from './chat.js';
@@ -31,13 +31,17 @@ export function createApp({store=new Store(),env={},connectors=false}={}) {
     const send=(data,status=200)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));};
     try {
       const url=new URL(req.url,'http://localhost');const path=url.pathname;
+      if(req.method==='GET' && path==='/downloads/Zombies-Tracker-LiveSplit.zip') {
+        const content=await readFile(resolve(root,'downloads/Zombies-Tracker-LiveSplit.zip'));
+        res.writeHead(200,{'Content-Type':'application/zip','Content-Disposition':'attachment; filename="Zombies-Tracker-LiveSplit.zip"'});res.end(content);return;
+      }
       if(req.method==='GET' && ['/','/app.js','/style.css'].includes(path)) {
         const file=path==='/'?'index.html':path.slice(1);const content=await readFile(resolve(root,file));
         res.writeHead(200,{'Content-Type':file.endsWith('.js')?'text/javascript; charset=utf-8':file.endsWith('.css')?'text/css; charset=utf-8':'text/html; charset=utf-8'});res.end(content);return;
       }
-      if(req.method==='GET' && path==='/health')return send({ok:true,version:'0.1.0'});
+      if(req.method==='GET' && path==='/health')return send({ok:true,version:'0.2.0'});
       limit(req,'all',600);
-      if(req.method==='GET' && path==='/api/catalog')return send({maps:ENABLED_MAPS,allMaps:MAPS,integrations:{discord:!!env.DISCORD_PUBLIC_KEY,twitch:!!env.TWITCH_CHANNEL_IDS,youtube:!!env.YOUTUBE_LIVE_CHAT_IDS,therun:true}});
+      if(req.method==='GET' && path==='/api/catalog')return send({maps:ENABLED_MAPS,allMaps:MAPS,categories:CATEGORIES,integrations:{discord:!!env.DISCORD_PUBLIC_KEY,twitch:!!env.TWITCH_CHANNEL_IDS,youtube:!!env.YOUTUBE_LIVE_CHAT_IDS,therun:true}});
       if(req.method==='GET' && path==='/api/players')return send(store.list('players').filter(p=>p.public).slice(0,200).map(p=>({id:p.id,name:p.name,status:store.view(p.id).status,profile:p.profile,source:p.source?.type??'direct'})));
       if(req.method==='GET' && path.startsWith('/api/players/')) {
         const v=store.view(decodeURIComponent(path.slice('/api/players/'.length)));
@@ -96,3 +100,4 @@ if(process.argv[1] && import.meta.url===pathToFileURL(resolve(process.argv[1])).
   app.server.listen(port,host,()=>console.log(`Zombies Tracker: http://${host}:${port}\nPlatform connectors activate only when configured. No OBS integration.`));
   process.on('SIGINT',()=>app.stop());process.on('SIGTERM',()=>app.stop());
 }
+

@@ -10,6 +10,7 @@ export const MAPS = [
 ].includes(id) }));
 
 export const ENABLED_MAPS = MAPS.filter(map => map.enabled);
+export const CATEGORIES = ['No Gums', 'Classic Gums', 'Mega Gums', 'Any%'];
 export function requireEnabledMap(id) {
   check(ENABLED_MAPS.some(map => map.id === id), 'This map is disabled for new runs. Choose an enabled map.');
 }
@@ -26,14 +27,16 @@ export function key(value) { return clean(value).normalize('NFKC').toLowerCase()
 export function profile(input) {
   check(input && typeof input === 'object', 'Choose a run profile.');
   check(MAPS.some(m => m.id === input.map), 'Choose an official BO3 map.');
-  check(Number.isInteger(input.players) && input.players >= 1 && input.players <= 4, 'Players must be 1–4.');
-  check(['RealTime', 'GameTime'].includes(input.timing), 'Choose RealTime or GameTime.');
-  return { map: input.map, objective: key(input.objective), players: input.players,
-    rules: key(input.rules), route: key(input.route), timing: input.timing };
+  check(input.players === undefined || input.players === 1, 'This tracker supports Solo Easter Egg runs only.');
+  const category = CATEGORIES.find(c => c.toLowerCase() === String(input.category).trim().toLowerCase());
+  check(category, 'Choose No Gums, Classic Gums, Mega Gums, or Any%. Update older companion configurations in Runner setup.');
+  check(input.timing === undefined || input.timing === 'RealTime', 'This tracker uses RTA (Real Time) only.');
+  return { map: input.map, category, players: 1, timing: 'RealTime' };
 }
-export function profileKey(p) { return JSON.stringify(profile(p)); }
+// Retain historical categories without silently assigning old records to a gum category.
+export function profileKey(p) { return p.category ? JSON.stringify({map:p.map,category:p.category,players:p.players??1,timing:p.timing??'RealTime'}) : JSON.stringify({map:p.map,objective:p.objective,players:p.players,rules:p.rules,route:p.route,timing:p.timing}); }
 export function profileLabel(p) {
-  return `${MAPS.find(m => m.id === p.map)?.name ?? p.map} · ${p.players === 1 ? 'Solo' : p.players + 'P'} · ${p.objective} · ${p.rules} · ${p.route} · ${p.timing}`;
+  return `${MAPS.find(m => m.id === p.map)?.name ?? p.map} · ${p.category ? 'Solo · Easter Egg · '+p.category : 'Legacy · '+p.players+'P · '+p.objective+' · '+p.rules+' · '+p.route} · ${p.timing}`;
 }
 export function milliseconds(value) {
   if (value == null || value === '-' || value === '') return null;
