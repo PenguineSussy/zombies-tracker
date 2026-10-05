@@ -1,7 +1,8 @@
 import { parseCommand } from './domain.js';
+import {chatTargets,channelCooldown,connections} from './chat-connections.js';
 
 export class ChatResponder {
-  constructor(store, limit = 450, clock = Date.now) { this.store=store; this.limit=limit; this.clock=clock; this.cooldowns=new Map(); this.ids=new Map(); }
+  constructor(store, limit = 450, clock = Date.now, cooldown = ()=>15) { this.store=store; this.limit=limit; this.clock=clock; this.cooldown=cooldown; this.cooldowns=new Map(); this.ids=new Map(); }
   respond(channel, sender, messageId, text) {
     const now=this.clock();
     for(const [id,at] of this.ids) if(now-at>600000) this.ids.delete(id);
@@ -10,7 +11,7 @@ export class ChatResponder {
     this.ids.set(messageId,now);
     const command=parseCommand(text); if(!command) return null;
     const userKey=`${channel}:${sender}`, channelKey=`channel:${channel}`;
-    if(now-(this.cooldowns.get(userKey)??-Infinity)<5000 || now-(this.cooldowns.get(channelKey)??-Infinity)<1600 || now-(this.cooldowns.get('global')??-Infinity)<1600) return null;
+    if(now-(this.cooldowns.get(userKey)??-Infinity)<5000 || now-(this.cooldowns.get(channelKey)??-Infinity)<this.cooldown(channel)*1000 || now-(this.cooldowns.get('global')??-Infinity)<1600) return null;
     this.cooldowns.set(userKey,now); this.cooldowns.set(channelKey,now); this.cooldowns.set('global',now);
     let result=this.store.answer(command);
     if(command.command==='session' && result?.length>this.limit) {
@@ -56,9 +57,10 @@ export function twitchToken(store,env) {
   twitchTokens.set(store,token);return token;
 }
 export function startTwitch(store,env,log=console.log) {
-  if(!env.TWITCH_CLIENT_ID || !env.TWITCH_ACCESS_TOKEN || !env.TWITCH_BOT_USER_ID || !env.TWITCH_CHANNEL_IDS) return ()=>{};
+  if(!env.TWITCH_CLIENT_ID || !env.TWITCH_ACCESS_TOKEN || !env.TWITCH_BOT_USER_ID) return ()=>{};
   const token=twitchToken(store,env);
-  const responder=new ChatResponder(store), channels=env.TWITCH_CHANNEL_IDS.split(',').map(v=>v.trim()).filter(v=>/^\d+$/.test(v));
+  const responder=new ChatResponder(store,450,Date.now,channel=>channelCooldown(store,'twitch',channel)), channels=chatTargets(store,env,'twitch');
+  if(!channels.length)return ()=>{};
   const headers={'Client-Id':env.TWITCH_CLIENT_ID,'Content-Type':'application/json'};
   let stopped=false, socket, pendingSocket, retryTimer, watchdog, failures=0, validationTimer;
   const retry=()=>{ if(!stopped) { clearTimeout(retryTimer); retryTimer=setTimeout(()=>connect(),Math.min(60000,1000*2**Math.min(failures++,6))); } };
@@ -84,13 +86,14 @@ export function startTwitch(store,env,log=console.log) {
           if(!handoff) for(const channel of channels) {
             const r=await token.request('https://api.twitch.tv/helix/eventsub/subscriptions',{method:'POST',headers,body:JSON.stringify({type:'channel.chat.message',version:'1',condition:{broadcaster_user_id:channel,user_id:env.TWITCH_BOT_USER_ID},transport:{method:'websocket',session_id:message.payload.session.id}})});
             if(!r.ok) log(`Twitch channel ${channel} subscription failed (${r.status}); check authorization.`);
+            connectionStatus(store,'twitch',channel,r.ok?'Listening for commands':`Connection failed (${r.status}); reconnect or try again`);
           }
           log('Twitch connection established.');
         } else if(type==='session_reconnect') connect(message.payload.session.reconnect_url,true);
         else if(type==='revocation') log('Twitch subscription revoked; reauthorize the channel.');
         else if(type==='notification') {
           alive(); const e=message.payload.event;
-          if(e.chatter_user_id===env.TWITCH_BOT_USER_ID || !channels.includes(e.broadcaster_user_id)) return;
+          if(stopped || e.chatter_user_id===env.TWITCH_BOT_USER_ID || !chatTargets(store,env,'twitch').includes(e.broadcaster_user_id)) return;
           const reply=responder.respond(e.broadcaster_user_id,e.chatter_user_id,e.message_id,e.message.text);
           if(reply) { const r=await token.request('https://api.twitch.tv/helix/chat/messages',{method:'POST',headers,body:JSON.stringify({broadcaster_id:e.broadcaster_user_id,sender_id:env.TWITCH_BOT_USER_ID,message:reply})}); if(!r.ok) log(`Twitch reply failed (${r.status}).`); }
         } else if(type==='session_keepalive') alive();
@@ -105,27 +108,30 @@ export function startTwitch(store,env,log=console.log) {
 }
 
 export function startYouTube(store,env,log=console.log) {
-  if(!env.YOUTUBE_ACCESS_TOKEN || !env.YOUTUBE_LIVE_CHAT_IDS) return ()=>{};
+  if(!env.YOUTUBE_ACCESS_TOKEN) return ()=>{};
   const saved=store.get('metadata','youtube-oauth')??{};
   const token=new OAuthToken({accessToken:saved.accessToken??env.YOUTUBE_ACCESS_TOKEN,refreshToken:saved.refreshToken??env.YOUTUBE_REFRESH_TOKEN,clientId:env.YOUTUBE_CLIENT_ID,clientSecret:env.YOUTUBE_CLIENT_SECRET,provider:'youtube'});
   token.onRefresh=value=>store.put('metadata','youtube-oauth',value);
-  const responder=new ChatResponder(store,190), timers=new Set(); let stopped=false;
+  const responder=new ChatResponder(store,190,Date.now,channel=>channelCooldown(store,'youtube',channel)), timers=new Set(); let stopped=false;
   const schedule=(fn,ms)=>{const id=setTimeout(()=>{timers.delete(id);void fn();},ms);timers.add(id);};
-  for(const chat of env.YOUTUBE_LIVE_CHAT_IDS.split(',').map(s=>s.trim()).filter(Boolean)) {
+  for(const chat of chatTargets(store,env,'youtube')) {
     let pageToken, initialized=false, failures=0;
     async function poll() {
-      if(stopped) return;
+      if(stopped || !chatTargets(store,env,'youtube').includes(chat)) return;
       try {
         const params=new URLSearchParams({liveChatId:chat,part:'snippet,authorDetails',maxResults:'200'}); if(pageToken) params.set('pageToken',pageToken);
         const r=await token.request('https://www.googleapis.com/youtube/v3/liveChat/messages?'+params);
         if(!r.ok) {
           const data=await r.json(); const reason=data.error?.errors?.[0]?.reason;
-          if(['liveChatEnded','liveChatDisabled','quotaExceeded','forbidden'].includes(reason)) {log(`YouTube chat stopped: ${reason}.`);return;}
+          if(['liveChatEnded','liveChatDisabled','quotaExceeded','forbidden'].includes(reason)) {log(`YouTube chat stopped: ${reason}.`);connectionStatus(store,'youtube',chat,`Chat stopped: ${reason}`);return;}
           throw new Error(`YouTube HTTP ${r.status}`);
         }
         const data=await r.json(); failures=0;
+        if(stopped || !chatTargets(store,env,'youtube').includes(chat))return;
+        connectionStatus(store,'youtube',chat,'Listening for commands');
         // Do not reply to the historical page fetched when a connector first starts.
         if(initialized) for(const m of data.items??[]) {
+          if(stopped || !chatTargets(store,env,'youtube').includes(chat))return;
           if(m.snippet.type!=='textMessageEvent' || m.authorDetails.channelId===env.YOUTUBE_BOT_CHANNEL_ID) continue;
           const reply=responder.respond(chat,m.authorDetails.channelId,m.id,m.snippet.textMessageDetails.messageText);
           if(reply) {
@@ -140,4 +146,10 @@ export function startYouTube(store,env,log=console.log) {
     void poll();
   }
   return ()=>{stopped=true;for(const t of timers)clearTimeout(t);};
+}
+
+function connectionStatus(store,provider,target,status) {
+  for(const c of connections(store).filter(c=>c.provider===provider&&c.target===target&&c.enabled&&c.connected)) {
+    store.put('metadata',`chat-connection:${provider}:${c.player}`,{...c,status});
+  }
 }

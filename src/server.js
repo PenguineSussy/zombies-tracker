@@ -10,6 +10,7 @@ import { sourceConfig, startTheRun } from './therun.js';
 import { startTwitch, startYouTube } from './chat.js';
 import { publicStreams } from './streams.js';
 import { startStreamMonitor } from './stream-monitor.js';
+import {ChatConnections} from './chat-connections.js';
 
 const root=fileURLToPath(new URL('../public/',import.meta.url));
 function equal(a,b) { return typeof a==='string' && typeof b==='string' && Buffer.byteLength(a)===Buffer.byteLength(b) && timingSafeEqual(Buffer.from(a),Buffer.from(b)); }
@@ -18,7 +19,10 @@ async function body(req) {
   for await(const chunk of req) { bytes+=chunk.length;check(bytes<=262144,'Request too large.',413);chunks.push(chunk); }
   return Buffer.concat(chunks);
 }
-export function createApp({store=new Store(),env={},connectors=false}={}) {
+export function createApp({store=new Store(),env={},connectors=false,fetcher=fetch}={}) {
+  const chatbot=new ChatConnections(store,env,fetcher);
+  let stopChat=()=>{};
+  const restartChat=()=>{stopChat();if(connectors){const stops=[startTwitch(store,env),startYouTube(store,env)];stopChat=()=>stops.forEach(stop=>stop());}};
   const limits=new Map();
   function limit(req,name,max,window=60000) {
     const now=Date.now(), key=`${req.socket.remoteAddress}:${name}`;
@@ -33,6 +37,13 @@ export function createApp({store=new Store(),env={},connectors=false}={}) {
     const send=(data,status=200)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));};
     try {
       const url=new URL(req.url,'http://localhost');const path=url.pathname;
+      if(req.method==='GET'&&path.startsWith('/api/chatbot/callback/')) {
+        limit(req,'oauth-callback',30);
+        const provider=path.split('/').at(-1);
+        try {await chatbot.finish(provider,url.searchParams,req.headers.cookie);restartChat();res.writeHead(303,{Location:'/?chatbot=connected#integrations'});res.end();}
+        catch(error){res.writeHead(303,{Location:'/?chatbot=error&reason='+encodeURIComponent(error.status?error.message:'Connection failed. Please try again.')+'#integrations'});res.end();}
+        return;
+      }
       if(req.method==='GET' && path==='/downloads/Zombies-Tracker-LiveSplit.zip') {
         const content=await readFile(resolve(root,'downloads/Zombies-Tracker-LiveSplit.zip'));
         res.writeHead(200,{'Content-Type':'application/zip','Content-Disposition':'attachment; filename="Zombies-Tracker-LiveSplit.zip"'});res.end(content);return;
@@ -41,7 +52,7 @@ export function createApp({store=new Store(),env={},connectors=false}={}) {
         const file=path==='/'?'index.html':path.slice(1);const content=await readFile(resolve(root,file));
         res.writeHead(200,{'Content-Type':file.endsWith('.js')?'text/javascript; charset=utf-8':file.endsWith('.css')?'text/css; charset=utf-8':'text/html; charset=utf-8'});res.end(content);return;
       }
-      if(req.method==='GET' && path==='/health')return send({ok:true,version:'0.3.0'});
+      if(req.method==='GET' && path==='/health')return send({ok:true,version:'0.4.0'});
       limit(req,'all',600);
       if(req.method==='GET' && path==='/api/catalog')return send({maps:ENABLED_MAPS,allMaps:MAPS,categories:CATEGORIES,categoriesByMap:Object.fromEntries(ENABLED_MAPS.map(m=>[m.id,categoriesForMap(m.id)])),integrations:{discord:!!env.DISCORD_PUBLIC_KEY,twitch:!!env.TWITCH_CHANNEL_IDS,youtube:!!env.YOUTUBE_LIVE_CHAT_IDS,therun:true}});
       if(req.method==='GET' && path==='/api/players')return send(store.list('players').filter(p=>p.public).slice(0,200).map(p=>({id:p.id,name:p.name,status:store.view(p.id).status,profile:p.profile,source:p.source?.type??'direct',streams:publicStreams(p,store.clock())})));
@@ -68,13 +79,22 @@ export function createApp({store=new Store(),env={},connectors=false}={}) {
         check(false,'Not found.',404);
       }
       const p=store.authenticate(token);
+      if(req.method==='GET'&&path==='/api/me/chatbot')return send(chatbot.view(p));
+      if(req.method==='GET'&&path==='/api/me/chatbot/youtube/broadcasts'){limit(req,'broadcasts',10);return send(await chatbot.broadcasts(p));}
+      if(path.startsWith('/api/me/chatbot/')) {
+        const [, , , ,provider,operation]=path.split('/');
+        limit(req,'chatbot',20);
+        if(req.method==='POST'&&operation==='connect'){const result=chatbot.start(provider,p,token);res.setHeader('Set-Cookie',result.cookie);return send({url:result.url});}
+        if(req.method==='POST'&&operation==='settings'){const result=await chatbot.settings(provider,p,data);restartChat();return send(result);}
+        if(req.method==='DELETE'&&!operation){const result=chatbot.disconnect(provider,p);restartChat();return send(result);}
+      }
       if(req.method==='GET'&&path==='/api/me')return send(p);
       if(req.method==='POST'&&path==='/api/me/streams')return send(store.streams(p,data));
       if(req.method==='POST'&&path==='/api/ingest'){check(!p.source||p.source.type==='direct','This runner uses therun.gg; switch to direct before sending LiveSplit updates.',409);return send(store.ingest(p.id,data));}
       if(req.method==='POST'&&path==='/api/me/privacy')return send(store.privacy(p,data.public));
       if(req.method==='POST'&&path==='/api/me/session')return send(store.session(p,data.action));
       if(req.method==='POST'&&path==='/api/me/rotate')return send({token:store.rotate(p)});
-      if(req.method==='DELETE'&&path==='/api/me'){store.removePlayer(p);return send({deleted:true});}
+      if(req.method==='DELETE'&&path==='/api/me'){chatbot.disconnect('twitch',p);chatbot.disconnect('youtube',p);store.removePlayer(p);restartChat();return send({deleted:true});}
       if(req.method==='GET'&&path==='/api/me/history')return send(store.attempts(p.id));
       if(req.method==='POST'&&path==='/api/me/source') {
         const source=sourceConfig(data);
@@ -90,7 +110,7 @@ export function createApp({store=new Store(),env={},connectors=false}={}) {
   server.requestTimeout=15000;server.headersTimeout=10000;
   const stops=[];let delivering=false;
   if(connectors) {
-    stops.push(startTheRun(store),startTwitch(store,env),startYouTube(store,env),startStreamMonitor(store,env));
+    restartChat();stops.push(()=>stopChat(),startTheRun(store),startStreamMonitor(store,env));
     const timer=setInterval(async()=>{if(delivering)return;delivering=true;try{await deliverAlerts(store,env.DISCORD_BOT_TOKEN);}catch(error){console.error('Alert delivery failed:',error.message);}finally{delivering=false;}},2000);
     stops.push(()=>clearInterval(timer));
   }
@@ -103,4 +123,5 @@ if(process.argv[1] && import.meta.url===pathToFileURL(resolve(process.argv[1])).
   app.server.listen(port,host,()=>console.log(`Zombies Tracker: http://${host}:${port}\nPlatform connectors activate only when configured. No OBS integration.`));
   process.on('SIGINT',()=>app.stop());process.on('SIGTERM',()=>app.stop());
 }
+
 
