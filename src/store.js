@@ -3,6 +3,7 @@ import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { check, clean, key, snapshot, profile, profileKey, profileLabel, time, parseCommand, requireEnabledMap } from './domain.js';
+import {streamLink} from './streams.js';
 
 const hash = token => createHash('sha256').update(String(token)).digest('hex');
 const decode = row => row ? JSON.parse(row.body) : null;
@@ -48,10 +49,19 @@ export class Store {
     this.db.prepare('UPDATE players SET token=? WHERE id=?').run(hash(token), p.id); return token;
   }
   privacy(p, isPublic) { check(typeof isPublic === 'boolean', 'public must be true or false.'); p.public = isPublic; this.savePlayer(p); return p; }
+  streams(p, input) {
+    check(typeof input.live === 'boolean', 'Choose whether your stream is live.');
+    for (const value of [input.twitch,input.youtube]) check(value == null || (typeof value === 'string' && value.length <= 500), 'Invalid stream URL.');
+    const twitch=streamLink(input.twitch,'twitch'), youtube=streamLink(input.youtube,'youtube');
+    check(!input.live || youtube, 'Add a YouTube broadcast link before marking it live. Twitch is verified automatically.');
+    p.streams={twitch,youtube,liveUntil:input.live?this.clock()+12*3600000:null};
+    this.savePlayer(p); return p;
+  }
   session(p, action) {
     check(['start', 'end'].includes(action), 'Use start or end.');
     const a = p.activeAttempt && this.get('attempts', p.activeAttempt);
     check(!a || !['Running', 'Paused'].includes(a.phase) || this.clock() - p.lastSeen > 30000, 'Reset or finish the active attempt before changing sessions.', 409);
+    if(p.sessionId) p.lastSession={id:p.sessionId,startedAt:p.sessionStarted,endedAt:this.clock()};
     p.sessionId = action === 'start' ? randomUUID() : null;
     p.sessionStarted = action === 'start' ? this.clock() : null;
     this.savePlayer(p); return p;
@@ -71,8 +81,15 @@ export class Store {
         check(p.activeAttempt === id && !a.closed, 'Attempt already closed; start a new attempt.', 409);
       }
       const old = p.activeAttempt && this.get('attempts', p.activeAttempt);
-      if (old && old.id !== id) { old.closed = true; if (old.phase !== 'Ended') old.phase = 'Reset'; this.saveAttempt(old); }
+      if (old && old.id !== id) {
+        old.closed = true;
+        if (old.phase !== 'Ended' && old.phase !== 'NotRunning') {
+          old.resetObserved = s.phase === 'NotRunning'; old.phase = 'Reset';
+        }
+        this.saveAttempt(old);
+      }
       if ((!p.sessionId && !a && s.phase !== 'NotRunning') || (p.lastSeen && now - p.lastSeen > 2 * 3600000 && !a && s.phase !== 'NotRunning')) {
+        if(p.sessionId) p.lastSession={id:p.sessionId,startedAt:p.sessionStarted,endedAt:p.lastSeen};
         p.sessionId = randomUUID(); p.sessionStarted = now;
       }
       const previousSplits = a?.splits ?? [];
@@ -125,6 +142,46 @@ export class Store {
     const candidates = this.attempts(p.id).filter(a => !a.practice && profileKey(a.profile) === profileKey(selectedProfile) && (scope === 'alltime' || a.sessionId === p.sessionId));
     return candidates.flatMap(a => a.splits.filter(s => s.name === key(split)).map(s => ({ ...s, attemptId: a.id, at: a.updatedAt }))).sort((a,b) => a.ms - b.ms)[0] ?? null;
   }
+  sessionStats(p) {
+    const session=p.sessionId?{id:p.sessionId,startedAt:p.sessionStarted,endedAt:null}:p.lastSession;
+    if(!session) return null;
+    const attempts=this.attempts(p.id).filter(a=>a.sessionId===session.id && a.phase!=='NotRunning');
+    const active=p.activeAttempt&&this.get('attempts',p.activeAttempt);
+    const status=this.view(p.id).status;
+    const current=active?.sessionId===session.id && ['Running','Paused'].includes(status)?active.profile:null;
+    const groups=new Map();
+    for(const a of attempts) {
+      const id=profileKey(a.profile);
+      if(!groups.has(id)) groups.set(id,{profile:a.profile,label:profileLabel(a.profile),attempts:0,resets:0,finishes:0,fastestMs:null,splits:new Map()});
+      const group=groups.get(id); group.attempts++;
+      if(a.resetObserved===true)group.resets++;
+      if(a.practice)continue;
+      if(a.phase==='Ended' && a.complete){group.finishes++;group.fastestMs=Math.min(group.fastestMs??Infinity,a.elapsedMs);}
+      for(const split of a.splits) {
+        const stats=group.splits.get(split.name)??{name:split.name,count:0,totalMs:0,bestMs:Infinity};
+        stats.count++;stats.totalMs+=split.ms;stats.bestMs=Math.min(stats.bestMs,split.ms);group.splits.set(split.name,stats);
+      }
+    }
+    return {...session,active:!!p.sessionId,durationMs:Math.max(0,(session.endedAt??this.clock())-session.startedAt),current,
+      attempts:attempts.length,resets:attempts.filter(a=>a.resetObserved===true).length,
+      unconfirmedEnds:attempts.filter(a=>a.phase==='Reset'&&a.resetObserved!==true).length,
+      groups:[...groups.values()].map(g=>({...g,splits:[...g.splits.values()].map(({totalMs,...s})=>({...s,averageMs:Math.round(totalMs/s.count)}))}))};
+  }
+  sessionAnswer(p, compact=false) {
+    const s=this.sessionStats(p);
+    if(!s)return `${p.name}: No recorded session.`;
+    const link=`https://doctormonty.beer/?runner=${encodeURIComponent(p.id)}`;
+    const summary=`${p.name}: ${s.active?'Session':'Last session'} ${time(s.durationMs)}; ${s.resets} resets; ${s.attempts} attempts.`;
+    if(compact)return `${summary} Stats: ${link}`;
+    const lines=[summary,`Full session: ${link}`,s.current?`Currently: ${profileLabel(s.current)}`:'Currently: no active tracked run.'];
+    for(const g of s.groups) {
+      lines.push(`${g.label}: ${g.attempts} attempts, ${g.finishes} complete finishes; fastest finish ${g.fastestMs==null?'unavailable':time(g.fastestMs)}.`);
+      lines.push(...g.splits.map(v=>`${v.name}: average ${time(v.averageMs)}, fastest ${time(v.bestMs)} (${v.count} samples).`));
+    }
+    lines.push('Split times are cumulative RTA checkpoints; practice and missing splits are excluded from time statistics. Reset count includes observed resets only.');
+    if(s.unconfirmedEnds)lines.push(`${s.unconfirmedEnds} attempt endings were not observed and are not counted as confirmed resets.`);
+    return lines.join('\n');
+  }
   answer(input) {
     const q = typeof input === 'string' ? parseCommand(input) : input;
     if (!q) return null;
@@ -151,8 +208,7 @@ export class Store {
         return `${p.name} | ${label} | ${ref == null ? 'WR checkpoint comparison unavailable.' : `${last.name} ${time(last.ms)}: ${time(Math.abs(ref-last.ms))} ${last.ms < ref ? 'ahead' : last.ms > ref ? 'behind' : 'level'} at this checkpoint. Benchmark: ${a.benchmark.source}`}${p.status === 'offline' ? ' Tracker offline; this is the last recorded attempt.' : ''}`;
       }
       if (q.command === 'session') {
-        const attempts = this.attempts(p.id).filter(a => a.sessionId === p.sessionId && a.phase !== 'NotRunning');
-        return `${p.name}: ${p.sessionId ? `session started ${new Date(p.sessionStarted).toISOString()}; ${attempts.length} recorded attempts, ${attempts.filter(a => a.phase === 'Ended').length} finishes.` : 'No active session.'}`;
+        return this.sessionAnswer(p);
       }
       if (q.command === 'pb') {
         const best = this.attempts(p.id).filter(a => a.phase === 'Ended' && a.complete && !a.practice && profileKey(a.profile) === profileKey(p.profile)).sort((a,b) => a.elapsedMs - b.elapsedMs)[0];
