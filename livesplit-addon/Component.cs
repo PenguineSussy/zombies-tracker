@@ -4,6 +4,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Web.Script.Serialization;
@@ -13,7 +14,7 @@ using LiveSplit.Model;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;
 
-[assembly: AssemblyVersion("0.2.0.0")]
+[assembly: AssemblyVersion("0.2.1.0")]
 [assembly: ComponentFactory(typeof(LiveSplit.ZombiesTracker.Factory))]
 
 namespace LiveSplit.ZombiesTracker
@@ -27,7 +28,7 @@ namespace LiveSplit.ZombiesTracker
         public string UpdateName { get { return ComponentName; } }
         public string XMLURL { get { return ""; } }
         public string UpdateURL { get { return ""; } }
-        public Version Version { get { return new Version(0, 2, 0); } }
+        public Version Version { get { return new Version(0, 2, 1); } }
     }
     public sealed class AddonOptions
     {
@@ -38,6 +39,15 @@ namespace LiveSplit.ZombiesTracker
     }
     public sealed class TrackerComponent : LogicComponent
     {
+        sealed class Continuity
+        {
+            public TrackerComponent Owner;
+            public string Config, Id, Identity, LastPhase, Frozen;
+            public long Sequence;
+            public bool First, ForceNew, SuppressNext;
+        }
+        static readonly ConditionalWeakTable<LiveSplitState, Continuity> continuity = new ConditionalWeakTable<LiveSplitState, Continuity>();
+        readonly Continuity runtime;
         readonly LiveSplitState state;
         readonly SettingsPanel panel;
         readonly Timer timer;
@@ -49,10 +59,13 @@ namespace LiveSplit.ZombiesTracker
         long sequence;
         DateTime lastHeartbeat = DateTime.MinValue;
         bool first = true, forceNew = true, disposed, suppressNext = true;
+        bool activated;
+        string protectedToken = "";
         public override string ComponentName { get { return "Zombies Tracker"; } }
         public TrackerComponent(LiveSplitState state)
         {
             this.state = state;
+            runtime = continuity.GetValue(state, s => new Continuity());
             panel = new SettingsPanel(Apply, ClearQueue);
             panel.LoadOptions(options);
             state.OnStart += Started;
@@ -72,6 +85,8 @@ namespace LiveSplit.ZombiesTracker
         void Changed(object sender, EventArgs e) { Capture(true); }
         void Tick(object sender, EventArgs e)
         {
+            if (!activated || disposed || runtime.Owner != this) return;
+            try { EnsureUploader(); } catch (Exception ex) { panel.StatusText = "Connection waiting: " + ex.Message; return; }
             if ((DateTime.UtcNow - lastHeartbeat).TotalSeconds >= 5) Capture(false);
             if (uploader != null) uploader.Flush();
         }
@@ -87,7 +102,7 @@ namespace LiveSplit.ZombiesTracker
         }
         void Capture(bool transition)
         {
-            if (disposed) return;
+            if (disposed || !activated || runtime.Owner != this) return;
             try
             {
                 var variables = Variables();
@@ -113,32 +128,39 @@ namespace LiveSplit.ZombiesTracker
                 var snapshot = Protocol.Capture(state, profile, id, sequence + 1, options.Practice, suppressNext || first, aliases);
                 uploader.Enqueue(snapshot);
                 sequence++; first = false; forceNew = false; suppressNext = false; lastPhase = phase; lastHeartbeat = DateTime.UtcNow;
+                runtime.Config=json.Serialize(options); runtime.Id=id; runtime.Identity=identity; runtime.LastPhase=lastPhase; runtime.Frozen=frozen;
+                runtime.Sequence=sequence; runtime.First=first; runtime.ForceNew=forceNew; runtime.SuppressNext=suppressNext;
                 panel.StatusText = uploader.Status + " / " + uploader.Count + " pending / " + phase;
             }
             catch (Exception ex) { panel.StatusText = "Not uploading: " + ex.Message; }
         }
         void Apply(AddonOptions value)
         {
+            if (json.Serialize(value) == json.Serialize(options)) return;
             if (state.CurrentPhase == TimerPhase.Running || state.CurrentPhase == TimerPhase.Paused)
                 throw new InvalidOperationException("Reset or finish the run before changing addon settings.");
             Configure(value);
         }
         void Configure(AddonOptions value)
         {
+            if (json.Serialize(value) == json.Serialize(options)) return;
             UploadQueue.ValidateServer(value.Server);
             var parsed = json.Deserialize<Dictionary<string,string>>(value.Aliases);
             var validated = new Dictionary<string,string>();
             foreach (var v in parsed) validated.Add(Protocol.Clean(v.Key), Protocol.Clean(v.Value));
             if (uploader != null) { uploader.Dispose(); uploader = null; }
             options = value; aliases = validated;
-            if (value.Enabled) uploader = new UploadQueue(value.Server, value.Token,
+            forceNew = true; first = true; suppressNext = true; frozen = null;
+        }
+        void EnsureUploader()
+        {
+            if (!activated || !options.Enabled || uploader != null) return;
+            uploader = new UploadQueue(options.Server, options.Token,
 #if TESTING
                 Path.Combine(Path.GetTempPath(), "ZombiesTracker-Tests"));
 #else
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ZombiesTracker", "LiveSplit"));
 #endif
-            forceNew = true; first = true; suppressNext = true; frozen = null;
-            Capture(false);
         }
         void ClearQueue()
         {
@@ -149,10 +171,17 @@ namespace LiveSplit.ZombiesTracker
         public override Control GetSettingsControl(LayoutMode mode) { return panel; }
         public override XmlNode GetSettings(XmlDocument doc)
         {
+            // LiveSplit serializes/clones components while editing layouts. Never start
+            // a network connection or allow encryption errors to escape into its editor.
+            try { Apply(panel.ReadOptions()); }
+            catch (Exception ex) { panel.StatusText = "Settings not applied: " + ex.Message; panel.LoadOptions(options); }
             var root = doc.CreateElement("Settings");
             Action<string,string> put = (key, val) => { var node = doc.CreateElement(key); node.InnerText = val; root.AppendChild(node); };
-            put("Version", "0.2.0"); put("Enabled", options.Enabled.ToString()); put("Server", options.Server);
-            put("ProtectedToken", Convert.ToBase64String(Protection.Protect(Encoding.UTF8.GetBytes(options.Token))));
+            bool canSave = true;
+            try { protectedToken = options.Token.Length == 0 ? "" : Convert.ToBase64String(Protection.Protect(Encoding.UTF8.GetBytes(options.Token))); }
+            catch (Exception ex) { canSave = false; panel.StatusText = "Cannot save key: " + ex.Message; }
+            put("Version", "0.2.1"); put("Enabled", (options.Enabled && canSave).ToString()); put("Server", options.Server);
+            put("ProtectedToken", protectedToken);
             put("Map", options.Map); put("Category", options.Category); put("Practice", options.Practice.ToString()); put("Aliases", options.Aliases);
             return root;
         }
@@ -165,12 +194,27 @@ namespace LiveSplit.ZombiesTracker
             {
                 string encrypted = read("ProtectedToken", "");
                 value.Token = encrypted == "" ? "" : Encoding.UTF8.GetString(Protection.Unprotect(Convert.FromBase64String(encrypted)));
+                protectedToken = encrypted;
                 Configure(value);
             }
             catch (Exception ex) { value.Enabled = false; options = value; panel.StatusText = "Settings need attention: " + ex.Message; }
             panel.LoadOptions(value);
         }
-        public override void Update(IInvalidator invalidator, LiveSplitState state, float width, float height, LayoutMode mode) { }
+        public override void Update(IInvalidator invalidator, LiveSplitState state, float width, float height, LayoutMode mode)
+        {
+            if (disposed) return;
+            // Only components used by the real layout get Update. Editor clones stay inert.
+            if (activated) return;
+            activated = true;
+            if(runtime.Config == json.Serialize(options))
+            {
+                id=runtime.Id; identity=runtime.Identity; lastPhase=runtime.LastPhase; frozen=runtime.Frozen;
+                sequence=runtime.Sequence; first=runtime.First; forceNew=runtime.ForceNew; suppressNext=runtime.SuppressNext;
+                if(runtime.Owner!=null && !runtime.Owner.disposed) { uploader=runtime.Owner.uploader; runtime.Owner.uploader=null; }
+            }
+            runtime.Owner=this;
+            try { EnsureUploader(); } catch (Exception ex) { panel.StatusText = "Connection waiting: " + ex.Message; }
+        }
         public override void Dispose()
         {
             disposed = true; timer.Stop(); timer.Dispose();
@@ -235,7 +279,7 @@ namespace LiveSplit.ZombiesTracker
             category.Items.AddRange(Detector.CategoriesForMap(selectedMap));
             category.SelectedIndex = Math.Max(0, category.Items.IndexOf(previous ?? ""));
         }
-        AddonOptions ReadOptions()
+        public AddonOptions ReadOptions()
         {
             return new AddonOptions { Enabled = enabled.Checked, Server = server.Text.Trim(), Token = token.Text.Trim(),
                 Map = map.SelectedItem is MapInfo ? ((MapInfo)map.SelectedItem).Id : "", Category = category.SelectedIndex > 0 ? (string)category.SelectedItem : "",
