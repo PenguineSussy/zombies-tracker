@@ -32,6 +32,23 @@ Split names must be unique and 1–80 characters without `<`, `>` or `@`. Aliase
 
 ## Offline behavior and troubleshooting
 
+## Map category limits and Super Easter Egg
+
+Zetsubou No Shima allows Classic Gums, Mega Gums, or Any%. Ascension and Shangri-La allow only Any%. Other maps and the separate Super Easter Egg category offer all four categories. Invalid combinations stop uploads; rename the LiveSplit category or choose a permitted override before starting.
+
+For Super Easter Egg, use one continuous LiveSplit file with category `Super Easter Egg - Classic Gums - Solo` (substitute your gum category). Include Shadows of Evil, The Giant, Der Eisendrache, Zetsubou No Shima, Gorod Krovi, and Revelations. The first five may be in your chosen order; Revelations must be last. Keep each map's splits together, prefix each checkpoint with its map (for example `DE - Bow`), and end each map block with `Map - Complete`. A minimal file has these six splits:
+
+1. `SOE - Complete`
+2. `The Giant - Complete`
+3. `DE - Complete`
+4. `ZNS - Complete`
+5. `GK - Complete`
+6. `Revelations - Complete`
+
+Do not reset between maps. All checkpoint and elapsed times are cumulative LiveSplit Real Time values. The tracker never creates an independent clock or adds separate map timers. The website shows the latest received RTA sample; the five-second addon heartbeat and ten-second page refresh can introduce a short display delay. Pauses, skips, undo and reset follow LiveSplit. If using aliases, preserve the map prefixes and completion markers. A finished run without all six map completions is marked incomplete.
+
+## Connection recovery
+
 Starts, splits, skips, undo, pauses/resumes, finishes and resets are captured through LiveSplit events. A heartbeat runs every five seconds while uploading. Network requests happen in the background. Pending events are saved in an encrypted, bounded queue under `%LOCALAPPDATA%\ZombiesTracker\LiveSplit`; they are retried in order. Recovered events suppress notifications. An ordinary brief network outage retains the attempt ID. Restarting LiveSplit creates a new observed attempt after draining queued events; no attempt continuity across a process restart is promised.
 
 Only run one uploader per runner: the addon, the old companion, or therun.gg. Duplicate addon instances for the same server/key are blocked. A separate old companion cannot be detected automatically.

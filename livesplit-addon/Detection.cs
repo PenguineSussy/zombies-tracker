@@ -26,6 +26,11 @@ namespace LiveSplit.ZombiesTracker
     public static class Detector
     {
         public static readonly string[] Categories = { "No Gums", "Classic Gums", "Mega Gums", "Any%" };
+        public static string[] CategoriesForMap(string map)
+        {
+            if (map == "ascension" || map == "shangri-la") return new[]{"Any%"};
+            return map == "zetsubou-no-shima" ? Categories.Where(c => c != "No Gums").ToArray() : Categories;
+        }
         public static string Category(IEnumerable<string> texts, string manual)
         {
             if (!string.IsNullOrEmpty(manual)) return Categories.Contains(manual) ? manual : null;
@@ -40,6 +45,7 @@ namespace LiveSplit.ZombiesTracker
             return found.Count == 1 ? found.First() : null;
         }
         public static readonly MapInfo[] Maps = {
+            new MapInfo("super-easter-egg", "Super Easter Egg (6 maps)", true, "Super Easter Egg", "Super EE", "SuperEE"),
             new MapInfo("shadows-of-evil", "Shadows of Evil", true, "SOE"),
             new MapInfo("the-giant", "The Giant", true),
             new MapInfo("der-eisendrache", "Der Eisendrache", true, "DE"),
@@ -68,6 +74,36 @@ namespace LiveSplit.ZombiesTracker
         {
             return Maps.Where(m => m.Aliases.Any(a => (shortNames || Normalize(a).Length > 3) && texts.Any(t => Has(t, a)))).ToList();
         }
+        static readonly string[] CoreIds = { "shadows-of-evil", "the-giant", "der-eisendrache", "zetsubou-no-shima", "gorod-krovi", "revelations" };
+        public static string Stage(string name, bool completion)
+        {
+            var normalized = Normalize(name);
+            foreach (var map in Maps.Where(m => CoreIds.Contains(m.Id)))
+                foreach (var alias in map.Aliases.Concat(map.Id == "the-giant" ? new[]{"giant"} : map.Id == "revelations" ? new[]{"rev"} : new string[0]))
+                {
+                    string a = Normalize(alias);
+                    if (completion ? new[]{a,a+" complete",a+" ee",a+" finish"}.Contains(normalized) : normalized == a || normalized.StartsWith(a + " ")) return map.Id;
+                }
+            return null;
+        }
+        public static string ValidateSuper(string[] names)
+        {
+            if (names.Length == 0) return "Super EE needs a single split file covering all six maps.";
+            var stages = names.Select(n => Stage(n, false)).ToArray();
+            if (stages.Any(s => s == null)) return "Prefix every Super EE split with its map, e.g. DE - Bow. End each map with Map - Complete.";
+            var groups = new List<string>();
+            for (int i=0;i<stages.Length;i++)
+            {
+                if (i==0 || stages[i]!=stages[i-1]) groups.Add(stages[i]);
+                if (i==stages.Length-1 || stages[i]!=stages[i+1])
+                    if (Stage(names[i],true)!=stages[i]) return "Each map block must end with a Map - Complete split.";
+                if (i<stages.Length-1 && stages[i]==stages[i+1] && Stage(names[i],true)!=null)
+                    return "Map completion must be the last split in its map block.";
+            }
+            if(groups.Count!=6 || groups.Distinct().Count()!=6 || groups.Last()!="revelations")
+                return "Super EE requires all six core maps exactly once, with Revelations last.";
+            return null;
+        }
         static Detection Resolve(List<MapInfo> maps, string source)
         {
             if (maps.Count > 1) return new Detection { Reason = "Conflicting maps in " + source + ": " + string.Join(", ", maps.Select(m => m.Name)) };
@@ -91,7 +127,8 @@ namespace LiveSplit.ZombiesTracker
             {
                 if (!string.IsNullOrWhiteSpace(game) && !Has(game, "Black Ops 3") && !Has(game, "Black Ops III") && !Has(game, "BO3"))
                     return new Detection { Reason = "Game is not labeled Black Ops 3 / Black Ops III / BO3. Correct Edit Splits, or explicitly choose a map override." };
-                result = Resolve(Matches(primary, true), "game/category, map variable, or split-file name");
+                bool super = primary.Any(t => Has(t, "Super Easter Egg") || Has(t, "Super EE") || Has(t, "SuperEE"));
+                result = super ? new Detection { Map = "super-easter-egg", Reason = "Super Easter Egg (6 maps) detected from run labels" } : Resolve(Matches(primary, true), "game/category, map variable, or split-file name");
                 if (result == null) result = Resolve(Matches(names, false), "split names");
                 if (result == null)
                 {
@@ -119,6 +156,7 @@ namespace LiveSplit.ZombiesTracker
             }
             result.Players = counts.Count == 1 ? (int?)counts.First() : null;
             result.NonSolo = counts.Any(c => c > 1) || playerText.Any(t => Has(t, "coop") || Has(t, "co op") || Has(t, "duo") || Has(t, "cooperative"));
+            if(result.Map=="super-easter-egg") { var error=ValidateSuper(names); if(error!=null) { result.Map=null; result.Reason=error; } }
             return result;
         }
     }

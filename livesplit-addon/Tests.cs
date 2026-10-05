@@ -22,7 +22,15 @@ class Tests
     {
         try
         {
-            foreach (var map in Detector.Maps.Where(m => m.Enabled)) Check(Detect(map.Name + " No Gums Solo").Map == map.Id, "map " + map.Name);
+            foreach (var map in Detector.Maps.Where(m => m.Enabled && m.Id != "super-easter-egg")) Check(Detect(map.Name + " Any% Solo").Map == map.Id, "map " + map.Name);
+            Check(!Detector.CategoriesForMap("zetsubou-no-shima").Contains("No Gums"), "ZNS category restriction");
+            Check(Detector.CategoriesForMap("ascension").SequenceEqual(new[]{"Any%"}) && Detector.CategoriesForMap("shangri-la").SequenceEqual(new[]{"Any%"}), "Any percent only maps");
+            var superSplits = new[]{"SOE - Complete", "The Giant - Complete", "DE - Bow", "DE - Complete", "ZNS - Complete", "GK - Complete", "Revelations - Complete"};
+            Check(Detect("Super Easter Egg - Classic Gums - Solo", superSplits).Map == "super-easter-egg", "six map detection");
+            Check(!Detect("Super EE", superSplits.Where(n => !n.StartsWith("The Giant")).ToArray()).Success, "Giant required");
+            Check(Detector.ValidateSuper(superSplits.Reverse().ToArray()) != null, "Revelations must end run");
+            Check(Detector.ValidateSuper(superSplits.Concat(new[]{"Bow"}).ToArray()) != null, "prefix required");
+            Check(Detector.Stage("DE - Bow", false) == "der-eisendrache" && Detector.Stage("DE - Bow", true) == null, "checkpoint not completion");
             Check(Detect("DE - No Gums - Solo").Map == "der-eisendrache", "abbreviation");
             Check(!Detect("Moon + Origins").Success, "conflict");
             Check(!Detect("Kino der Toten").Success, "disabled");
@@ -49,6 +57,11 @@ class Tests
             state.CurrentTimingMethod = TimingMethod.GameTime;
             var sample = Protocol.Capture(state, profile, "test-attempt", 1, false, false, aliases);
             Check(sample.splits.Count == 1 && sample.splits[0].name == "bow" && sample.splits[0].ms > 0, "actual split / alias / RTA despite GameTime display");
+            model.Pause();
+            sample = Protocol.Capture(state, profile, "test-attempt", 2, false, false, aliases);
+            Check(sample.elapsedMs == (long)Math.Round(state.CurrentTime.RealTime.Value.TotalMilliseconds), "paused elapsed equals LiveSplit RTA exactly");
+            Pump(40); Check(Protocol.Capture(state, profile, "test-attempt", 3, false, false, aliases).elapsedMs == sample.elapsedMs, "no independent clock during pause");
+            model.Pause();
             model.SkipSplit(); sample = Protocol.Capture(state, profile, "test-attempt", 2, false, false, aliases);
             Check(!sample.complete && sample.splits.Count == 1, "skip incomplete");
             model.UndoSplit(); model.UndoSplit(); sample = Protocol.Capture(state, profile, "test-attempt", 3, false, false, aliases);

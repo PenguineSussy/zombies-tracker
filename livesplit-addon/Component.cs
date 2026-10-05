@@ -100,6 +100,7 @@ namespace LiveSplit.ZombiesTracker
                 if (!options.Enabled || uploader == null) { panel.StatusText = "Not uploading. Configure settings, then enable and Apply."; return; }
                 if (detected.NonSolo) throw new InvalidOperationException("Multiplayer detected. Only Solo runs are supported; no upload sent.");
                 if (!detected.Success || category == null) { panel.StatusText = "Not uploading: resolve detection above."; return; }
+                if (!Detector.CategoriesForMap(detected.Map).Contains(category)) { panel.StatusText = "Not uploading: this map allows only " + string.Join(", ", Detector.CategoriesForMap(detected.Map)) + "."; return; }
                 string phase = state.CurrentPhase.ToString();
                 var profile = new RunProfile { map = detected.Map, category = category, players = 1, timing = "RealTime" };
                 string fingerprint = json.Serialize(profile) + "|" + options.Practice + "|" + string.Join("|", state.Run.Select(s => s.Name));
@@ -202,6 +203,7 @@ namespace LiveSplit.ZombiesTracker
             add(new Label { Text = "Private runner key (encrypted for this Windows account)", AutoSize = true }); add(token);
             add(new Label { Text = "Map", AutoSize = true }); map.Items.Add("Automatic detection"); foreach (var m in Detector.Maps.Where(m => m.Enabled)) map.Items.Add(m); map.SelectedIndex = 0; add(map);
             add(new Label { Text = "Gum category", AutoSize = true }); category.Items.Add("Automatic detection"); category.Items.AddRange(Detector.Categories); category.SelectedIndex = 0; add(category);
+            map.SelectedIndexChanged += delegate { RefreshCategories(); };
             add(practice); add(new Label { Text = "Split aliases (JSON)", AutoSize = true }); add(aliases);
             var import = new Button { Text = "Import downloaded config.json", AutoSize = true };
             import.Click += delegate {
@@ -225,6 +227,14 @@ namespace LiveSplit.ZombiesTracker
             add(new Label { Text = "Save your LiveSplit layout after Apply. Add this component only once. Never run the old companion at the same time.", AutoSize = true, MaximumSize = new Size(450, 0) });
         }
         void Try(Action action) { try { action(); } catch (Exception ex) { status.Text = ex.Message; } }
+        void RefreshCategories()
+        {
+            string previous = category.SelectedItem as string;
+            string selectedMap = map.SelectedItem is MapInfo ? ((MapInfo)map.SelectedItem).Id : "";
+            category.Items.Clear(); category.Items.Add("Automatic detection");
+            category.Items.AddRange(Detector.CategoriesForMap(selectedMap));
+            category.SelectedIndex = Math.Max(0, category.Items.IndexOf(previous ?? ""));
+        }
         AddonOptions ReadOptions()
         {
             return new AddonOptions { Enabled = enabled.Checked, Server = server.Text.Trim(), Token = token.Text.Trim(),
