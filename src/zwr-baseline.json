@@ -1,0 +1,506 @@
+[
+  {
+    "id": "zwr:{\"map\":\"super-easter-egg\",\"category\":\"Classic Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "super-easter-egg",
+      "category": "Classic Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 10562000,
+    "holder": "Invisible Hole",
+    "source": "https://zwr.gg/leaderboards/bo3/Super-ee-speedrun/bo3-super-ee/",
+    "checkedAt": 1791240348012
+  },
+  {
+    "id": "zwr:{\"map\":\"super-easter-egg\",\"category\":\"Mega Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "super-easter-egg",
+      "category": "Mega Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 7976000,
+    "holder": "Invisible Hole",
+    "source": "https://zwr.gg/leaderboards/bo3/Super-ee-speedrun/bo3-super-ee/",
+    "checkedAt": 1791240348012
+  },
+  {
+    "id": "zwr:{\"map\":\"super-easter-egg\",\"category\":\"Any%\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "super-easter-egg",
+      "category": "Any%",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 8109000,
+    "holder": "Seqn",
+    "source": "https://zwr.gg/leaderboards/bo3/Super-ee-speedrun/bo3-super-ee/",
+    "checkedAt": 1791240348012
+  },
+  {
+    "id": "zwr:{\"map\":\"shadows-of-evil\",\"category\":\"No Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "shadows-of-evil",
+      "category": "No Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 1345000,
+    "holder": "Scottydogs007",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/shadows-of-evil/",
+    "checkedAt": 1791240345606
+  },
+  {
+    "id": "zwr:{\"map\":\"shadows-of-evil\",\"category\":\"Classic Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "shadows-of-evil",
+      "category": "Classic Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 1337000,
+    "holder": "Scottydogs007",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/shadows-of-evil/",
+    "checkedAt": 1791240345606
+  },
+  {
+    "id": "zwr:{\"map\":\"shadows-of-evil\",\"category\":\"Mega Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "shadows-of-evil",
+      "category": "Mega Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 1166000,
+    "holder": "ASSEM158",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/shadows-of-evil/",
+    "checkedAt": 1791240345606
+  },
+  {
+    "id": "zwr:{\"map\":\"shadows-of-evil\",\"category\":\"Any%\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "shadows-of-evil",
+      "category": "Any%",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 1109000,
+    "holder": "Scottydogs007",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/shadows-of-evil/",
+    "checkedAt": 1791240345606
+  },
+  {
+    "id": "zwr:{\"map\":\"the-giant\",\"category\":\"No Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "the-giant",
+      "category": "No Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 150000,
+    "holder": "Bilzay",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/the-giant/",
+    "checkedAt": 1791240345847
+  },
+  {
+    "id": "zwr:{\"map\":\"the-giant\",\"category\":\"Classic Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "the-giant",
+      "category": "Classic Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 144000,
+    "holder": "Bilzay",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/the-giant/",
+    "checkedAt": 1791240345847
+  },
+  {
+    "id": "zwr:{\"map\":\"the-giant\",\"category\":\"Mega Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "the-giant",
+      "category": "Mega Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 63000,
+    "holder": "scottiei3",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/the-giant/",
+    "checkedAt": 1791240345847
+  },
+  {
+    "id": "zwr:{\"map\":\"the-giant\",\"category\":\"Any%\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "the-giant",
+      "category": "Any%",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 65000,
+    "holder": "Luisete2105",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/the-giant/",
+    "checkedAt": 1791240345847
+  },
+  {
+    "id": "zwr:{\"map\":\"der-eisendrache\",\"category\":\"No Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "der-eisendrache",
+      "category": "No Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 1741000,
+    "holder": "Invisible Hole",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/der-eisendrache/",
+    "checkedAt": 1791240346170
+  },
+  {
+    "id": "zwr:{\"map\":\"der-eisendrache\",\"category\":\"Classic Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "der-eisendrache",
+      "category": "Classic Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 1720000,
+    "holder": "nikolaieu",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/der-eisendrache/",
+    "checkedAt": 1791240346170
+  },
+  {
+    "id": "zwr:{\"map\":\"der-eisendrache\",\"category\":\"Mega Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "der-eisendrache",
+      "category": "Mega Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 1542000,
+    "holder": "Seqn",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/der-eisendrache/",
+    "checkedAt": 1791240346170
+  },
+  {
+    "id": "zwr:{\"map\":\"der-eisendrache\",\"category\":\"Any%\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "der-eisendrache",
+      "category": "Any%",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 1558000,
+    "holder": "Pace Pai",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/der-eisendrache/",
+    "checkedAt": 1791240346170
+  },
+  {
+    "id": "zwr:{\"map\":\"zetsubou-no-shima\",\"category\":\"Classic Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "zetsubou-no-shima",
+      "category": "Classic Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 1534000,
+    "holder": "Satchel",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/zetsubou-no-shima/",
+    "checkedAt": 1791240346407
+  },
+  {
+    "id": "zwr:{\"map\":\"zetsubou-no-shima\",\"category\":\"Mega Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "zetsubou-no-shima",
+      "category": "Mega Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 1206000,
+    "holder": "Invisible Hole",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/zetsubou-no-shima/",
+    "checkedAt": 1791240346407
+  },
+  {
+    "id": "zwr:{\"map\":\"zetsubou-no-shima\",\"category\":\"Any%\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "zetsubou-no-shima",
+      "category": "Any%",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 1292000,
+    "holder": "cbrnn",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/zetsubou-no-shima/",
+    "checkedAt": 1791240346407
+  },
+  {
+    "id": "zwr:{\"map\":\"gorod-krovi\",\"category\":\"No Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "gorod-krovi",
+      "category": "No Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 2340000,
+    "holder": "Invisible Hole",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/gorod-krovi/",
+    "checkedAt": 1791240346667
+  },
+  {
+    "id": "zwr:{\"map\":\"gorod-krovi\",\"category\":\"Classic Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "gorod-krovi",
+      "category": "Classic Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 2061000,
+    "holder": "Invisible Hole",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/gorod-krovi/",
+    "checkedAt": 1791240346667
+  },
+  {
+    "id": "zwr:{\"map\":\"gorod-krovi\",\"category\":\"Mega Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "gorod-krovi",
+      "category": "Mega Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 1861000,
+    "holder": "Invisible Hole",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/gorod-krovi/",
+    "checkedAt": 1791240346667
+  },
+  {
+    "id": "zwr:{\"map\":\"gorod-krovi\",\"category\":\"Any%\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "gorod-krovi",
+      "category": "Any%",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 1892000,
+    "holder": "Barela",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/gorod-krovi/",
+    "checkedAt": 1791240346667
+  },
+  {
+    "id": "zwr:{\"map\":\"revelations\",\"category\":\"No Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "revelations",
+      "category": "No Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 1973000,
+    "holder": "Invisible Hole",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/revelations/",
+    "checkedAt": 1791240346984
+  },
+  {
+    "id": "zwr:{\"map\":\"revelations\",\"category\":\"Classic Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "revelations",
+      "category": "Classic Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 2104000,
+    "holder": "Invisible Hole",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/revelations/",
+    "checkedAt": 1791240346984
+  },
+  {
+    "id": "zwr:{\"map\":\"revelations\",\"category\":\"Mega Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "revelations",
+      "category": "Mega Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 1384000,
+    "holder": "sable",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/revelations/",
+    "checkedAt": 1791240346984
+  },
+  {
+    "id": "zwr:{\"map\":\"revelations\",\"category\":\"Any%\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "revelations",
+      "category": "Any%",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 1421000,
+    "holder": "Elosho",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/revelations/",
+    "checkedAt": 1791240346984
+  },
+  {
+    "id": "zwr:{\"map\":\"ascension\",\"category\":\"Any%\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "ascension",
+      "category": "Any%",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 467000,
+    "holder": "J Dubs",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/ascension/",
+    "checkedAt": 1791240347156
+  },
+  {
+    "id": "zwr:{\"map\":\"shangri-la\",\"category\":\"Any%\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "shangri-la",
+      "category": "Any%",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 616000,
+    "holder": "Itzs Nukez",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/shangri-la/",
+    "checkedAt": 1791240347321
+  },
+  {
+    "id": "zwr:{\"map\":\"moon\",\"category\":\"No Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "moon",
+      "category": "No Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 1545100,
+    "holder": "GameLikeADylan",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/moon/",
+    "checkedAt": 1791240347539
+  },
+  {
+    "id": "zwr:{\"map\":\"moon\",\"category\":\"Classic Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "moon",
+      "category": "Classic Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 1576000,
+    "holder": "GameLikeADylan",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/moon/",
+    "checkedAt": 1791240347539
+  },
+  {
+    "id": "zwr:{\"map\":\"moon\",\"category\":\"Mega Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "moon",
+      "category": "Mega Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 1139000,
+    "holder": "GameLikeADylan",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/moon/",
+    "checkedAt": 1791240347539
+  },
+  {
+    "id": "zwr:{\"map\":\"moon\",\"category\":\"Any%\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "moon",
+      "category": "Any%",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 1111000,
+    "holder": "GameLikeADylan",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/moon/",
+    "checkedAt": 1791240347539
+  },
+  {
+    "id": "zwr:{\"map\":\"origins\",\"category\":\"No Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "origins",
+      "category": "No Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 2895000,
+    "holder": "dezumando",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/origins/",
+    "checkedAt": 1791240347796
+  },
+  {
+    "id": "zwr:{\"map\":\"origins\",\"category\":\"Classic Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "origins",
+      "category": "Classic Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 2934000,
+    "holder": "dezumando",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/origins/",
+    "checkedAt": 1791240347796
+  },
+  {
+    "id": "zwr:{\"map\":\"origins\",\"category\":\"Mega Gums\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "origins",
+      "category": "Mega Gums",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 1849000,
+    "holder": "ross_aiden",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/origins/",
+    "checkedAt": 1791240347796
+  },
+  {
+    "id": "zwr:{\"map\":\"origins\",\"category\":\"Any%\",\"players\":1,\"timing\":\"RealTime\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "origins",
+      "category": "Any%",
+      "players": 1,
+      "timing": "RealTime"
+    },
+    "ms": 1925000,
+    "holder": "ross_aiden",
+    "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/origins/",
+    "checkedAt": 1791240347796
+  }
+]

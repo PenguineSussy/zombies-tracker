@@ -1,4 +1,5 @@
 import {ENABLED_MAPS,categoriesForMap,profileKey,milliseconds} from './domain.js';
+import {readFileSync} from 'node:fs';
 
 export function zwrUrl(map) {
   return map==='super-easter-egg'?'https://zwr.gg/leaderboards/bo3/Super-ee-speedrun/bo3-super-ee/':`https://zwr.gg/leaderboards/bo3/ee-speedrun/${map}/`;
@@ -27,6 +28,10 @@ export function parseZwr(html,map,checkedAt=Date.now()) {
   return records;
 }
 export function startZwr(store,fetcher=fetch,log=console.log) {
+  // Dated public-page snapshot also supports hosts blocked by ZWR's edge protection.
+  // Never advance checkedAt unless an actual source fetch succeeds.
+  const baseline=JSON.parse(readFileSync(new URL('./zwr-baseline.json',import.meta.url),'utf8'));
+  for(const record of baseline)if(!store.get('metadata',record.id))store.put('metadata',record.id,record);
   let stopped=false,busy=false;const abort=new AbortController();
   async function refresh(){
     if(busy||stopped)return;busy=true;
