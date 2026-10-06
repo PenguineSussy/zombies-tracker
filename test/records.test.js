@@ -41,7 +41,7 @@ test('WR commands select maps independently of runners, default Mega Gums and va
  const store=new Store();t.after(()=>store.close());
  for(const [category,ms] of [['Mega Gums',1542000],['Any%',1558000]]) {
   const p={...profile,category};const id='zwr:'+JSON.stringify(p);
-  store.put('metadata',id,{id,profile:p,ms,holder:'Example',checkedAt:Date.now(),source:'https://zwr.gg/'});
+  store.put('metadata',id,{id,profile:p,ms,holder:'Example',achievedDate:'2025-09-23',checkedAt:Date.now(),source:'https://zwr.gg/'});
  }
  assert.match(store.answer('!wr Der Eisendrache'),/Mega Gums · RTA.*25:42/);
  assert.match(store.answer('!wr Der Eisendrache Any%'),/Any% · RTA.*25:58/);
@@ -54,4 +54,25 @@ test('WR commands select maps independently of runners, default Mega Gums and va
  assert.match(store.answer('!wr Ascension Any%'),/Ascension.*Any% · RTA/);
  assert.match(store.answer('!wr Super Easter Egg'),/Super Easter Egg.*Mega Gums · RTA/);
  assert.doesNotMatch(store.answer('!wr Der Eisendrache'),/RealTime/);
+});
+
+test('WR dates match exact records, reject invalid dates, and never use checkedAt',()=>{
+ const id='bo3-der-eisendrache-ee-speedrun-all-gobblegum-1-board';
+ const html=board(id,'25:42');
+ const metadata=(added,name='Example',achieved='25:42')=>'<script type="application/json" id="'+id+'">'+JSON.stringify({'1':[{players:1,id:'123',player1:{name},achieved,added}]})+'</script>';
+ assert.equal(parseZwr(html+metadata('23rd, September 2025'),'der-eisendrache')[0].achievedDate,'2025-09-23');
+ assert.equal(parseZwr(html+metadata('31st, February 2025'),'der-eisendrache')[0].achievedDate,null);
+ assert.equal(parseZwr(html+metadata('23rd, September 2025','Other'),'der-eisendrache')[0].achievedDate,null);
+ assert.equal(parseZwr(html+metadata('23rd, September 2025','Example','26:00'),'der-eisendrache')[0].achievedDate,null);
+ assert.equal(parseZwr(html,'der-eisendrache',123)[0].achievedDate,null);
+});
+test('WR replies show only achieved date and omit source link and checked timestamp',t=>{
+ const store=new Store();t.after(()=>store.close());const id='zwr:'+JSON.stringify(profile);
+ const record={id,profile,ms:1542000,holder:'Example',achievedDate:'2025-09-23',dateSource:'zwr-added',checkedAt:Date.now(),source:'https://zwr.gg/'};
+ store.put('metadata',id,record);const answer=store.answer('!wr DE');
+ assert.match(answer,/SOLO WR:/);
+ assert.doesNotMatch(answer,/ZWR/);
+ assert.match(answer,/Achieved: 2025-09-23\./);
+ assert.doesNotMatch(answer,/Checked|https?:|ZWR added|zwr-added|stale cache/);
+ store.put('metadata',id,{...record,achievedDate:null});assert.match(store.answer('!wr DE'),/Achieved: unavailable/);
 });
