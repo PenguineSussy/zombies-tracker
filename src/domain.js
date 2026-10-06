@@ -85,7 +85,7 @@ export function snapshot(input) {
     check(Number.isInteger(s.index) && s.index > previous && s.index < input.index, 'Splits must be ordered, unique, and completed.');
     check(Number.isSafeInteger(s.ms) && s.ms >= 0 && s.ms >= previousTime && s.ms <= input.elapsedMs, 'Invalid checkpoint time.');
     previous = s.index; previousTime = s.ms;
-    return { index: s.index, name: key(s.name), ms: s.ms };
+    return { index: s.index, name: key(s.name), displayName: clean(s.name), ms: s.ms };
   });
   check(new Set(splits.map(s => s.name)).size === splits.length, 'Milestone names must be unique. Map repeated splits to distinct names.');
   const result = { attemptId: input.attemptId, sequence: input.sequence, profile: profile(input.profile),
@@ -100,6 +100,13 @@ export function snapshot(input) {
     result.stageMap=superStage(result.current)??(result.phase==='Ended'?'revelations':null);
     result.complete=result.complete&&new Set(completed).size===6&&completed.length===6&&completed.at(-1)==='revelations';
   }
+  if(input.records != null) {
+    check(Array.isArray(input.records.splits) && input.records.splits.length>0 && input.records.splits.length<=500,'Invalid saved splits.');
+    const validTime=v=>{check(v==null || (Number.isSafeInteger(v)&&v>=0&&v<=604800000),'Invalid saved time.');return v??null;};
+    const saved=input.records.splits.map((s,i)=>{check(s.index===i,'Saved splits must be in order.');return {index:i,name:key(s.name),displayName:clean(s.name),bestSplitMs:validTime(s.bestSplitMs),bestSegmentMs:validTime(s.bestSegmentMs)};});
+    check(new Set(saved.map(s=>s.name)).size===saved.length,'Saved split names must be unique.');
+    result.records={pbMs:validTime(input.records.pbMs),splits:saved};
+  }
   return result;
 }
 
@@ -107,7 +114,7 @@ export function parseCommand(text) {
   const words = String(text).trim().match(/"[^"]+"|\S+/g)?.map(s => s.replace(/^"|"$/g, '')) ?? [];
   if (words[0]?.startsWith('@')) words.shift();
   const command = words.shift()?.toLowerCase();
-  if (!['!current', '!best', '!splits', '!pace', '!session', '!pb', '!help'].includes(command)) return null;
+  if (!['!current', '!best', '!splits', '!pace', '!session', '!pb', '!wr', '!help'].includes(command)) return null;
   if (command === '!help') return { command: 'help' };
   const player = words.shift()?.replace(/^@/, '').toLowerCase();
   if (!player || !/^[a-z0-9_]{3,30}$/.test(player)) return { command: 'help' };

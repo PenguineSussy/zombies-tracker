@@ -10,6 +10,7 @@ import { sourceConfig, startTheRun } from './therun.js';
 import { startTwitch, startYouTube } from './chat.js';
 import { publicStreams } from './streams.js';
 import { startStreamMonitor } from './stream-monitor.js';
+import {startZwr} from './zwr.js';
 import {ChatConnections} from './chat-connections.js';
 
 const root=fileURLToPath(new URL('../public/',import.meta.url));
@@ -110,7 +111,7 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
   server.requestTimeout=15000;server.headersTimeout=10000;
   const stops=[];let delivering=false;
   if(connectors) {
-    restartChat();stops.push(()=>stopChat(),startTheRun(store),startStreamMonitor(store,env));
+    restartChat();stops.push(()=>stopChat(),startTheRun(store),startStreamMonitor(store,env),startZwr(store,fetcher));
     const timer=setInterval(async()=>{if(delivering)return;delivering=true;try{await deliverAlerts(store,env.DISCORD_BOT_TOKEN);}catch(error){console.error('Alert delivery failed:',error.message);}finally{delivering=false;}},2000);
     stops.push(()=>clearInterval(timer));
   }
