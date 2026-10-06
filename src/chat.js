@@ -2,7 +2,7 @@ import { parseCommand } from './domain.js';
 import {chatTargets,channelCooldown,connections} from './chat-connections.js';
 
 export class ChatResponder {
-  constructor(store, limit = 450, clock = Date.now, cooldown = ()=>15) { this.store=store; this.limit=limit; this.clock=clock; this.cooldown=cooldown; this.cooldowns=new Map(); this.ids=new Map(); }
+  constructor(store, limit = 450, clock = Date.now, cooldown = ()=>15, provider = null) { this.provider=provider; this.store=store; this.limit=limit; this.clock=clock; this.cooldown=cooldown; this.cooldowns=new Map(); this.ids=new Map(); }
   respond(channel, sender, messageId, text) {
     const now=this.clock();
     for(const [id,at] of this.ids) if(now-at>600000) this.ids.delete(id);
@@ -13,6 +13,10 @@ export class ChatResponder {
     const userKey=`${channel}:${sender}`, channelKey=`channel:${channel}`;
     if(now-(this.cooldowns.get(userKey)??-Infinity)<5000 || now-(this.cooldowns.get(channelKey)??-Infinity)<this.cooldown(channel)*1000 || now-(this.cooldowns.get('global')??-Infinity)<1600) return null;
     this.cooldowns.set(userKey,now); this.cooldowns.set(channelKey,now); this.cooldowns.set('global',now);
+    if(command.command==='pb'&&!command.player&&this.provider) {
+      const owners=connections(this.store).filter(c=>c.provider===this.provider&&c.target===channel&&c.connected&&c.enabled&&this.store.get('players',c.player));
+      if(owners.length===1)command.player=owners[0].player;
+    }
     let result=this.store.answer(command);
     if(command.command==='session' && result?.length>this.limit) {
       const p=this.store.view(command.player);
@@ -59,7 +63,7 @@ export function twitchToken(store,env) {
 export function startTwitch(store,env,log=console.log) {
   if(!env.TWITCH_CLIENT_ID || !env.TWITCH_ACCESS_TOKEN || !env.TWITCH_BOT_USER_ID) return ()=>{};
   const token=twitchToken(store,env);
-  const responder=new ChatResponder(store,450,Date.now,channel=>channelCooldown(store,'twitch',channel)), channels=chatTargets(store,env,'twitch');
+  const responder=new ChatResponder(store,450,Date.now,channel=>channelCooldown(store,'twitch',channel),'twitch'), channels=chatTargets(store,env,'twitch');
   if(!channels.length)return ()=>{};
   const headers={'Client-Id':env.TWITCH_CLIENT_ID,'Content-Type':'application/json'};
   let stopped=false, socket, pendingSocket, retryTimer, watchdog, failures=0, validationTimer;
@@ -112,7 +116,7 @@ export function startYouTube(store,env,log=console.log) {
   const saved=store.get('metadata','youtube-oauth')??{};
   const token=new OAuthToken({accessToken:saved.accessToken??env.YOUTUBE_ACCESS_TOKEN,refreshToken:saved.refreshToken??env.YOUTUBE_REFRESH_TOKEN,clientId:env.YOUTUBE_CLIENT_ID,clientSecret:env.YOUTUBE_CLIENT_SECRET,provider:'youtube'});
   token.onRefresh=value=>store.put('metadata','youtube-oauth',value);
-  const responder=new ChatResponder(store,190,Date.now,channel=>channelCooldown(store,'youtube',channel)), timers=new Set(); let stopped=false;
+  const responder=new ChatResponder(store,190,Date.now,channel=>channelCooldown(store,'youtube',channel),'youtube'), timers=new Set(); let stopped=false;
   const schedule=(fn,ms)=>{const id=setTimeout(()=>{timers.delete(id);void fn();},ms);timers.add(id);};
   for(const chat of chatTargets(store,env,'youtube')) {
     let pageToken, initialized=false, failures=0;

@@ -116,6 +116,18 @@ export function parseCommand(text) {
   const command = words.shift()?.toLowerCase();
   if (!['!current', '!best', '!splits', '!pace', '!session', '!pb', '!wr', '!help'].includes(command)) return null;
   if (command === '!help') return { command: 'help' };
+  if (command === '!pb') {
+    let player;
+    if(words[0]?.startsWith('@')) {
+      player=words.shift().slice(1).toLowerCase();
+      if(!/^[a-z0-9_]{3,30}$/.test(player))return {command:'pb',error:'Use !pb [@runner] [map] [category].'};
+    }
+    if(!words.length)return {command:'pb',player};
+    const selected=parseCommand('!wr '+words.join(' '));
+    // Retain the old unmentioned username syntax only when it is not a map.
+    if(!player&&words.length===1&&selected.error?.startsWith('Use !wr')&&/^[a-z0-9_]{3,30}$/i.test(words[0]))return {command:'pb',player:words[0].toLowerCase()};
+    return {command:'pb',player,...(selected.error?{error:selected.error.replace('!wr <map>','!pb [@runner] <map>').replace('!wr Der Eisendrache','!pb @Penguine Der Eisendrache')}:{profile:selected.profile})};
+  }
   if (command === '!wr') {
     const text=stageWords(words.join(' '));
     const candidates=ENABLED_MAPS.flatMap(m=>[m.name,m.id,...(CORE_MAP_ALIASES[m.id]??[]),...(m.id==='super-easter-egg'?['super easter egg','super ee']:[])].map(alias=>({map:m.id,alias:stageWords(alias)}))).sort((a,b)=>b.alias.length-a.alias.length);
