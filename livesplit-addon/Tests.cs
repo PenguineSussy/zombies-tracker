@@ -72,10 +72,27 @@ class Tests
                 Check(Encoding.UTF8.GetString(Protection.Unprotect(Convert.FromBase64String(replacementXml["ProtectedToken"].InnerText)))=="replacement-test-key","saved key updates correctly");
             }
             var profile = new RunProfile { map = "der-eisendrache", category = "No Gums", players = 1, timing = "RealTime" };
+            var historyRun = new Run(new LiveSplit.Model.Comparisons.StandardComparisonGeneratorsFactory());
+            historyRun.Add(new Segment("Rocket")); historyRun.Add(new Segment("R7")); historyRun.Add(new Segment("End"));
+            historyRun[0].PersonalBestSplitTime = new Time { RealTime = TimeSpan.FromSeconds(355) };
+            historyRun[0].BestSegmentTime = new Time { RealTime = TimeSpan.FromSeconds(334) };
+            historyRun[1].PersonalBestSplitTime = new Time { RealTime = TimeSpan.FromSeconds(438) };
+            historyRun[1].BestSegmentTime = new Time { RealTime = TimeSpan.FromSeconds(60) };
+            historyRun[2].PersonalBestSplitTime = new Time { RealTime = TimeSpan.FromSeconds(1625) };
+            historyRun[0].SegmentHistory[1] = new Time { RealTime = TimeSpan.FromSeconds(340) };
+            historyRun[1].SegmentHistory[1] = new Time { RealTime = TimeSpan.FromSeconds(65) };
+            historyRun[1].SegmentHistory[2] = new Time { RealTime = TimeSpan.FromSeconds(1) };
+            historyRun[0].SegmentHistory[3] = new Time();
+            historyRun[1].SegmentHistory[3] = new Time { RealTime = TimeSpan.FromSeconds(410) };
+            var history = Protocol.ReadRecords(historyRun);
+            Check(history.splits[0].name == "Rocket" && history.splits[0].bestSplitMs == 334000 && history.splits[0].bestSegmentMs == 334000, "Rocket best is gold, not PB comparison");
+            Check(history.splits[1].bestSplitMs == 405000 && history.splits[1].bestSegmentMs == 60000, "cumulative history and segment are independent; missing prefix excluded");
+            Check(history.pbMs == 1625000, "PB from final Personal Best comparison");
+            Check(historyRun[0].PersonalBestSplitTime.RealTime.Value.TotalSeconds == 355 && historyRun[0].BestSegmentTime.RealTime.Value.TotalSeconds == 334, "record reading does not mutate comparisons");
             model.Start(); Pump(40); model.Split();
             state.CurrentTimingMethod = TimingMethod.GameTime;
             var sample = Protocol.Capture(state, profile, "test-attempt", 1, false, false);
-            Check(sample.splits.Count == 1 && sample.splits[0].name == "bow done" && sample.splits[0].ms > 0, "original split name / RTA despite GameTime display");
+            Check(sample.splits.Count == 1 && sample.splits[0].name == "Bow Done" && sample.splits[0].ms > 0, "original split name / RTA despite GameTime display");
             model.Pause();
             sample = Protocol.Capture(state, profile, "test-attempt", 2, false, false);
             Check(sample.elapsedMs == (long)Math.Round(state.CurrentTime.RealTime.Value.TotalMilliseconds), "paused elapsed equals LiveSplit RTA exactly");

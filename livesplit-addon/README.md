@@ -76,3 +76,10 @@ Built against the local LiveSplit installation. Automated tests use the actual L
 
 Source API reference: https://github.com/LiveSplit/LiveSplit/tree/master/src/LiveSplit.Core
 
+# Version 0.2.4: saved records
+
+Close LiveSplit, replace `Components/LiveSplit.ZombiesTracker.dll` with the DLL in this ZIP, then reopen LiveSplit and your splits. Existing addon settings and runner key remain usable.
+
+This version uploads the loaded split file's RTA Personal Best, best cumulative split times reconstructed from saved history, and Best Segment times. It reads these independently of the selected comparison and never writes comparisons or layout settings. Original split-name capitalization is preserved. Saved records synchronize when the addon connects, when run details change, and while idle/finished. Old files or deleted LiveSplit history cannot be recovered by the addon.
+
+Commands: `!best @name Rocket alltime`, `!splits @name alltime`, and `!pb @name`. Bests show cumulative split time followed by the segment time in parentheses. Missing values are reported as unavailable. Session statistics exclude imported history. PBs remain self-reported LiveSplit/tracker times, not verified leaderboard submissions.
