@@ -36,3 +36,22 @@ test('ZWR selects exact Solo gum board; does not borrow co-op or reversed record
  assert.equal(parseZwr(board('bo3-bo3-super-ee-Super-ee-speedrun-all-gobblegum-reversed-1-board','1:00'),'super-easter-egg').length,0);
  assert.equal(parseZwr('<html>Unavailable</html>','der-eisendrache').length,0);
 });
+
+test('WR commands select maps independently of runners, default Mega Gums and validate categories',t=>{
+ const store=new Store();t.after(()=>store.close());
+ for(const [category,ms] of [['Mega Gums',1542000],['Any%',1558000]]) {
+  const p={...profile,category};const id='zwr:'+JSON.stringify(p);
+  store.put('metadata',id,{id,profile:p,ms,holder:'Example',checkedAt:Date.now(),source:'https://zwr.gg/'});
+ }
+ assert.match(store.answer('!wr Der Eisendrache'),/Mega Gums · RTA.*25:42/);
+ assert.match(store.answer('!wr Der Eisendrache Any%'),/Any% · RTA.*25:58/);
+ assert.match(store.answer('@littlemontybot !WR de ANY%'),/Any% · RTA.*25:58/);
+ assert.match(store.answer('!wr @Penguine'),/Use !wr <map>/);
+ assert.match(store.answer('!wr'),/Use !wr <map>/);
+ assert.match(store.answer('!wr Der Eisendrache typo'),/Choose No Gums/);
+ assert.match(store.answer('!wr Zetsubou No Shima No Gums'),/allows only/);
+ assert.match(store.answer('!wr Ascension'),/allows only: Any%/);
+ assert.match(store.answer('!wr Ascension Any%'),/Ascension.*Any% · RTA/);
+ assert.match(store.answer('!wr Super Easter Egg'),/Super Easter Egg.*Mega Gums · RTA/);
+ assert.doesNotMatch(store.answer('!wr Der Eisendrache'),/RealTime/);
+});
