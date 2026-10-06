@@ -52,7 +52,7 @@ export function profile(input) {
 // Retain historical categories without silently assigning old records to a gum category.
 export function profileKey(p) { return p.category ? JSON.stringify({map:p.map,category:p.category,players:p.players??1,timing:p.timing??'RealTime'}) : JSON.stringify({map:p.map,objective:p.objective,players:p.players,rules:p.rules,route:p.route,timing:p.timing}); }
 export function profileLabel(p) {
-  return `${MAPS.find(m => m.id === p.map)?.name ?? p.map} · ${p.category ? 'Solo · Easter Egg · '+p.category : 'Legacy · '+p.players+'P · '+p.objective+' · '+p.rules+' · '+p.route} · ${p.timing}`;
+  return `${MAPS.find(m => m.id === p.map)?.name ?? p.map} · ${p.category ? 'Solo · Easter Egg · '+p.category : 'Legacy · '+p.players+'P · '+p.objective+' · '+p.rules+' · '+p.route} · ${p.timing === 'RealTime' ? 'RTA' : p.timing}`;
 }
 export function milliseconds(value) {
   if (value == null || value === '-' || value === '') return null;
@@ -116,6 +116,16 @@ export function parseCommand(text) {
   const command = words.shift()?.toLowerCase();
   if (!['!current', '!best', '!splits', '!pace', '!session', '!pb', '!wr', '!help'].includes(command)) return null;
   if (command === '!help') return { command: 'help' };
+  if (command === '!wr') {
+    const text=stageWords(words.join(' '));
+    const candidates=ENABLED_MAPS.flatMap(m=>[m.name,m.id,...(CORE_MAP_ALIASES[m.id]??[]),...(m.id==='super-easter-egg'?['super easter egg','super ee']:[])].map(alias=>({map:m.id,alias:stageWords(alias)}))).sort((a,b)=>b.alias.length-a.alias.length);
+    const match=candidates.find(m=>text===m.alias||text.startsWith(m.alias+' '));
+    if(!match) return {command:'wr',error:'Use !wr <map> [category], e.g. !wr Der Eisendrache Any%. Mega Gums is the default.'};
+    const suffix=text.slice(match.alias.length).trim();
+    const category=suffix ? CATEGORIES.find(c=>stageWords(c)===suffix) : 'Mega Gums';
+    if(!category) return {command:'wr',error:'Choose No Gums, Classic Gums, Mega Gums, or Any%.'};
+    return {command:'wr',profile:{map:match.map,category}};
+  }
   const player = words.shift()?.replace(/^@/, '').toLowerCase();
   if (!player || !/^[a-z0-9_]{3,30}$/.test(player)) return { command: 'help' };
   let scope = 'session';

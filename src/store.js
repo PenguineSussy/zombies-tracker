@@ -206,8 +206,15 @@ export class Store {
   answer(input) {
     const q = typeof input === 'string' ? parseCommand(input) : input;
     if (!q) return null;
-    if (q.command === 'help') return 'Commands: !current @player | !best @player bow session/alltime | !splits @player | !pace @player | !pb @player | !wr @player | !splits @player alltime | !session @player. Use registered tracker usernames.';
+    if (q.command === 'help') return 'Commands: !current @player | !best @player bow session/alltime | !splits @player | !pace @player | !pb @player | !wr <map> [category] (default: Mega Gums) | !splits @player alltime | !session @player. Use registered tracker usernames.';
     try {
+      if(q.command==='wr') {
+        if(q.error) return q.error;
+        const selected=profile(q.profile);
+        requireEnabledMap(selected.map);
+        const wr=this.get('metadata',`zwr:${profileKey(selected)}`);
+        return `${profileLabel(selected)} | ${wr?.ms!=null?`ZWR Solo WR: ${time(wr.ms)} — ${wr.holder}. Checked ${new Date(wr.checkedAt).toISOString().slice(0,10)}${this.clock()-wr.checkedAt>86400000?' (stale cache)':''}. ${wr.source}`:'ZWR record unavailable for this category.'}`;
+      }
       const p = this.view(q.player);
       if (p.private) return `${p.name} isn't sharing tracking data.`;
       const a = p.attempt, label = p.profile ? profileLabel(p.profile) : 'No category selected';
@@ -241,10 +248,6 @@ export class Store {
         const saved=this.savedRecords(p)?.pbMs;
         const fromSaved=saved!=null && (!best || saved<=best.elapsedMs);
         return `${p.name} | ${label} | PB: ${fromSaved?time(saved):best?time(best.elapsedMs):'unavailable'}${fromSaved?' (LiveSplit Personal Best)':best?' (tracker completed run)':''}.`;
-      }
-      if(q.command==='wr') {
-        const wr=p.profile && this.get('metadata',`zwr:${profileKey(p.profile)}`);
-        return `${p.name} | ${label} | ${wr?.ms!=null?`ZWR Solo WR: ${time(wr.ms)} — ${wr.holder}. Checked ${new Date(wr.checkedAt).toISOString().slice(0,10)}${this.clock()-wr.checkedAt>86400000?' (stale cache)':''}. ${wr.source}`:'ZWR record unavailable for this category.'}`;
       }
       return 'Unknown command.';
     } catch (error) { if (error.status) return error.message; throw error; }
