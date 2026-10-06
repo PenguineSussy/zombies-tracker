@@ -6,6 +6,15 @@ export function zwrUrl(map) {
 }
 const categories={'Mega Gums':'all-gobblegum','Classic Gums':'classic-gobblegum','No Gums':'no-gobblegum','Any%':'any-gobblegum'};
 const text=s=>s.replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&#39;|&apos;/g,"'").replace(/&quot;/g,'"').replace(/&#(\d+);/g,(_,n)=>String.fromCodePoint(Number(n))).trim();
+function recordDate(value) {
+  const match=String(value??'').match(/^(\d{1,2})(?:st|nd|rd|th)?,?\s+([A-Za-z]+)\s+(\d{4})$/);
+  if(!match)return null;
+  const month=['January','February','March','April','May','June','July','August','September','October','November','December'].findIndex(m=>m.toLowerCase()===match[2].toLowerCase())+1;
+  if(!month)return null;
+  const iso=match[3]+'-'+String(month).padStart(2,'0')+'-'+match[1].padStart(2,'0');
+  const date=new Date(iso+'T00:00:00Z');
+  return Number.isFinite(date.getTime())&&date.toISOString().slice(0,10)===iso?iso:null;
+}
 // Exact board IDs keep co-op, reversed Super and other gum categories separate.
 export function parseZwr(html,map,checkedAt=Date.now()) {
   const records=[];
@@ -22,8 +31,16 @@ export function parseZwr(html,map,checkedAt=Date.now()) {
     const clock=text(row.match(/<a\b[^>]*class="Achieved"[^>]*>([\s\S]*?)<\/a>/)?.[1]??'');
     if(!holder||holder.length>100||!/^\d+(?::\d{2}){1,2}(?:\.\d+)?$/.test(clock))continue;
     const ms=milliseconds(clock);if(ms<=0||ms>604800000)continue;
+    // ZWR's 'achieved' field is a duration; 'added' is the approved date fallback.
+    // Match the exact board, holder and time before attaching any date.
+    let details;
+    try {
+      const json=[...html.matchAll(/<script\b[^>]*type="application\/json"[^>]*id="([^"]+)"[^>]*>([\s\S]*?)<\/script>/g)].find(m=>m[1]===board);
+      details=json&&JSON.parse(json[2])['1']?.find(r=>Number(r.players)===1&&r.player1?.name===holder&&milliseconds(r.achieved)===ms);
+    } catch { /* Missing or malformed metadata must not create a date. */ }
+    const achievedDate=recordDate(details?.added);
     const profile={map,category,players:1,timing:'RealTime'};
-    records.push({id:`zwr:${profileKey(profile)}`,kind:'zwr',profile,ms,holder,source:zwrUrl(map),checkedAt});
+    records.push({id:`zwr:${profileKey(profile)}`,kind:'zwr',profile,ms,holder,source:zwrUrl(map),checkedAt,achievedDate,dateSource:achievedDate?'zwr-added':null,recordId:details?.id??null});
   }
   return records;
 }
@@ -31,7 +48,12 @@ export function startZwr(store,fetcher=fetch,log=console.log) {
   // Dated public-page snapshot also supports hosts blocked by ZWR's edge protection.
   // Never advance checkedAt unless an actual source fetch succeeds.
   const baseline=JSON.parse(readFileSync(new URL('./zwr-baseline.json',import.meta.url),'utf8'));
-  for(const record of baseline)if(!store.get('metadata',record.id))store.put('metadata',record.id,record);
+  for(const record of baseline) {
+    const current=store.get('metadata',record.id);
+    if(!current || record.checkedAt>current.checkedAt)store.put('metadata',record.id,record);
+    else if(!current.achievedDate&&record.achievedDate&&current.ms===record.ms&&current.holder===record.holder)
+      store.put('metadata',record.id,{...current,achievedDate:record.achievedDate,dateSource:record.dateSource,recordId:record.recordId});
+  }
   let stopped=false,busy=false;const abort=new AbortController();
   async function refresh(){
     if(busy||stopped)return;busy=true;

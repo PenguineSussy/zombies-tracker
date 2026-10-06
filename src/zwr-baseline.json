@@ -11,7 +11,10 @@
     "ms": 10562000,
     "holder": "Invisible Hole",
     "source": "https://zwr.gg/leaderboards/bo3/Super-ee-speedrun/bo3-super-ee/",
-    "checkedAt": 1791240348012
+    "checkedAt": 1791276051818,
+    "achievedDate": "2023-10-27",
+    "dateSource": "zwr-added",
+    "recordId": "112275"
   },
   {
     "id": "zwr:{\"map\":\"super-easter-egg\",\"category\":\"Mega Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -25,7 +28,10 @@
     "ms": 7976000,
     "holder": "Invisible Hole",
     "source": "https://zwr.gg/leaderboards/bo3/Super-ee-speedrun/bo3-super-ee/",
-    "checkedAt": 1791240348012
+    "checkedAt": 1791276051818,
+    "achievedDate": "2026-07-16",
+    "dateSource": "zwr-added",
+    "recordId": "124834"
   },
   {
     "id": "zwr:{\"map\":\"super-easter-egg\",\"category\":\"Any%\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -39,7 +45,10 @@
     "ms": 8109000,
     "holder": "Seqn",
     "source": "https://zwr.gg/leaderboards/bo3/Super-ee-speedrun/bo3-super-ee/",
-    "checkedAt": 1791240348012
+    "checkedAt": 1791276051818,
+    "achievedDate": "2025-05-19",
+    "dateSource": "zwr-added",
+    "recordId": "137151"
   },
   {
     "id": "zwr:{\"map\":\"shadows-of-evil\",\"category\":\"No Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -53,7 +62,10 @@
     "ms": 1345000,
     "holder": "Scottydogs007",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/shadows-of-evil/",
-    "checkedAt": 1791240345606
+    "checkedAt": 1791276052157,
+    "achievedDate": "2026-04-17",
+    "dateSource": "zwr-added",
+    "recordId": "23197"
   },
   {
     "id": "zwr:{\"map\":\"shadows-of-evil\",\"category\":\"Classic Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -67,7 +79,10 @@
     "ms": 1337000,
     "holder": "Scottydogs007",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/shadows-of-evil/",
-    "checkedAt": 1791240345606
+    "checkedAt": 1791276052157,
+    "achievedDate": "2026-04-17",
+    "dateSource": "zwr-added",
+    "recordId": "147511"
   },
   {
     "id": "zwr:{\"map\":\"shadows-of-evil\",\"category\":\"Mega Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -81,7 +96,10 @@
     "ms": 1166000,
     "holder": "ASSEM158",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/shadows-of-evil/",
-    "checkedAt": 1791240345606
+    "checkedAt": 1791276052157,
+    "achievedDate": "2026-09-26",
+    "dateSource": "zwr-added",
+    "recordId": "147015"
   },
   {
     "id": "zwr:{\"map\":\"shadows-of-evil\",\"category\":\"Any%\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -95,7 +113,10 @@
     "ms": 1109000,
     "holder": "Scottydogs007",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/shadows-of-evil/",
-    "checkedAt": 1791240345606
+    "checkedAt": 1791276052157,
+    "achievedDate": "2026-04-16",
+    "dateSource": "zwr-added",
+    "recordId": "147512"
   },
   {
     "id": "zwr:{\"map\":\"the-giant\",\"category\":\"No Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -109,7 +130,10 @@
     "ms": 150000,
     "holder": "Bilzay",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/the-giant/",
-    "checkedAt": 1791240345847
+    "checkedAt": 1791276052435,
+    "achievedDate": "2023-03-30",
+    "dateSource": "zwr-added",
+    "recordId": "84227"
   },
   {
     "id": "zwr:{\"map\":\"the-giant\",\"category\":\"Classic Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -123,7 +147,10 @@
     "ms": 144000,
     "holder": "Bilzay",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/the-giant/",
-    "checkedAt": 1791240345847
+    "checkedAt": 1791276052435,
+    "achievedDate": "2022-03-30",
+    "dateSource": "zwr-added",
+    "recordId": "83695"
   },
   {
     "id": "zwr:{\"map\":\"the-giant\",\"category\":\"Mega Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -137,7 +164,10 @@
     "ms": 63000,
     "holder": "scottiei3",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/the-giant/",
-    "checkedAt": 1791240345847
+    "checkedAt": 1791276052435,
+    "achievedDate": "2026-09-23",
+    "dateSource": "zwr-added",
+    "recordId": "68327"
   },
   {
     "id": "zwr:{\"map\":\"the-giant\",\"category\":\"Any%\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -151,7 +181,10 @@
     "ms": 65000,
     "holder": "Luisete2105",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/the-giant/",
-    "checkedAt": 1791240345847
+    "checkedAt": 1791276052435,
+    "achievedDate": "2025-01-08",
+    "dateSource": "zwr-added",
+    "recordId": "131675"
   },
   {
     "id": "zwr:{\"map\":\"der-eisendrache\",\"category\":\"No Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -165,7 +198,10 @@
     "ms": 1741000,
     "holder": "Invisible Hole",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/der-eisendrache/",
-    "checkedAt": 1791240346170
+    "checkedAt": 1791276052799,
+    "achievedDate": "2025-12-03",
+    "dateSource": "zwr-added",
+    "recordId": "143561"
   },
   {
     "id": "zwr:{\"map\":\"der-eisendrache\",\"category\":\"Classic Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -179,7 +215,10 @@
     "ms": 1720000,
     "holder": "nikolaieu",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/der-eisendrache/",
-    "checkedAt": 1791240346170
+    "checkedAt": 1791276052799,
+    "achievedDate": "2024-09-13",
+    "dateSource": "zwr-added",
+    "recordId": "122028"
   },
   {
     "id": "zwr:{\"map\":\"der-eisendrache\",\"category\":\"Mega Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -193,7 +232,10 @@
     "ms": 1542000,
     "holder": "Seqn",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/der-eisendrache/",
-    "checkedAt": 1791240346170
+    "checkedAt": 1791276052799,
+    "achievedDate": "2025-09-23",
+    "dateSource": "zwr-added",
+    "recordId": "129362"
   },
   {
     "id": "zwr:{\"map\":\"der-eisendrache\",\"category\":\"Any%\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -207,7 +249,10 @@
     "ms": 1558000,
     "holder": "Pace Pai",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/der-eisendrache/",
-    "checkedAt": 1791240346170
+    "checkedAt": 1791276052799,
+    "achievedDate": "2025-09-18",
+    "dateSource": "zwr-added",
+    "recordId": "141469"
   },
   {
     "id": "zwr:{\"map\":\"zetsubou-no-shima\",\"category\":\"Classic Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -221,7 +266,10 @@
     "ms": 1534000,
     "holder": "Satchel",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/zetsubou-no-shima/",
-    "checkedAt": 1791240346407
+    "checkedAt": 1791276053063,
+    "achievedDate": "2024-09-19",
+    "dateSource": "zwr-added",
+    "recordId": "122574"
   },
   {
     "id": "zwr:{\"map\":\"zetsubou-no-shima\",\"category\":\"Mega Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -235,7 +283,10 @@
     "ms": 1206000,
     "holder": "Invisible Hole",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/zetsubou-no-shima/",
-    "checkedAt": 1791240346407
+    "checkedAt": 1791276053063,
+    "achievedDate": "2026-01-15",
+    "dateSource": "zwr-added",
+    "recordId": "107472"
   },
   {
     "id": "zwr:{\"map\":\"zetsubou-no-shima\",\"category\":\"Any%\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -249,7 +300,10 @@
     "ms": 1292000,
     "holder": "cbrnn",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/zetsubou-no-shima/",
-    "checkedAt": 1791240346407
+    "checkedAt": 1791276053063,
+    "achievedDate": "2026-06-11",
+    "dateSource": "zwr-added",
+    "recordId": "117414"
   },
   {
     "id": "zwr:{\"map\":\"gorod-krovi\",\"category\":\"No Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -263,7 +317,10 @@
     "ms": 2340000,
     "holder": "Invisible Hole",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/gorod-krovi/",
-    "checkedAt": 1791240346667
+    "checkedAt": 1791276053658,
+    "achievedDate": "2023-12-06",
+    "dateSource": "zwr-added",
+    "recordId": "113483"
   },
   {
     "id": "zwr:{\"map\":\"gorod-krovi\",\"category\":\"Classic Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -277,7 +334,10 @@
     "ms": 2061000,
     "holder": "Invisible Hole",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/gorod-krovi/",
-    "checkedAt": 1791240346667
+    "checkedAt": 1791276053658,
+    "achievedDate": "2025-12-04",
+    "dateSource": "zwr-added",
+    "recordId": "41933"
   },
   {
     "id": "zwr:{\"map\":\"gorod-krovi\",\"category\":\"Mega Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -291,7 +351,10 @@
     "ms": 1861000,
     "holder": "Invisible Hole",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/gorod-krovi/",
-    "checkedAt": 1791240346667
+    "checkedAt": 1791276053658,
+    "achievedDate": "2026-01-09",
+    "dateSource": "zwr-added",
+    "recordId": "109919"
   },
   {
     "id": "zwr:{\"map\":\"gorod-krovi\",\"category\":\"Any%\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -305,7 +368,10 @@
     "ms": 1892000,
     "holder": "Barela",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/gorod-krovi/",
-    "checkedAt": 1791240346667
+    "checkedAt": 1791276053658,
+    "achievedDate": "2026-09-25",
+    "dateSource": "zwr-added",
+    "recordId": "141473"
   },
   {
     "id": "zwr:{\"map\":\"revelations\",\"category\":\"No Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -319,7 +385,10 @@
     "ms": 1973000,
     "holder": "Invisible Hole",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/revelations/",
-    "checkedAt": 1791240346984
+    "checkedAt": 1791276053976,
+    "achievedDate": "2025-12-12",
+    "dateSource": "zwr-added",
+    "recordId": "109655"
   },
   {
     "id": "zwr:{\"map\":\"revelations\",\"category\":\"Classic Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -333,7 +402,10 @@
     "ms": 2104000,
     "holder": "Invisible Hole",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/revelations/",
-    "checkedAt": 1791240346984
+    "checkedAt": 1791276053976,
+    "achievedDate": "2023-08-10",
+    "dateSource": "zwr-added",
+    "recordId": "109656"
   },
   {
     "id": "zwr:{\"map\":\"revelations\",\"category\":\"Mega Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -347,7 +419,10 @@
     "ms": 1384000,
     "holder": "sable",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/revelations/",
-    "checkedAt": 1791240346984
+    "checkedAt": 1791276053976,
+    "achievedDate": "2024-09-19",
+    "dateSource": "zwr-added",
+    "recordId": "107656"
   },
   {
     "id": "zwr:{\"map\":\"revelations\",\"category\":\"Any%\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -361,7 +436,10 @@
     "ms": 1421000,
     "holder": "Elosho",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/revelations/",
-    "checkedAt": 1791240346984
+    "checkedAt": 1791276053976,
+    "achievedDate": "2026-07-11",
+    "dateSource": "zwr-added",
+    "recordId": "150257"
   },
   {
     "id": "zwr:{\"map\":\"ascension\",\"category\":\"Any%\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -375,7 +453,10 @@
     "ms": 467000,
     "holder": "J Dubs",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/ascension/",
-    "checkedAt": 1791240347156
+    "checkedAt": 1791276054145,
+    "achievedDate": "2023-05-15",
+    "dateSource": "zwr-added",
+    "recordId": "103687"
   },
   {
     "id": "zwr:{\"map\":\"shangri-la\",\"category\":\"Any%\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -389,7 +470,10 @@
     "ms": 616000,
     "holder": "Itzs Nukez",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/shangri-la/",
-    "checkedAt": 1791240347321
+    "checkedAt": 1791276054317,
+    "achievedDate": "2023-06-27",
+    "dateSource": "zwr-added",
+    "recordId": "85150"
   },
   {
     "id": "zwr:{\"map\":\"moon\",\"category\":\"No Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -403,7 +487,10 @@
     "ms": 1545100,
     "holder": "GameLikeADylan",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/moon/",
-    "checkedAt": 1791240347539
+    "checkedAt": 1791276054538,
+    "achievedDate": "2025-03-13",
+    "dateSource": "zwr-added",
+    "recordId": "86137"
   },
   {
     "id": "zwr:{\"map\":\"moon\",\"category\":\"Classic Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -417,7 +504,10 @@
     "ms": 1576000,
     "holder": "GameLikeADylan",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/moon/",
-    "checkedAt": 1791240347539
+    "checkedAt": 1791276054538,
+    "achievedDate": "2022-07-18",
+    "dateSource": "zwr-added",
+    "recordId": "88773"
   },
   {
     "id": "zwr:{\"map\":\"moon\",\"category\":\"Mega Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -431,7 +521,10 @@
     "ms": 1139000,
     "holder": "GameLikeADylan",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/moon/",
-    "checkedAt": 1791240347539
+    "checkedAt": 1791276054538,
+    "achievedDate": "2026-09-28",
+    "dateSource": "zwr-added",
+    "recordId": "93060"
   },
   {
     "id": "zwr:{\"map\":\"moon\",\"category\":\"Any%\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -445,7 +538,10 @@
     "ms": 1111000,
     "holder": "GameLikeADylan",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/moon/",
-    "checkedAt": 1791240347539
+    "checkedAt": 1791276054538,
+    "achievedDate": "2025-05-10",
+    "dateSource": "zwr-added",
+    "recordId": "94179"
   },
   {
     "id": "zwr:{\"map\":\"origins\",\"category\":\"No Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -459,7 +555,10 @@
     "ms": 2895000,
     "holder": "dezumando",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/origins/",
-    "checkedAt": 1791240347796
+    "checkedAt": 1791276054836,
+    "achievedDate": "2026-07-14",
+    "dateSource": "zwr-added",
+    "recordId": "143309"
   },
   {
     "id": "zwr:{\"map\":\"origins\",\"category\":\"Classic Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -473,7 +572,10 @@
     "ms": 2934000,
     "holder": "dezumando",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/origins/",
-    "checkedAt": 1791240347796
+    "checkedAt": 1791276054836,
+    "achievedDate": "2026-07-28",
+    "dateSource": "zwr-added",
+    "recordId": "151303"
   },
   {
     "id": "zwr:{\"map\":\"origins\",\"category\":\"Mega Gums\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -487,7 +589,10 @@
     "ms": 1849000,
     "holder": "ross_aiden",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/origins/",
-    "checkedAt": 1791240347796
+    "checkedAt": 1791276054836,
+    "achievedDate": "2026-08-26",
+    "dateSource": "zwr-added",
+    "recordId": "74424"
   },
   {
     "id": "zwr:{\"map\":\"origins\",\"category\":\"Any%\",\"players\":1,\"timing\":\"RealTime\"}",
@@ -501,6 +606,9 @@
     "ms": 1925000,
     "holder": "ross_aiden",
     "source": "https://zwr.gg/leaderboards/bo3/ee-speedrun/origins/",
-    "checkedAt": 1791240347796
+    "checkedAt": 1791276054836,
+    "achievedDate": "2025-11-07",
+    "dateSource": "zwr-added",
+    "recordId": "105374"
   }
 ]

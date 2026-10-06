@@ -213,7 +213,7 @@ export class Store {
         const selected=profile(q.profile);
         requireEnabledMap(selected.map);
         const wr=this.get('metadata',`zwr:${profileKey(selected)}`);
-        return `${profileLabel(selected)} | ${wr?.ms!=null?`ZWR Solo WR: ${time(wr.ms)} — ${wr.holder}. Checked ${new Date(wr.checkedAt).toISOString().slice(0,10)}${this.clock()-wr.checkedAt>86400000?' (stale cache)':''}. ${wr.source}`:'ZWR record unavailable for this category.'}`;
+        return `${profileLabel(selected)} | ${wr?.ms!=null?`SOLO WR: ${time(wr.ms)} — ${wr.holder}. Achieved: ${wr.achievedDate??'unavailable'}.`:'Solo WR unavailable for this category.'}`;
       }
       const p = this.view(q.player);
       if (p.private) return `${p.name} isn't sharing tracking data.`;
