@@ -27,3 +27,9 @@ Validation: 31 Node tests, 47 addon assertions including actual LiveSplit TimerM
 * YouTube selects an active broadcast belonging to the connected channel. Runner tokens remain server-side, with browser-bound expiring OAuth state and single-use callbacks. Discord setup remains deferred.
 * Includes LiveSplit addon 0.2.3 with split aliases removed and stable encrypted settings. User confirmed their layout works after this update.
 * 40 Node tests pass. Real provider callback and live chat smoke tests remain required after deployment. Google Testing restrictions still apply.
+# Saved-record command update
+
+- Addon 0.2.4 reads RTA saved PB, best cumulative split history and best segments without modifying LiveSplit comparisons.
+- Preserve original split capitalization; all-time bests show split (segment); `!pb` includes the loaded file's PB; `!splits @name alltime` lists bests.
+- `!wr @name` reads category-matched ZWR Solo finish records with source and last-checked date; refresh every six hours and label stale cached results. Finish records do not substitute for intermediate WR checkpoints.
+- Deferred: GK session cleanup and LiveSplit lifetime attempt totals.

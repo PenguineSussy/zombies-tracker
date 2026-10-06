@@ -33,12 +33,25 @@ namespace LiveSplit.ZombiesTracker
         public bool practice { get; set; }
         public bool suppressAlerts { get; set; }
         public long observedAt { get; set; }
+        public SavedRecords records { get; set; }
+    }
+    public sealed class SavedSplit
+    {
+        public int index { get; set; }
+        public string name { get; set; }
+        public long? bestSplitMs { get; set; }
+        public long? bestSegmentMs { get; set; }
+    }
+    public sealed class SavedRecords
+    {
+        public long? pbMs { get; set; }
+        public List<SavedSplit> splits { get; set; }
     }
     public static class Protocol
     {
         public static string Clean(string value)
         {
-            value = Regex.Replace((value ?? "").Normalize().Trim().ToLowerInvariant(), @"\s+", " ");
+            value = Regex.Replace((value ?? "").Normalize().Trim(), @"\s+", " ");
             if (value.Length == 0 || value.Length > 80 || Regex.IsMatch(value, @"[\x00-\x1f<>@]"))
                 throw new InvalidOperationException("Use names of 1-80 characters without <, > or @. Rename invalid split names in LiveSplit.");
             return value;
@@ -57,7 +70,7 @@ namespace LiveSplit.ZombiesTracker
                 splits = new List<Checkpoint>(), complete = !idle, practice = practice, suppressAlerts = suppress,
                 observedAt = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalMilliseconds
             };
-            var unique = new HashSet<string>();
+            var unique = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             for (int i = 0; i < state.Run.Count; i++)
             {
                 string name = Clean(state.Run[i].Name);
@@ -69,6 +82,41 @@ namespace LiveSplit.ZombiesTracker
                 else snapshot.complete = false;
             }
             return snapshot;
+        }
+        static long? Milliseconds(TimeSpan? value)
+        {
+            if (!value.HasValue || value.Value.TotalMilliseconds < 0 || value.Value.TotalMilliseconds > 604800000) return null;
+            return (long)Math.Round(value.Value.TotalMilliseconds);
+        }
+        // Read-only equivalent of LiveSplit's Best Split Times history calculation.
+        // Never run a comparison generator against the user's live Run: it writes comparisons.
+        public static SavedRecords ReadRecords(IRun run)
+        {
+            var result = new SavedRecords { splits = new List<SavedSplit>(), pbMs = run.Count == 0 ? null : Milliseconds(run[run.Count - 1].PersonalBestSplitTime.RealTime) };
+            var totals = new Dictionary<int, TimeSpan>();
+            for (int i = 0; i < run.Count; i++)
+            {
+                var segment = run[i];
+                long? best = Milliseconds(i == 0 ? segment.BestSegmentTime.RealTime : segment.PersonalBestSplitTime.RealTime);
+                var next = new Dictionary<int, TimeSpan>();
+                foreach (var entry in segment.SegmentHistory)
+                {
+                    TimeSpan total;
+                    if (i == 0) total = TimeSpan.Zero;
+                    else if (!totals.TryGetValue(entry.Key, out total)) continue;
+                    var duration = entry.Value.RealTime;
+                    if (duration.HasValue)
+                    {
+                        total += duration.Value;
+                        var candidate = Milliseconds(total);
+                        if (candidate.HasValue && (!best.HasValue || candidate.Value < best.Value)) best = candidate;
+                    }
+                    next[entry.Key] = total;
+                }
+                totals = next;
+                result.splits.Add(new SavedSplit { index = i, name = Clean(segment.Name), bestSplitMs = best, bestSegmentMs = Milliseconds(segment.BestSegmentTime.RealTime) });
+            }
+            return result;
         }
     }
 }

@@ -14,7 +14,7 @@ using LiveSplit.Model;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;
 
-[assembly: AssemblyVersion("0.2.3.0")]
+[assembly: AssemblyVersion("0.2.4.0")]
 [assembly: ComponentFactory(typeof(LiveSplit.ZombiesTracker.Factory))]
 
 namespace LiveSplit.ZombiesTracker
@@ -28,7 +28,7 @@ namespace LiveSplit.ZombiesTracker
         public string UpdateName { get { return ComponentName; } }
         public string XMLURL { get { return ""; } }
         public string UpdateURL { get { return ""; } }
-        public Version Version { get { return new Version(0, 2, 3); } }
+        public Version Version { get { return new Version(0, 2, 4); } }
     }
     public sealed class AddonOptions
     {
@@ -55,7 +55,7 @@ namespace LiveSplit.ZombiesTracker
         readonly JavaScriptSerializer json = new JavaScriptSerializer();
         string id = Guid.NewGuid().ToString(), identity, lastPhase, frozen;
         long sequence;
-        DateTime lastHeartbeat = DateTime.MinValue;
+        DateTime lastHeartbeat = DateTime.MinValue, lastRecords = DateTime.MinValue;
         bool first = true, forceNew = true, disposed, suppressNext = true;
         bool activated;
         string protectedToken = "";
@@ -125,6 +125,11 @@ namespace LiveSplit.ZombiesTracker
                 bool fresh = forceNew || identity != fingerprint || (lastPhase != phase && (idle || lastPhase == "NotRunning"));
                 if (fresh) { id = Guid.NewGuid().ToString(); sequence = 0; identity = fingerprint; frozen = idle ? null : fingerprint; }
                 var snapshot = Protocol.Capture(state, profile, id, sequence + 1, options.Practice, suppressNext || first);
+                if (!options.Practice && (first || fresh || ((idle || state.CurrentPhase == TimerPhase.Ended) && (transition || (DateTime.UtcNow - lastRecords).TotalSeconds >= 60))))
+                {
+                    snapshot.records = Protocol.ReadRecords(state.Run);
+                    lastRecords = DateTime.UtcNow;
+                }
                 uploader.Enqueue(snapshot);
                 sequence++; first = false; forceNew = false; suppressNext = false; lastPhase = phase; lastHeartbeat = DateTime.UtcNow;
                 runtime.Config=json.Serialize(options); runtime.Id=id; runtime.Identity=identity; runtime.LastPhase=lastPhase; runtime.Frozen=frozen;
@@ -186,7 +191,7 @@ namespace LiveSplit.ZombiesTracker
                 }
             }
             catch (Exception ex) { canSave = false; panel.StatusText = "Cannot save key: " + ex.Message; }
-            put("Version", "0.2.3"); put("Enabled", (options.Enabled && canSave).ToString()); put("Server", options.Server);
+            put("Version", "0.2.4"); put("Enabled", (options.Enabled && canSave).ToString()); put("Server", options.Server);
             put("ProtectedToken", protectedToken);
             put("Map", options.Map); put("Category", options.Category); put("Practice", options.Practice.ToString());
             return root;
