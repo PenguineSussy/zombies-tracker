@@ -117,7 +117,7 @@ async function details(id){
   box.append(node('p',`${p.status}${p.attempt?.current?' · Current: '+p.attempt.current:''}`,'muted'));
   if(p.attempt)box.append(node('p',`LiveSplit RTA at last update: ${format(p.attempt.elapsedMs)}${p.attempt.stageMap?' · '+catalog.maps.find(m=>m.id===p.attempt.stageMap)?.name:''}`,'muted'));
   renderSession(box,p.session);
-  if(p.attempt?.splits.length){const table=node('table'),head=node('tr');head.append(node('th','Checkpoint'),node('th','Run time'));table.append(head);for(const split of p.attempt.splits){const row=node('tr');row.append(node('td',split.name),node('td',format(split.ms)));table.append(row);}box.append(table);}else box.append(node('p','No checkpoints recorded yet.','muted'));
+  if(p.attempt?.splits.length){const table=node('table'),head=node('tr');head.append(node('th','Checkpoint'),node('th','Run time'));table.append(head);for(const split of p.attempt.splits){const row=node('tr');row.append(node('td',split.displayName??split.name),node('td',format(split.ms)));table.append(row);}box.append(table);}else box.append(node('p','No checkpoints recorded yet.','muted'));
   if(p.attempt?.practice)box.append(node('p','Practice attempt — excluded from records.','small muted'));
   if(p.attempt&&!p.attempt.complete&&p.attempt.phase==='Ended')box.append(node('p','Incomplete run: required checkpoints may be missing.','small muted'));
 }
