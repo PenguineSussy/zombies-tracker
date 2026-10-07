@@ -40,3 +40,19 @@ test('PB map queries also include completed tracked runs and exclude practice',t
  const s=fixture(t);for(const [id,ms,practice]of [['normal',1500000,false],['practice',100,true]])s.saveAttempt({id,player:'penguine',profile:de,phase:'Ended',complete:true,practice,elapsedMs:ms});
  assert.match(s.answer('!pb @Penguine DE'),/25:00 \(tracker completed run\)/);
 });
+test('all runner commands select the current platform/channel owner unless explicitly mentioned',t=>{
+ const s=fixture(t);link(s,'twitch');link(s,'youtube','other');
+ for(const provider of ['twitch','youtube']){
+  const reply=responder(s,provider),owner=provider==='twitch'?'Penguine':'Other',foreign=owner==='Penguine'?'Other':'Penguine';
+  for(const command of ['!current','!session','!sessionpb','!splits','!splits alltime','!pace','!best Rocket alltime','!pb DE']){
+   assert.match(reply(command),new RegExp(owner),provider+' '+command);
+   const explicit=command.replace(/^(\S+)/,`$1 @${foreign}`);
+   assert.match(reply(explicit),new RegExp(foreign),provider+' '+explicit);
+  }
+  assert.match(reply('!current','unlinked'),/not linked/);
+  assert.match(reply('!wr DE'),/SOLO WR|Solo WR/);
+ }
+ s.privacy(s.get('players','penguine'),false);assert.match(responder(s,'twitch')('!current'),/isn't sharing/);
+ link(s,'twitch','other');assert.match(responder(s,'twitch')('!current'),/not linked/);
+ assert.match(s.answer('!current'),/not linked/);
+});
