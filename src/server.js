@@ -61,7 +61,7 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
         const v=store.view(decodeURIComponent(path.slice('/api/players/'.length)));
         // Do not expose private source configuration, benchmark internals, or alert metadata.
         return send({id:v.id,name:v.name,private:v.private,status:v.status,lastSeen:v.lastSeen,profile:v.profile,session:v.private?null:store.sessionStats(v),streams:publicStreams(v,store.clock()),
-          attempt:v.attempt?{phase:v.attempt.phase,current:v.attempt.current,stageMap:v.attempt.stageMap,elapsedMs:v.attempt.elapsedMs,splits:v.attempt.splits,complete:v.attempt.complete,practice:v.attempt.practice}:null});
+          attempt:v.attempt?{attemptCount:v.attempt.attemptCount??null,phase:v.attempt.phase,current:v.attempt.current,stageMap:v.attempt.stageMap,elapsedMs:v.attempt.elapsedMs,splits:v.attempt.splits,complete:v.attempt.complete,practice:v.attempt.practice}:null});
       }
       const raw=await body(req);let data={};
       if(raw.length){try{data=JSON.parse(raw);}catch{check(false,'Invalid JSON.');}}

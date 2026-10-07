@@ -100,6 +100,11 @@ export function snapshot(input) {
     result.stageMap=superStage(result.current)??(result.phase==='Ended'?'revelations':null);
     result.complete=result.complete&&new Set(completed).size===6&&completed.length===6&&completed.at(-1)==='revelations';
   }
+  if(input.resetEvent!=null){check(typeof input.resetEvent==='boolean','Invalid reset event.');result.resetEvent=input.resetEvent;}
+  if(input.attemptCount!=null) {
+    check(Number.isSafeInteger(input.attemptCount)&&input.attemptCount>=0&&input.attemptCount<=2147483647,'Invalid LiveSplit attempt count.');
+    result.attemptCount=input.attemptCount;
+  }
   if(input.records != null) {
     check(Array.isArray(input.records.splits) && input.records.splits.length>0 && input.records.splits.length<=500,'Invalid saved splits.');
     const validTime=v=>{check(v==null || (Number.isSafeInteger(v)&&v>=0&&v<=604800000),'Invalid saved time.');return v??null;};
