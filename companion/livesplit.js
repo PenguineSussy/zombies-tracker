@@ -117,7 +117,7 @@ export class Reconciler {
       }
       if (s.splits.length !== sample.index) s.complete = false;
     }
-    const result = { attemptId: s.id, sequence: ++s.sequence, profile: this.config.profile,
+    const result = { attemptId: s.id, attemptCount: Number(sample.attemptCount), sequence: ++s.sequence, profile: this.config.profile,
       phase: sample.phase, index: sample.index, elapsedMs: sample.elapsedMs, current: sample.current,
       splits: structuredClone(s.splits), complete: s.complete, practice: this.config.practice === true,
       suppressAlerts: this.reconnecting, observedAt: Date.now() };
