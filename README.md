@@ -45,6 +45,7 @@ Replace `map` with a map name such as `DE`, and `split` with a checkpoint such a
 - WR finish records from ZWR and reviewed checkpoints for matching map/category records. Missing checkpoints stay unavailable; `~` marks whole-second estimates.
 
 Stats are self-reported timer data. A faster time or checkpoint does not automatically verify an official WR.
+Self-made rules document that help the bot with timing and commands: [LittleMontyBot Rules Document](https://docs.google.com/document/d/1arPynVeBmHWqB8ZAXyha9CtHKic2vv2ff9EL5_vCstw/edit?tab=t.0)
 
 ## Run or develop locally
 
