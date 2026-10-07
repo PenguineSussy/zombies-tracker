@@ -14,7 +14,7 @@ using LiveSplit.Model;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;
 
-[assembly: AssemblyVersion("0.2.6.0")]
+[assembly: AssemblyVersion("0.2.7.0")]
 [assembly: ComponentFactory(typeof(LiveSplit.ZombiesTracker.Factory))]
 
 namespace LiveSplit.ZombiesTracker
@@ -28,7 +28,7 @@ namespace LiveSplit.ZombiesTracker
         public string UpdateName { get { return ComponentName; } }
         public string XMLURL { get { return ""; } }
         public string UpdateURL { get { return ""; } }
-        public Version Version { get { return new Version(0, 2, 5); } }
+        public Version Version { get { return new Version(0, 2, 7); } }
     }
     public sealed class AddonOptions
     {
@@ -113,7 +113,7 @@ namespace LiveSplit.ZombiesTracker
                 panel.DetectionText = detected.Reason + "\r\n" + (category == null ? "Gum category unknown or conflicting; choose a category override." : category + " / Solo / Easter Egg / RTA");
                 if (!options.Enabled || uploader == null) { panel.StatusText = "Not uploading. Configure settings, then enable and Apply."; return; }
                 if (detected.NonSolo) throw new InvalidOperationException("Multiplayer detected. Only Solo runs are supported; no upload sent.");
-                if (!detected.Success || category == null) { panel.StatusText = "Not uploading: resolve detection above."; return; }
+                if (!detected.Success || category == null) { panel.StatusText = !detected.Success ? "Unsupported game/map - tracking paused." : "Not uploading: resolve category above."; suppressNext = true; return; }
                 if (!Detector.CategoriesForMap(detected.Map).Contains(category)) { panel.StatusText = "Not uploading: this map allows only " + string.Join(", ", Detector.CategoriesForMap(detected.Map)) + "."; return; }
                 string phase = state.CurrentPhase.ToString();
                 var profile = new RunProfile { map = detected.Map, category = category, players = 1, timing = "RealTime" };
@@ -192,7 +192,7 @@ namespace LiveSplit.ZombiesTracker
                 }
             }
             catch (Exception ex) { canSave = false; panel.StatusText = "Cannot save key: " + ex.Message; }
-            put("Version", "0.2.6"); put("Enabled", (options.Enabled && canSave).ToString()); put("Server", options.Server);
+            put("Version", "0.2.7"); put("Enabled", (options.Enabled && canSave).ToString()); put("Server", options.Server);
             put("ProtectedToken", protectedToken);
             put("Map", options.Map); put("Category", options.Category); put("Practice", options.Practice.ToString());
             return root;
