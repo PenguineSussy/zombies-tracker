@@ -1,3 +1,4 @@
+import {queueAnnouncements} from './announcements.js';
 import {splitName,resolveSplits,displayAttempt} from './split-rules.js';
 import { DatabaseSync } from 'node:sqlite';
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
@@ -104,6 +105,7 @@ export class Store {
         if(p.sessionId) p.lastSession={id:p.sessionId,startedAt:p.sessionStarted,endedAt:p.lastSeen};
         p.sessionId = randomUUID(); p.sessionStarted = now;
       }
+      const previousAttempt=a;
       const previousSplits = a?.splits ?? [];
       const baseline = this.list('benchmarks').filter(b => profileKey(b.profile) === profileKey(s.profile)).sort((x,y) => y.createdAt - x.createdAt)[0];
       a = { ...s, id, player: p.id, sessionId: p.sessionId ?? a?.sessionId,
@@ -115,6 +117,7 @@ export class Store {
       if (a.phase === 'NotRunning') a.complete = false;
       check(s.observedAt <= now + 60000, 'Runner clock is ahead of server time.');
       p.profile = s.profile; p.activeAttempt = id; p.lastSeen = Math.min(now, s.observedAt);
+      queueAnnouncements(this,p,a,previousAttempt);
       if(s.records && !s.practice) {
         const recordId=`saved-records:${p.id}:${profileKey(s.profile)}`;
         const previous=this.get('metadata',recordId);
@@ -308,7 +311,7 @@ export class Store {
       for (const job of this.list('outbox')) if (job.player === p.id) this.db.prepare('DELETE FROM outbox WHERE id=?').run(job.id);
       for (const sub of this.list('subscriptions')) if (sub.player === p.id) this.db.prepare('DELETE FROM subscriptions WHERE id=?').run(sub.id);
       this.db.prepare('DELETE FROM players WHERE id=?').run(p.id);
-      for(const row of this.list('metadata'))if(row.kind==='saved-records'&&row.player===p.id)this.db.prepare('DELETE FROM metadata WHERE id=?').run(row.id);
+      for(const row of this.list('metadata'))if(['saved-records','chat-announcement'].includes(row.kind)&&row.player===p.id)this.db.prepare('DELETE FROM metadata WHERE id=?').run(row.id);
     });
   }
 }

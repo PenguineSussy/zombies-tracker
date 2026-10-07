@@ -1,3 +1,4 @@
+import {announcementDefaults} from './announcements.js';
 import {randomBytes,createHash} from 'node:crypto';
 import {check} from './domain.js';
 import {OAuthToken} from './chat.js';
@@ -27,7 +28,7 @@ export class ChatConnections {
   view(player) {
     return Object.fromEntries(['twitch','youtube'].map(provider=>{
       const c=this.store.get('metadata',id(provider,player.id));
-      return [provider,{available:this.available(provider),connected:!!c?.connected,name:c?.name??null,enabled:!!c?.enabled,cooldownSeconds:c?.cooldownSeconds??15,broadcastId:c?.broadcastId??null,target:!!c?.target,status:c?.status??'Not connected'}];
+      return [provider,{available:this.available(provider),connected:!!c?.connected,name:c?.name??null,enabled:!!c?.enabled,cooldownSeconds:c?.cooldownSeconds??15,announcements:{...announcementDefaults(),...c?.announcements},broadcastId:c?.broadcastId??null,target:!!c?.target,status:c?.status??'Not connected'}];
     }));
   }
   start(provider,player,runnerKey) {
@@ -64,7 +65,7 @@ export class ChatConnections {
     check(this.store.db.prepare('SELECT id FROM players WHERE id=? AND token=?').get(pending.player,pending.keyHash),'Runner sign-in changed. Reconnect.',401);
     const old=this.store.get('metadata',id(provider,pending.player));
     this.store.put('metadata',id(provider,pending.player),{kind:'chat-connection',player:pending.player,provider,connected:true,channelId:channel.id,name:provider==='twitch'?channel.display_name:channel.snippet.title,
-      target:provider==='twitch'?channel.id:null,enabled:false,cooldownSeconds:old?.cooldownSeconds??15,status:'Connected; enable chat replies when ready',
+      target:provider==='twitch'?channel.id:null,enabled:false,cooldownSeconds:old?.cooldownSeconds??15,announcements:old?.announcements??announcementDefaults(),status:'Connected; enable chat replies when ready',
       ...(provider==='youtube'?{accessToken:tokens.access_token,refreshToken:tokens.refresh_token}: {})});
   }
   async broadcasts(player) {
@@ -81,6 +82,8 @@ export class ChatConnections {
     this.config(provider);const key=id(provider,player.id),c=this.store.get('metadata',key);
     check(c?.connected,'Connect your channel first.');
     check(typeof input.enabled==='boolean'&&Number.isInteger(input.cooldownSeconds)&&input.cooldownSeconds>=5&&input.cooldownSeconds<=300,'Cooldown must be a whole number from 5 to 300 seconds.');
+    const announcements={...announcementDefaults(),...(input.announcements??c.announcements??{})};
+    check(announcements&&typeof announcements==='object'&&['gold','pb','wr','communityWr'].every(k=>typeof announcements[k]==='boolean')&&Object.keys(announcements).length===4,'Choose valid announcement settings.');
     if(provider==='youtube'&&input.enabled) {
       const selected=(await this.broadcasts(player)).find(b=>b.id===input.broadcastId);
       check(selected,'Select an active broadcast belonging to your connected channel.');
@@ -88,7 +91,7 @@ export class ChatConnections {
     }
     const latest=this.store.get('metadata',key);
     check(latest?.connected&&latest.channelId===c.channelId&&this.store.get('players',player.id),'Connection changed. Please refresh.',409);
-    this.store.put('metadata',key,{...latest,target:c.target,broadcastId:c.broadcastId,enabled:input.enabled,cooldownSeconds:input.cooldownSeconds,status:input.enabled?'Waiting for bot connection':'Replies disabled'});
+    this.store.put('metadata',key,{...latest,target:c.target,broadcastId:c.broadcastId,enabled:input.enabled,cooldownSeconds:input.cooldownSeconds,announcements,status:input.enabled?'Waiting for bot connection':'Replies disabled'});
     return this.view(player);
   }
   disconnect(provider,player) {

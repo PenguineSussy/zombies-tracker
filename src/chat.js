@@ -1,3 +1,4 @@
+import {startAnnouncements} from './announcements.js';
 import { parseCommand } from './domain.js';
 import {chatTargets,channelCooldown,connections} from './chat-connections.js';
 
@@ -66,7 +67,8 @@ export function startTwitch(store,env,log=console.log) {
   const responder=new ChatResponder(store,450,Date.now,channel=>channelCooldown(store,'twitch',channel),'twitch'), channels=chatTargets(store,env,'twitch');
   if(!channels.length)return ()=>{};
   const headers={'Client-Id':env.TWITCH_CLIENT_ID,'Content-Type':'application/json'};
-  let stopped=false, socket, pendingSocket, retryTimer, watchdog, failures=0, validationTimer;
+  let stopped=false, socket, pendingSocket, retryTimer, watchdog, failures=0, validationTimer, authorized=false;
+  const stopAnnouncements=startAnnouncements(store,'twitch',async(channel,message)=>{const r=await token.request('https://api.twitch.tv/helix/chat/messages',{method:'POST',headers,body:JSON.stringify({broadcaster_id:channel,sender_id:env.TWITCH_BOT_USER_ID,message})});if(!r.ok||(await r.json()).data?.[0]?.is_sent!==true)throw new Error('Announcement not sent');},()=>authorized&&!stopped);
   const retry=()=>{ if(!stopped) { clearTimeout(retryTimer); retryTimer=setTimeout(()=>connect(),Math.min(60000,1000*2**Math.min(failures++,6))); } };
   async function validate() {
     let r=await fetch('https://id.twitch.tv/oauth2/validate',{headers:{Authorization:`OAuth ${token.accessToken}`},signal:AbortSignal.timeout(10000)});
@@ -106,9 +108,9 @@ export function startTwitch(store,env,log=console.log) {
     ws.onerror=()=>ws.close();
     ws.onclose=()=>{ if(pendingSocket===ws) { pendingSocket=null; retry(); } else if(socket===ws && !pendingSocket) { clearTimeout(watchdog); retry(); } };
   }
-  void validate().then(()=>{ if(!stopped) connect(); }).catch(error=>log(error.message));
+  void validate().then(()=>{ if(!stopped) {authorized=true;connect();} }).catch(error=>log(error.message));
   validationTimer=setInterval(()=>void validate().catch(error=>{log(error.message); socket?.close();}),3600000);
-  return ()=>{stopped=true;clearTimeout(retryTimer);clearTimeout(watchdog);clearInterval(validationTimer);socket?.close();pendingSocket?.close();};
+  return ()=>{stopped=true;stopAnnouncements();clearTimeout(retryTimer);clearTimeout(watchdog);clearInterval(validationTimer);socket?.close();pendingSocket?.close();};
 }
 
 export function startYouTube(store,env,log=console.log) {
@@ -117,6 +119,7 @@ export function startYouTube(store,env,log=console.log) {
   const token=new OAuthToken({accessToken:saved.accessToken??env.YOUTUBE_ACCESS_TOKEN,refreshToken:saved.refreshToken??env.YOUTUBE_REFRESH_TOKEN,clientId:env.YOUTUBE_CLIENT_ID,clientSecret:env.YOUTUBE_CLIENT_SECRET,provider:'youtube'});
   token.onRefresh=value=>store.put('metadata','youtube-oauth',value);
   const responder=new ChatResponder(store,190,Date.now,channel=>channelCooldown(store,'youtube',channel),'youtube'), timers=new Set(); let stopped=false;
+  const stopAnnouncements=startAnnouncements(store,'youtube',async(chat,message)=>{const r=await token.request('https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({snippet:{liveChatId:chat,type:'textMessageEvent',textMessageDetails:{messageText:message}}})});if(!r.ok)throw new Error('Announcement not sent');});
   const schedule=(fn,ms)=>{const id=setTimeout(()=>{timers.delete(id);void fn();},ms);timers.add(id);};
   for(const chat of chatTargets(store,env,'youtube')) {
     let pageToken, initialized=false, failures=0;
@@ -149,7 +152,7 @@ export function startYouTube(store,env,log=console.log) {
     }
     void poll();
   }
-  return ()=>{stopped=true;for(const t of timers)clearTimeout(t);};
+  return ()=>{stopped=true;stopAnnouncements();for(const t of timers)clearTimeout(t);};
 }
 
 function connectionStatus(store,provider,target,status) {
