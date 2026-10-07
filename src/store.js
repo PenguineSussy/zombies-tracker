@@ -1,3 +1,4 @@
+import {capturePacePB,paceAnswer} from './pace.js';
 import {queueAnnouncements} from './announcements.js';
 import {splitName,resolveSplits,displayAttempt} from './split-rules.js';
 import { DatabaseSync } from 'node:sqlite';
@@ -111,7 +112,7 @@ export class Store {
       a = { ...s, id, player: p.id, sessionId: p.sessionId ?? a?.sessionId,
         startedAt: a?.startedAt ?? now, updatedAt: now,
         activityAt: s.phase==='Ended'&&a?.phase==='Ended'?(a.activityAt??a.observedAt??a.updatedAt):Math.min(now,s.observedAt),
-        benchmark: a ? a.benchmark : baseline ?? null, closed: false,
+        benchmark: a ? a.benchmark : baseline ?? null, pacePb: a ? a.pacePb : s.phase==='Ended'?null:capturePacePB(this,p,s,id), closed: false,
         notified: a?.notified ?? [] };
       // A reset ends the old attempt above, then reports an empty idle state in a new ID.
       if (a.phase === 'NotRunning') a.complete = false;
@@ -261,10 +262,7 @@ export class Store {
         return p.name+' | '+label+' | All-time split (segment): '+(rows.map(b=>(b.displayName??b.name)+': '+time(b.ms)+' ('+time(b.bestSegmentMs)+')').join(' · ')||'unavailable');
       }
       if (q.command === 'splits') return `${p.name} | ${label} | ${a?.splits.length ? a.splits.map(s => (s.displayName??s.name) + ' ' + time(s.ms)).join(' · ') : 'No checkpoints recorded.'}${a && !a.complete ? ' Partial history.' : ''}`;
-      if (q.command === 'pace') {
-        const ref = last && a.benchmark?.splits[last.name];
-        return `${p.name} | ${label} | ${ref == null ? 'WR checkpoint comparison unavailable.' : `${last.name} ${time(last.ms)}: ${time(Math.abs(ref-last.ms))} ${last.ms < ref ? 'ahead' : last.ms > ref ? 'behind' : 'level'} at this checkpoint. Benchmark: ${a.benchmark.source}`}${p.status === 'offline' ? ' Tracker offline; this is the last recorded attempt.' : ''}`;
-      }
+      if (q.command === 'pace') return paceAnswer(this,p);
       if (q.command === 'session') {
         return this.sessionAnswer(p);
       }

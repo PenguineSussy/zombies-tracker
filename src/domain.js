@@ -108,7 +108,7 @@ export function snapshot(input) {
   if(input.records != null) {
     check(Array.isArray(input.records.splits) && input.records.splits.length>0 && input.records.splits.length<=500,'Invalid saved splits.');
     const validTime=v=>{check(v==null || (Number.isSafeInteger(v)&&v>=0&&v<=604800000),'Invalid saved time.');return v??null;};
-    const saved=input.records.splits.map((s,i)=>{check(s.index===i,'Saved splits must be in order.');return {index:i,name:key(s.name),displayName:clean(s.name),bestSplitMs:validTime(s.bestSplitMs),bestSegmentMs:validTime(s.bestSegmentMs)};});
+    const saved=input.records.splits.map((s,i)=>{check(s.index===i,'Saved splits must be in order.');return {index:i,name:key(s.name),displayName:clean(s.name),pbSplitMs:validTime(s.pbSplitMs),bestSplitMs:validTime(s.bestSplitMs),bestSegmentMs:validTime(s.bestSegmentMs)};});
     check(new Set(saved.map(s=>s.name)).size===saved.length,'Saved split names must be unique.');
     result.records={pbMs:validTime(input.records.pbMs),splits:saved};
   }
