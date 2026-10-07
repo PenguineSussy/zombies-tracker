@@ -1,5 +1,11 @@
 # Changes
 
+## LiveSplit addon 0.2.8 — October 7, 2026
+
+- Background update checks in addon settings, without interrupting runs.
+- Signed-in website notices show the last reported addon version.
+- Important compatibility updates are highlighted; installation stays manual.
+
 ## LiveSplit addon 0.2.7 — October 7, 2026
 
 - Require a recognized BO3 game and supported map before uploading.

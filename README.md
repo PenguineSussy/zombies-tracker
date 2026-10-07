@@ -7,7 +7,7 @@ LiveSplit tracking and chat commands for **Call of Duty: Black Ops III Solo East
 ## Downloads
 
 
-- **[LiveSplit addon 0.2.7](https://github.com/PenguineSussy/zombies-tracker/releases/tag/livesplit-v0.2.7)** — for runners. Copy the DLL into LiveSplit.
+- **[LiveSplit addon 0.2.8](https://github.com/PenguineSussy/zombies-tracker/releases/tag/livesplit-v0.2.8)** — for runners. Copy the DLL into LiveSplit.
 - **[Bot 0.4.1](https://github.com/PenguineSussy/zombies-tracker/releases/tag/bot-v0.4.1)** — run your own tracker and chat service. Requires Node.js 24+ and your own platform credentials.
 
 
