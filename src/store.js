@@ -1,3 +1,4 @@
+import {recordActivity} from './activity.js';
 import {capturePacePB,paceAnswer} from './pace.js';
 import {queueAnnouncements} from './announcements.js';
 import {splitName,resolveSplits,displayAttempt} from './split-rules.js';
@@ -119,6 +120,7 @@ export class Store {
       check(s.observedAt <= now + 60000, 'Runner clock is ahead of server time.');
       p.profile = s.profile; p.activeAttempt = id; p.lastSeen = Math.min(now, s.observedAt);
       queueAnnouncements(this,p,a,previousAttempt);
+      recordActivity(this,p,a,previousAttempt,old);
       if(s.records && !s.practice) {
         const recordId=`saved-records:${p.id}:${profileKey(s.profile)}`;
         const previous=this.get('metadata',recordId);
