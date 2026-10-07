@@ -21,6 +21,7 @@ namespace LiveSplit.ZombiesTracker
     }
     public sealed class Snapshot
     {
+        public string addonVersion { get; set; }
         public string attemptId { get; set; }
         public int attemptCount { get; set; }
         public bool resetEvent { get; set; }
@@ -68,6 +69,7 @@ namespace LiveSplit.ZombiesTracker
             int index = idle ? -1 : state.CurrentSplitIndex;
             if (state.Run.Count > 500 || index > state.Run.Count) throw new InvalidOperationException("Unsupported split count/index (maximum 500).");
             var snapshot = new Snapshot {
+                addonVersion = AddonUpdates.InstalledVersion,
                 attemptId = id, attemptCount = state.Run.AttemptCount, sequence = sequence, profile = profile, phase = state.CurrentPhase.ToString(), index = index,
                 elapsedMs = idle ? 0 : (long)Math.Round(elapsed.Value.TotalMilliseconds), current = null,
                 splits = new List<Checkpoint>(), complete = !idle, practice = practice, suppressAlerts = suppress,
