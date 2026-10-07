@@ -8,9 +8,9 @@ function fixture(t){const store=new Store();t.after(()=>store.close());const {pl
 test('saved records work before a tracked run; preserve case and separate split from segment',t=>{
  const {store,send}=fixture(t);send();
  assert.match(store.answer('!best @runner ROCKET alltime'),/Rocket: 5:34 \(5:34\)/);
- assert.match(store.answer('!best @runner r7 alltime'),/R7: 6:45 \(1:00\)/);
+ assert.match(store.answer('!best @runner r7 alltime'),/Crackle: 6:45 \(1:00\)/);
  assert.match(store.answer('!pb @runner'),/27:05 \(LiveSplit Personal Best\)/);
- assert.match(store.answer('!splits @runner alltime'),/Rocket: 5:34 \(5:34\).*R7: 6:45 \(1:00\)/);
+ assert.match(store.answer('!splits @runner alltime'),/Rocket: 5:34 \(5:34\).*Crackle: 6:45 \(1:00\)/);
  assert.match(store.answer('!best @runner Rocket session'),/unavailable/);
 });
 test('records are isolated by category, runner and practice; invalid and stale uploads cannot change them',t=>{

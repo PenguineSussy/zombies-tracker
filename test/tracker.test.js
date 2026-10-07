@@ -37,7 +37,7 @@ test('two runners have isolated history and timing methods do not mix',t=>{
 });
 test('checkpoint completion uses actual split time rather than current elapsed timer',t=>{
   const {store,player}=fixture(t);store.ingest(player.id,event({index:2,elapsedMs:470000,current:'Next step',splits:[{index:0,name:'bow',ms:283000},{index:1,name:'crackle',ms:451000}]}));
-  const answer=store.answer('!current @Player1');assert.match(answer,/crackle at 7:31/);assert.match(answer,/Running at 7:50/);assert.match(answer,/Current: Next step/);
+  const answer=store.answer('!current @Player1');assert.match(answer,/Crackle at 7:31/);assert.match(answer,/Running at 7:50/);assert.match(answer,/Current: Next step/);
 });
 test('reset keeps session checkpoints; new session only resets session bests',t=>{
   const {store,player}=fixture(t);store.ingest(player.id,event());
