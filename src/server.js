@@ -54,7 +54,7 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
         const file=path==='/'?'index.html':path.slice(1);const content=await readFile(resolve(root,file));
         res.writeHead(200,{'Content-Type':file.endsWith('.png')?'image/png':file.endsWith('.js')?'text/javascript; charset=utf-8':file.endsWith('.css')?'text/css; charset=utf-8':'text/html; charset=utf-8'});res.end(content);return;
       }
-      if(req.method==='GET' && path==='/health')return send({ok:true,version:'0.4.0'});
+      if(req.method==='GET' && path==='/health')return send({ok:true,version:'0.4.1'});
       limit(req,'all',600);
       if(req.method==='GET' && path==='/api/catalog')return send({maps:ENABLED_MAPS,allMaps:MAPS,categories:CATEGORIES,categoriesByMap:Object.fromEntries(ENABLED_MAPS.map(m=>[m.id,categoriesForMap(m.id)])),integrations:{discord:!!env.DISCORD_PUBLIC_KEY,twitch:!!env.TWITCH_CHANNEL_IDS,youtube:!!env.YOUTUBE_LIVE_CHAT_IDS,therun:true}});
       if(req.method==='GET' && path==='/api/players')return send(store.list('players').filter(p=>p.public).slice(0,200).map(p=>({id:p.id,name:p.name,status:store.view(p.id).status,profile:p.profile,source:p.source?.type??'direct',streams:publicStreams(p,store.clock())})));
