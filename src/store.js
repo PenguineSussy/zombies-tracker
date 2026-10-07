@@ -119,6 +119,7 @@ export class Store {
       if (a.phase === 'NotRunning') a.complete = false;
       check(s.observedAt <= now + 60000, 'Runner clock is ahead of server time.');
       p.profile = s.profile; p.activeAttempt = id; p.lastSeen = Math.min(now, s.observedAt);
+      if(s.addonVersion && (p.source?.type??'direct')==='direct' && s.observedAt >= (p.addon?.reportedAt??0)) p.addon={version:s.addonVersion,reportedAt:Math.min(now,s.observedAt)};
       queueAnnouncements(this,p,a,previousAttempt);
       recordActivity(this,p,a,previousAttempt,old);
       if(s.records && !s.practice) {

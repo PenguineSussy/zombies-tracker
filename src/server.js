@@ -1,4 +1,5 @@
 import {runnerArchived} from './runner-visibility.js';
+import {addonRelease,addonStatus} from './addon-updates.js';
 import {publicActivity} from './activity.js';
 import {browserCookie,createBrowserSession,clearBrowserSession,browserSession,checkBrowserOrigin} from './browser-sessions.js';
 import http from 'node:http';
@@ -59,6 +60,7 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
       if(req.method==='GET' && path==='/health')return send({ok:true,version:'0.9.0'});
       limit(req,'all',600);
       if(req.method==='GET' && path==='/api/catalog')return send({maps:ENABLED_MAPS,allMaps:MAPS,categories:CATEGORIES,categoriesByMap:Object.fromEntries(ENABLED_MAPS.map(m=>[m.id,categoriesForMap(m.id)])),integrations:{discord:!!env.DISCORD_PUBLIC_KEY,twitch:!!env.TWITCH_CHANNEL_IDS,youtube:!!env.YOUTUBE_LIVE_CHAT_IDS,therun:true}});
+      if(req.method==='GET' && path==='/api/addon-release')return send(addonRelease);
       if(req.method==='GET' && path==='/api/activity')return send(publicActivity(store));
       if(req.method==='GET' && path==='/api/players')return send(store.list('players').filter(p=>p.public).slice(0,200).map(p=>runnerArchived(p,store.clock())?{id:p.id,name:p.name,status:'offline',lastSeen:p.lastSeen,archived:true}:({id:p.id,name:p.name,status:store.view(p.id).status,lastSeen:p.lastSeen,archived:false,profile:p.profile,source:p.source?.type??'direct',streams:publicStreams(p,store.clock())})));
       if(req.method==='GET' && path.startsWith('/api/players/')) {
@@ -97,7 +99,7 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
         if(req.method==='POST'&&operation==='settings'){const result=await chatbot.settings(provider,p,data);restartChat();return send(result);}
         if(req.method==='DELETE'&&!operation){const result=chatbot.disconnect(provider,p);restartChat();return send(result);}
       }
-      if(req.method==='GET'&&path==='/api/me')return send({...p,loginExpiresAt});
+      if(req.method==='GET'&&path==='/api/me')return send({...p,loginExpiresAt,addonUpdate:addonStatus(p)});
       if(req.method==='POST'&&path==='/api/me/streams')return send(store.streams(p,data));
       if(req.method==='POST'&&path==='/api/ingest'){check(!p.source||p.source.type==='direct','This runner uses therun.gg; switch to direct before sending LiveSplit updates.',409);return send(store.ingest(p.id,data));}
       if(req.method==='POST'&&path==='/api/me/privacy')return send(store.privacy(p,data.public));
