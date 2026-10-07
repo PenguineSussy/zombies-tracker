@@ -83,3 +83,7 @@ Close LiveSplit, replace `Components/LiveSplit.ZombiesTracker.dll` with the DLL 
 This version uploads the loaded split file's RTA Personal Best, best cumulative split times reconstructed from saved history, and Best Segment times. It reads these independently of the selected comparison and never writes comparisons or layout settings. Original split-name capitalization is preserved. Saved records synchronize when the addon connects, when run details change, and while idle/finished. Old files or deleted LiveSplit history cannot be recovered by the addon.
 
 Commands: `!best @name Rocket alltime`, `!splits @name alltime`, and `!pb @name`. Bests show cumulative split time followed by the segment time in parentheses. Missing values are reported as unavailable. Session statistics exclude imported history. PBs remain self-reported LiveSplit/tracker times, not verified leaderboard submissions.
+
+
+### 0.2.5 — attempt totals
+Reports LiveSplit Run.AttemptCount on each snapshot without changing the run. The website labels this as the total for the loaded splits, separate from tracked session attempts. Different split files can have different totals; counts are not added together. Close LiveSplit before replacing the component DLL.

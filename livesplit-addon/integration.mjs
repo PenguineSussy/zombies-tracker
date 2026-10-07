@@ -21,6 +21,8 @@ try{
  const attempt=seen.find(s=>s.phase==='Ended');
  assert.equal(attempt.profile.category,'No Gums');assert.equal(attempt.profile.timing,'RealTime');
  assert.equal(store.view(player.id).status,'NotRunning');
+ assert.ok(seen.some(s=>s.attemptCount>=34324),'native saved attempt count uploaded');
+ assert.ok(store.view(player.id).attempt.attemptCount>=34324,'attempt total persisted');
  assert.ok(seen.some(s=>s.attemptId==='offline-attempt'&&s.suppressAlerts),'recovered uploads suppress alerts');
  console.log(stdout.trim());console.log(`PASS native component → local HTTP → SQLite (${seen.length} events)`);
 }finally{await new Promise(r=>server.close(r));store.close();}

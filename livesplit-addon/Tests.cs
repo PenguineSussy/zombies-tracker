@@ -51,6 +51,9 @@ class Tests
             var run = new Run(new LiveSplit.Model.Comparisons.StandardComparisonGeneratorsFactory()); run.GameName = "Call of Duty: Black Ops III"; run.CategoryName = "Der Eisendrache - No Gums - Solo";
             run.Add(new Segment("Bow Done")); run.Add(new Segment("Crackle")); run.Add(new Segment("Boss"));
             var state = new LiveSplitState(run, null, null, null, null);
+            run.AttemptCount = 34324;
+            var countProbe = Protocol.Capture(state, new RunProfile { map="der-eisendrache", category="No Gums", players=1, timing="RealTime" }, "count-probe", 1, false, false);
+            Check(countProbe.attemptCount == 34324 && run.AttemptCount == 34324, "saved attempt count captured without mutation");
             var model = new TimerModel { CurrentState = state };
             using(var settingsProbe=new TrackerComponent(state)) {
                 var settingsDoc=new XmlDocument(); settingsDoc.LoadXml("<Settings><Enabled>False</Enabled><ProtectedToken>" + Convert.ToBase64String(Protection.Protect(Encoding.UTF8.GetBytes("synthetic-test-key"))) + "</ProtectedToken></Settings>");

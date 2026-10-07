@@ -14,7 +14,7 @@ using LiveSplit.Model;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;
 
-[assembly: AssemblyVersion("0.2.4.0")]
+[assembly: AssemblyVersion("0.2.5.0")]
 [assembly: ComponentFactory(typeof(LiveSplit.ZombiesTracker.Factory))]
 
 namespace LiveSplit.ZombiesTracker
@@ -28,7 +28,7 @@ namespace LiveSplit.ZombiesTracker
         public string UpdateName { get { return ComponentName; } }
         public string XMLURL { get { return ""; } }
         public string UpdateURL { get { return ""; } }
-        public Version Version { get { return new Version(0, 2, 4); } }
+        public Version Version { get { return new Version(0, 2, 5); } }
     }
     public sealed class AddonOptions
     {
@@ -80,7 +80,7 @@ namespace LiveSplit.ZombiesTracker
             timer.Start();
         }
         void Started(object sender, EventArgs e) { forceNew = true; Capture(true); }
-        void Reset(object sender, TimerPhase previous) { forceNew = true; frozen = null; Capture(true); }
+        void Reset(object sender, TimerPhase previous) { forceNew = true; frozen = null; Capture(true, true); }
         void Changed(object sender, EventArgs e) { Capture(true); }
         void Tick(object sender, EventArgs e)
         {
@@ -99,7 +99,7 @@ namespace LiveSplit.ZombiesTracker
             }
             return variables;
         }
-        void Capture(bool transition)
+        void Capture(bool transition, bool resetEvent = false)
         {
             if (disposed || !activated || runtime.Owner != this) return;
             try
@@ -130,6 +130,7 @@ namespace LiveSplit.ZombiesTracker
                     snapshot.records = Protocol.ReadRecords(state.Run);
                     lastRecords = DateTime.UtcNow;
                 }
+                snapshot.resetEvent = resetEvent;
                 uploader.Enqueue(snapshot);
                 sequence++; first = false; forceNew = false; suppressNext = false; lastPhase = phase; lastHeartbeat = DateTime.UtcNow;
                 runtime.Config=json.Serialize(options); runtime.Id=id; runtime.Identity=identity; runtime.LastPhase=lastPhase; runtime.Frozen=frozen;
@@ -191,7 +192,7 @@ namespace LiveSplit.ZombiesTracker
                 }
             }
             catch (Exception ex) { canSave = false; panel.StatusText = "Cannot save key: " + ex.Message; }
-            put("Version", "0.2.4"); put("Enabled", (options.Enabled && canSave).ToString()); put("Server", options.Server);
+            put("Version", "0.2.5"); put("Enabled", (options.Enabled && canSave).ToString()); put("Server", options.Server);
             put("ProtectedToken", protectedToken);
             put("Map", options.Map); put("Category", options.Category); put("Practice", options.Practice.ToString());
             return root;
