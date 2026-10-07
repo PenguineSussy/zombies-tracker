@@ -1,5 +1,14 @@
 # Changes
 
+## Bot 0.9.0 — October 7, 2026
+
+- Compact, automatically scrolling runner activity with pause and hide controls.
+- Public split, reset, finish and PB updates.
+- Four runners per page, name search and last-active details.
+- Offline activity is hidden after five minutes; archived run history stays private.
+- Inquiry links and corrected homepage wording.
+- Discord integration remains planned.
+
 ## Bot 0.4.1 — October 7, 2026
 
 - PB-based pace with reviewed, category-specific WR checkpoints.
@@ -15,3 +24,4 @@
 - Reads RTA, saved best splits, best segments and attempt totals.
 - Captures split, reset, undo and pause events without modifying comparisons.
 - Automatic map/category detection with manual overrides.
+
