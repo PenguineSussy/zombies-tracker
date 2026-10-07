@@ -47,9 +47,11 @@ $('two-streams').addEventListener('change',renderStreams);
 function renderSession(box,s){
   const section=node('section',null,'session-stats');section.append(node('h3',s?.active?'This session':'Last session'));
   if(!s){section.append(node('p','No recorded session yet.','muted'));box.append(section);return;}
-  section.append(node('p',`${format(s.durationMs)} elapsed · ${s.attempts} attempts · ${s.resets} observed resets`));
+  section.append(node('p',`${format(s.durationMs)} elapsed · ${s.attempts} tracked attempts · ${s.resets} session resets`));
+  if(s.reason==='inactive')section.append(node('p','Session ended after two hours without run activity. Duration stops at the last activity.','small muted'));
   if(s.current)section.append(node('p',`Currently: ${catalog.maps.find(m=>m.id===s.current.map)?.name??s.current.map} · ${s.current.category}`,'muted'));
   for(const g of s.groups){
+    if(!g.isCurrentProfile){section.append(node('p',`${catalog.allMaps.find(m=>m.id===g.profile.map)?.name??g.profile.map} · ${g.profile.category??'Legacy'} — Previously played · ${g.resets} session resets · ${format(g.durationMs)} tracked time`,'muted'));continue;}
     const group=node('details');group.append(node('summary',`${catalog.allMaps.find(m=>m.id===g.profile.map)?.name??g.profile.map} · ${g.profile.category??'Legacy'} · ${g.attempts} attempts`));
     group.append(node('p',`${g.finishes} complete finishes · Fastest: ${g.fastestMs==null?'not recorded':format(g.fastestMs)}`));
     const table=node('table'),head=node('tr');for(const label of ['Checkpoint','Average','Fastest','Samples'])head.append(node('th',label));table.append(head);
@@ -116,6 +118,7 @@ async function details(id){
   if(p.private){box.append(node('p','This runner is no longer sharing tracking data.','muted'));return;}
   box.append(node('p',`${p.status}${p.attempt?.current?' · Current: '+p.attempt.current:''}`,'muted'));
   if(p.attempt)box.append(node('p',`LiveSplit RTA at last update: ${format(p.attempt.elapsedMs)}${p.attempt.stageMap?' · '+catalog.maps.find(m=>m.id===p.attempt.stageMap)?.name:''}`,'muted'));
+  box.append(node('p',p.attempt?.attemptCount!=null?`LiveSplit total attempts (loaded splits): ${p.attempt.attemptCount.toLocaleString()}`:'LiveSplit total attempts: unavailable — update to addon 0.2.5.','muted'));
   renderSession(box,p.session);
   if(p.attempt?.splits.length){const table=node('table'),head=node('tr');head.append(node('th','Checkpoint'),node('th','Run time'));table.append(head);for(const split of p.attempt.splits){const row=node('tr');row.append(node('td',split.displayName??split.name),node('td',format(split.ms)));table.append(row);}box.append(table);}else box.append(node('p','No checkpoints recorded yet.','muted'));
   if(p.attempt?.practice)box.append(node('p','Practice attempt — excluded from records.','small muted'));
