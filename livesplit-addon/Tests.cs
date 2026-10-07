@@ -90,6 +90,7 @@ class Tests
             var history = Protocol.ReadRecords(historyRun);
             Check(history.splits[0].name == "Rocket" && history.splits[0].bestSplitMs == 334000 && history.splits[0].bestSegmentMs == 334000, "Rocket best is gold, not PB comparison");
             Check(history.splits[1].bestSplitMs == 405000 && history.splits[1].bestSegmentMs == 60000, "cumulative history and segment are independent; missing prefix excluded");
+            Check(history.splits[0].pbSplitMs == (long)historyRun[0].PersonalBestSplitTime.RealTime.Value.TotalMilliseconds, "PB checkpoint stays separate from best split and gold");
             Check(history.pbMs == 1625000, "PB from final Personal Best comparison");
             Check(historyRun[0].PersonalBestSplitTime.RealTime.Value.TotalSeconds == 355 && historyRun[0].BestSegmentTime.RealTime.Value.TotalSeconds == 334, "record reading does not mutate comparisons");
             model.Start(); Pump(40); model.Split();

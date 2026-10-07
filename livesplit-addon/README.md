@@ -87,3 +87,7 @@ Commands: `!best @name Rocket alltime`, `!splits @name alltime`, and `!pb @name`
 
 ### 0.2.5 — attempt totals
 Reports LiveSplit Run.AttemptCount on each snapshot without changing the run. The website labels this as the total for the loaded splits, separate from tracked session attempts. Different split files can have different totals; counts are not added together. Close LiveSplit before replacing the component DLL.
+
+### 0.2.6 — PB checkpoint pace
+
+Uploads each Personal Best comparison split in RTA, separately from best splits and gold segments. Read-only; no layout or comparison settings are changed. Close LiveSplit, replace the component DLL, reopen and reconnect to upload PB checkpoints for !pace.

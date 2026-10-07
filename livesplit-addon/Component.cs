@@ -14,7 +14,7 @@ using LiveSplit.Model;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;
 
-[assembly: AssemblyVersion("0.2.5.0")]
+[assembly: AssemblyVersion("0.2.6.0")]
 [assembly: ComponentFactory(typeof(LiveSplit.ZombiesTracker.Factory))]
 
 namespace LiveSplit.ZombiesTracker
@@ -192,7 +192,7 @@ namespace LiveSplit.ZombiesTracker
                 }
             }
             catch (Exception ex) { canSave = false; panel.StatusText = "Cannot save key: " + ex.Message; }
-            put("Version", "0.2.5"); put("Enabled", (options.Enabled && canSave).ToString()); put("Server", options.Server);
+            put("Version", "0.2.6"); put("Enabled", (options.Enabled && canSave).ToString()); put("Server", options.Server);
             put("ProtectedToken", protectedToken);
             put("Map", options.Map); put("Category", options.Category); put("Practice", options.Practice.ToString());
             return root;

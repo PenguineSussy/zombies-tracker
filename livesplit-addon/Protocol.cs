@@ -41,6 +41,7 @@ namespace LiveSplit.ZombiesTracker
     {
         public int index { get; set; }
         public string name { get; set; }
+        public long? pbSplitMs { get; set; }
         public long? bestSplitMs { get; set; }
         public long? bestSegmentMs { get; set; }
     }
@@ -116,7 +117,7 @@ namespace LiveSplit.ZombiesTracker
                     next[entry.Key] = total;
                 }
                 totals = next;
-                result.splits.Add(new SavedSplit { index = i, name = Clean(segment.Name), bestSplitMs = best, bestSegmentMs = Milliseconds(segment.BestSegmentTime.RealTime) });
+                result.splits.Add(new SavedSplit { index = i, name = Clean(segment.Name), pbSplitMs = Milliseconds(segment.PersonalBestSplitTime.RealTime), bestSplitMs = best, bestSegmentMs = Milliseconds(segment.BestSegmentTime.RealTime) });
             }
             return result;
         }
