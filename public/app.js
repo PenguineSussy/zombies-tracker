@@ -85,6 +85,7 @@ async function loadChatbot(){
     $(provider+'-status').textContent=c?.connected?`${c.name} · ${c.status}`:c&&!c.available?'Awaiting server setup':'Not connected';
     $(provider+'-enabled').checked=!!c?.enabled;
     $(provider+'-cooldown').value=c?.cooldownSeconds??15;
+    for(const type of ['gold','pb','wr','communityWr'])$(provider+'-announce-'+type).checked=c?.announcements?.[type]===true;
     if(provider==='youtube'){
       const option=node('option',c?.broadcastId?'Selected broadcast: '+c.broadcastId:'Find your active broadcast first');option.value=c?.broadcastId??'';$('youtube-broadcast').replaceChildren(option);
     }
@@ -93,7 +94,7 @@ async function loadChatbot(){
 for(const provider of ['twitch','youtube']){
   action('connect-'+provider,async()=>{requireLogin();const r=await api(`/api/me/chatbot/${provider}/connect`,{method:'POST',body:{}});location.assign(r.url);});
   action('disconnect-'+provider,async()=>{requireLogin();await api(`/api/me/chatbot/${provider}`,{method:'DELETE'});await loadChatbot();notice('Disconnected. Bot replies have been disabled for this connection.');});
-  action(provider+'-chat-form',async()=>{requireLogin();await api(`/api/me/chatbot/${provider}/settings`,{method:'POST',body:{enabled:$(provider+'-enabled').checked,cooldownSeconds:Number($(provider+'-cooldown').value),...(provider==='youtube'?{broadcastId:$('youtube-broadcast').value}:{})}});await loadChatbot();notice('Chatbot settings saved. Connection status updates after the bot joins.');},'submit');
+  action(provider+'-chat-form',async()=>{requireLogin();await api(`/api/me/chatbot/${provider}/settings`,{method:'POST',body:{enabled:$(provider+'-enabled').checked,cooldownSeconds:Number($(provider+'-cooldown').value),announcements:Object.fromEntries(['gold','pb','wr','communityWr'].map(type=>[type,$(provider+'-announce-'+type).checked])),...(provider==='youtube'?{broadcastId:$('youtube-broadcast').value}:{})}});await loadChatbot();notice('Chatbot settings saved. Connection status updates after the bot joins.');},'submit');
 }
 action('load-broadcasts',async()=>{requireLogin();const broadcasts=await api('/api/me/chatbot/youtube/broadcasts');const opts=broadcasts.map(b=>{const o=node('option',b.title);o.value=b.id;return o;});if(!opts.length){const o=node('option','No active broadcasts with live chat');o.value='';opts.push(o);}$('youtube-broadcast').replaceChildren(...opts);});
 function revealKey(value){$('new-key').textContent=value;$('new-key-box').hidden=false;}
