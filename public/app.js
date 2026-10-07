@@ -1,11 +1,11 @@
 import {streamCandidates,distinctSlots,playerUrl} from './watch.js?v=0.3.0';
 const $=id=>document.getElementById(id);
-let token=sessionStorage.getItem('runnerKey')??'', me=null, catalog, selected=new URLSearchParams(location.search).get('runner');
+let token='', me=null, loginExpiresAt=null, catalog, selected=new URLSearchParams(location.search).get('runner');
 const format=ms=>{const s=Math.floor(Math.abs(ms)/1000),h=Math.floor(s/3600);return `${ms<0?'-':''}${h?h+':'+String(Math.floor(s/60)%60).padStart(2,'0'):Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;};
 function notice(text,error=false){$('notice').textContent=text;$('notice').classList.toggle('error',error);$('notice').hidden=false;}
-async function api(path,{method='GET',body,key=token}={}){
+async function api(path,{method='GET',body,key=''}={}){
   const r=await fetch(path,{method,headers:{...(body?{'Content-Type':'application/json'}:{}),...(key?{Authorization:`Bearer ${key}`}:{})},...(body?{body:JSON.stringify(body)}:{})});
-  const data=await r.json();if(!r.ok)throw new Error(data.error??`Request failed (${r.status})`);return data;
+  const data=await r.json();if(!r.ok){if(r.status===401&&!key&&me){clearLogin();notice('Your saved sign-in has expired or is no longer valid. Enter your runner key to sign in again.',true);}const error=new Error(data.error??`Request failed (${r.status})`);error.status=r.status;throw error;}return data;
 }
 function action(id,fn,event='click'){$(id).addEventListener(event,async e=>{e.preventDefault();const target=e.submitter??(e.currentTarget.tagName==='BUTTON'?e.currentTarget:null);if(target)target.disabled=true;try{await fn();}catch(error){notice(error.message,true);}finally{if(target)target.disabled=false;}});}
 function node(tag,text,cls){const n=document.createElement(tag);if(text!=null)n.textContent=text;if(cls)n.className=cls;return n;}
@@ -71,7 +71,18 @@ function updateCategories(preferred=$('category').value){
 $('map').addEventListener('change',()=>updateCategories());
 function json(id){try{return JSON.parse($(id).value);}catch{throw new Error(`${id}: enter valid JSON.`);}}
 function requireLogin(){if(!me)throw new Error('Register or sign in with your runner key first.');}
-function saveKey(value){token=value;sessionStorage.setItem('runnerKey',value);$('runner-key').value='';}
+function rememberExpiry(value){try{if(value)localStorage.setItem('montyLoginExpires',String(value));else localStorage.removeItem('montyLoginExpires');sessionStorage.removeItem('runnerKey');}catch{}}
+function syncLoginUI(){
+  $('signed-out-panel').hidden=!!me;$('signed-in-panel').hidden=!me;
+  $('identity-heading').textContent=me?'Your account':'1. Create your tracker identity';
+  $('signed-in-name').textContent=me?'Signed in as '+me.name:'';
+}
+function expiryNote(){syncLoginUI();
+  $('login-status').textContent=loginExpiresAt?'Saved sign-in expires '+new Date(loginExpiresAt).toLocaleString()+'. '+(loginExpiresAt-Date.now()<=3*86400000?'Your sign-in expires soon. Keep your runner key ready to sign in again.':'You will need your runner key again after 30 days.'):'';
+}
+function clearLogin(){token='';me=null;loginExpiresAt=null;rememberExpiry(null);$('new-key').textContent='';$('new-key-box').hidden=true;$('runner-key').value='';$('account-state').textContent='Not signed in';$('source-status').textContent='';expiryNote();void loadChatbot();}
+async function saveKey(value){const result=await api('/api/login',{method:'POST',key:value});token='';loginExpiresAt=result.expiresAt;rememberExpiry(loginExpiresAt);$('runner-key').value='';expiryNote();}
+
 let chatConfig=null;
 async function loadChatbot(){
   if(!me){chatConfig=null;$('chatbot-login').textContent='Sign in with your runner key in LiveSplit to manage your channels.';}
@@ -100,8 +111,7 @@ action('load-broadcasts',async()=>{requireLogin();const broadcasts=await api('/a
 function revealKey(value){$('new-key').textContent=value;$('new-key-box').hidden=false;}
 function download(name,data){const link=node('a');const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 async function loadMe(){
-  if(!token)return;
-  me=await api('/api/me');$('account-state').textContent=`${me.name} · ${me.public?'Public':'Private'}`;
+  me=await api('/api/me');loginExpiresAt=me.loginExpiresAt;rememberExpiry(loginExpiresAt);expiryNote();$('account-state').textContent=`${me.name} · ${me.public?'Public':'Private'}`;
   $('privacy').textContent=me.public?'Make tracking private':'Make tracking public';
   $('source-status').textContent=`Source: ${me.source?.type??'direct'}${me.sourceError?' · '+me.sourceError:''}. Session: ${me.sessionStarted?new Date(me.sessionStarted).toLocaleString():'not started'}.`;
 }
@@ -127,20 +137,23 @@ async function details(id){
 }
 action('refresh',refresh);
 action('query-form',async()=>{$('answer').textContent=(await api('/api/query',{method:'POST',body:{command:$('command').value}})).reply;},'submit');
-action('register-form',async()=>{const result=await api('/api/register',{method:'POST',body:{username:$('username').value},key:''});saveKey(result.token);revealKey(result.token);await loadMe();await refresh();notice('Account created. Save your private runner key, then configure your data source.');},'submit');
-action('login-form',async()=>{const candidate=$('runner-key').value.trim();await api('/api/me',{key:candidate});saveKey(candidate);await loadMe();if(me.profile)for(const [k,v]of Object.entries(me.profile))if($(k))$(k).value=v;updateCategories(me.profile?.category);fillStreams();notice('Signed in.');},'submit');
+action('register-form',async()=>{const result=await api('/api/register',{method:'POST',body:{username:$('username').value},key:''});await saveKey(result.token);revealKey(result.token);await loadMe();await refresh();notice('Account created. Save your private runner key, then configure your data source.');},'submit');
+action('login-form',async()=>{const candidate=$('runner-key').value.trim();await api('/api/me',{key:candidate});await saveKey(candidate);await loadMe();if(me.profile)for(const [k,v]of Object.entries(me.profile))if($(k))$(k).value=v;updateCategories(me.profile?.category);fillStreams();notice('Signed in for 30 days on this browser. Keep your runner key for your next sign-in.');},'submit');
 action('copy-key',async()=>{await navigator.clipboard.writeText($('new-key').textContent);notice('Runner key copied.');});
 action('enable-addon',async()=>{requireLogin();await api('/api/me/source',{method:'POST',body:{type:'direct'}});await loadMe();notice('LiveSplit upload enabled. Paste your runner key into the addon, enable uploads, and Apply. Use only one data source.');});
 action('connect-therun',async()=>{requireLogin();await api('/api/me/source',{method:'POST',body:{type:'therun',username:$('therun-user').value,game:$('therun-game').value,category:$('therun-category').value,variables:json('therun-variables'),aliases:json('aliases'),profile:profile(),practice:$('practice').checked}});await loadMe();notice('therun.gg source saved. Matching public live updates are checked about every 15 seconds.');});
 for(const mode of ['start','end'])action(mode+'-session',async()=>{requireLogin();await api('/api/me/session',{method:'POST',body:{action:mode}});await loadMe();notice(mode==='start'?'New session started.':'Session ended. Disable addon uploads or disconnect therun.gg to keep it ended.');});
 action('privacy',async()=>{requireLogin();await api('/api/me/privacy',{method:'POST',body:{public:!me.public}});await loadMe();await refresh();notice(me.public?'Public tracking enabled.':'Tracking is private; chat queries and new role alerts are hidden.');});
 action('export',async()=>{requireLogin();download(me.id+'-history.json',await api('/api/me/history'));});
-action('rotate',async()=>{requireLogin();const r=await api('/api/me/rotate',{method:'POST',body:{}});saveKey(r.token);revealKey(r.token);notice('Key rotated. Old keys no longer work. Update your key in the LiveSplit addon.');});
-action('logout',async()=>{token='';me=null;sessionStorage.removeItem('runnerKey');$('new-key').textContent='';$('new-key-box').hidden=true;$('account-state').textContent='Not signed in';$('source-status').textContent='';await loadChatbot();notice('Signed out of this tab.');});
+action('rotate',async()=>{requireLogin();const r=await api('/api/me/rotate',{method:'POST',body:{}});await saveKey(r.token);revealKey(r.token);notice('Key rotated. Old keys no longer work. Update your key in the LiveSplit addon.');});
+action('logout',async()=>{await api('/api/logout',{method:'POST'});clearLogin();notice('Signed out. This browser will ask for your runner key next time.');});
 action('delete',async()=>{requireLogin();if($('delete-name').value.toLowerCase()!==me.id)throw new Error('Type your tracker username to confirm deletion.');await api('/api/me',{method:'DELETE'});$('logout').click();await refresh();notice('Account and recorded history deleted.');});
-async function init(){catalog=await api('/api/catalog');for(const m of catalog.maps){const o=node('option',m.name);o.value=m.id;$('map').append(o);}$('map').value='der-eisendrache';updateCategories();$('server-state').textContent='Tracker online';if(token)try{await loadMe();fillStreams();}catch{token='';sessionStorage.removeItem('runnerKey');}await refresh();}
+async function init(){catalog=await api('/api/catalog');for(const m of catalog.maps){const o=node('option',m.name);o.value=m.id;$('map').append(o);}$('map').value='der-eisendrache';updateCategories();$('server-state').textContent='Tracker online';try{let legacy;try{legacy=sessionStorage.getItem('runnerKey');}catch{}if(legacy)await saveKey(legacy);await loadMe();fillStreams();}catch(error){if(error.status===401){let wasSaved=false;try{wasSaved=!!localStorage.getItem('montyLoginExpires');}catch{}clearLogin();if(wasSaved)notice('Your saved sign-in has expired or is no longer valid. Sign in again with your runner key.',true);}else throw error;}await refresh();}
 void init().then(async()=>{await loadChatbot();if(location.hash==='#integrations')showTab('integrations');const q=new URLSearchParams(location.search);if(q.has('chatbot')){notice(q.get('chatbot')==='connected'?'Channel connected. Enable replies when ready.':q.get('reason')??'Connection failed.',q.get('chatbot')!=='connected');history.replaceState(null,'','/#integrations');}}).catch(e=>notice(e.message,true));
 setInterval(()=>{if(!document.hidden&&catalog){void refresh().catch(()=>{$('server-state').textContent='Connection unavailable';});if(me)void loadMe().catch(()=>{});}},10000);
 
 
 
+
+window.addEventListener('storage',e=>{if(e.key==='montyLoginExpires'){if(!e.newValue){if(me){clearLogin();notice('Signed out in another tab.');}}else void loadMe().catch(()=>{});}});
+setInterval(()=>{if(me&&loginExpiresAt){if(Date.now()>=loginExpiresAt){clearLogin();notice('Your 30-day sign-in has expired. Enter your runner key to sign in again.',true);}else expiryNote();}},10000);
