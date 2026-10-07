@@ -6,3 +6,9 @@ companion/state.json
 
 livesplit-addon/test-bin/
 livesplit-addon/dist/
+
+work-*.mjs
+*.sqlite*
+.env.*
+!.env.example
+release-staging/

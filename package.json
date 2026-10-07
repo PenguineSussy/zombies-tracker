@@ -1,9 +1,11 @@
 {
   "name": "zombies-tracker",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=24.0.0" },
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
     "start": "node --env-file-if-exists=.env src/server.js",
     "test": "node --test",
@@ -12,5 +14,3 @@
     "discord:register": "node --env-file-if-exists=.env scripts/register-discord.js"
   }
 }
-
-
