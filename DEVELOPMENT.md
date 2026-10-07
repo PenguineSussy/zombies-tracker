@@ -28,3 +28,8 @@ Distribute only the DLL from `livesplit-addon/dist/`. Test binaries use test-onl
 ## Public packages
 
 The bot package includes runnable source, tests and blank configuration. The addon package includes the production DLL, installation guide and buildable source. Private configuration, databases, keys, logs, test binaries and one-off maintenance files are excluded.
+# Addon release notices
+
+`src/addon-updates.js` is the public release manifest. Update `latestVersion`, `minimumVersion`, the release link and message only when the tested ZIP and GitHub release are available. The minimum version controls an important-update notice; it does not reject uploads. Keep these values unchanged for an unreleased development build.
+
+Addon 0.2.8 adds background checks and reports its version with snapshots. Older versions cannot show these notices inside LiveSplit. The website treats their unreported version as unknown. Version details are returned only to the signed-in runner.

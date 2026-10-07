@@ -1,4 +1,4 @@
-# Dr Monty Bot — LiveSplit addon 0.2.7
+# Dr Monty Bot — LiveSplit addon 0.2.8
 
 Tracks Black Ops III Solo Easter Egg runs in RTA. No separate companion or terminal is needed.
 
@@ -12,6 +12,12 @@ Tracks Black Ops III Solo Easter Egg runs in RTA. No separate companion or termi
 6. Check the detected map/category before starting. Use Practice for test runs.
 
 Your key is encrypted for your Windows account. Do not share configured layouts or keys. Updates are installed manually while LiveSplit is closed.
+
+## Update notices
+
+The addon checks the configured tracker server for release information at startup and every six hours. Open its layout settings to see the installed version, update status and download link. No pop-up interrupts your timer; failed checks do not stop tracking. Downloads are always opened from the official Dr Monty site.
+
+Uploads include the addon version. Your signed-in website shows the last reported version and highlights important compatibility updates. Older addons show an unknown version until you install a version that reports it. Updates are manual: finish your run, save your layout and splits, close LiveSplit and replace the DLL.
 
 ## Map and category detection
 

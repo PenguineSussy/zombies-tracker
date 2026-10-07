@@ -8,7 +8,7 @@ Copy-Item -LiteralPath "$PSScriptRoot\dist\LiveSplit.ZombiesTracker.dll" -Destin
 # Test dependencies stay in test-bin, never in the distributable archive.
 Get-ChildItem -LiteralPath $LiveSplitDir -Filter '*.dll' | Copy-Item -Destination $testDir -Force
 $refs = @('LiveSplit.Core.dll','UpdateManager.dll','SpeedrunComSharp.dll') | ForEach-Object { '/r:' + (Join-Path $LiveSplitDir $_) }
-& $compiler /nologo /target:library /define:TESTING /platform:anycpu "/out:$testDir\LiveSplit.ZombiesTracker.dll" /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Web.Extensions.dll /r:System.Net.Http.dll /r:System.Security.dll $refs "$PSScriptRoot\Detection.cs" "$PSScriptRoot\Protocol.cs" "$PSScriptRoot\UploadQueue.cs" "$PSScriptRoot\Component.cs" "$PSScriptRoot\Protection.cs"
+& $compiler /nologo /target:library /define:TESTING /platform:anycpu "/out:$testDir\LiveSplit.ZombiesTracker.dll" /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Web.Extensions.dll /r:System.Net.Http.dll /r:System.Security.dll $refs "$PSScriptRoot\AddonUpdates.cs" "$PSScriptRoot\Detection.cs" "$PSScriptRoot\Protocol.cs" "$PSScriptRoot\UploadQueue.cs" "$PSScriptRoot\Component.cs" "$PSScriptRoot\Protection.cs"
 if ($LASTEXITCODE -ne 0) { throw 'Test component compilation failed.' }
 & $compiler /nologo /target:exe /platform:anycpu "/out:$testDir\Tests.exe" /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Security.dll "/r:$testDir\LiveSplit.ZombiesTracker.dll" $refs "$PSScriptRoot\Tests.cs"
 if ($LASTEXITCODE -ne 0) { throw 'Test compilation failed.' }

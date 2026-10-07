@@ -112,8 +112,21 @@ function revealKey(value){$('new-key').textContent=value;$('new-key-box').hidden
 function download(name,data){const link=node('a');const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 async function loadMe(){
   me=await api('/api/me');loginExpiresAt=me.loginExpiresAt;rememberExpiry(loginExpiresAt);expiryNote();$('account-state').textContent=`${me.name} · ${me.public?'Public':'Private'}`;
+  renderAddonUpdate(me.addonUpdate);
   $('privacy').textContent=me.public?'Make tracking private':'Make tracking public';
   $('source-status').textContent=`Source: ${me.source?.type??'direct'}${me.sourceError?' · '+me.sourceError:''}. Session: ${me.sessionStarted?new Date(me.sessionStarted).toLocaleString():'not started'}.`;
+}
+function renderAddonUpdate(update){
+  const box=$('addon-update');box.replaceChildren();box.hidden=!update||me?.source?.type==='therun';if(box.hidden)return;
+  box.classList.toggle('important',update.state==='required');
+  const title=update.state==='required'?'Important addon update':update.state==='available'?'Addon update available':update.state==='unknown'?'Check your LiveSplit addon version':'LiveSplit addon is up to date';
+  box.append(node('strong',title));
+  box.append(node('p',update.installedVersion?`Last reported: ${update.installedVersion} · Latest release: ${update.latestVersion}`:`Latest release: ${update.latestVersion}. Your addon has not reported a version yet. Older addons cannot report their version.`,'small'));
+  if(update.lastReportedAt)box.append(node('p','Reported '+new Date(update.lastReportedAt).toLocaleString(),'small muted'));
+  if(update.state!=='current'){
+    box.append(node('p',update.message+' Save your splits and layout, close LiveSplit, replace the DLL, then reopen it.','small'));
+    const link=node('a','Download latest addon');link.href='/downloads/Zombies-Tracker-LiveSplit.zip';link.className='button';box.append(link);
+  }
 }
 function showTab(id){document.querySelectorAll('.panel').forEach(p=>p.hidden=p.id!==id);document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('selected',t.dataset.tab===id));}
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{showTab(t.dataset.tab);if(t.dataset.tab==='integrations')void loadChatbot().catch(e=>notice(e.message,true));}));

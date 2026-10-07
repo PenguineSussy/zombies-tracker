@@ -1,3 +1,4 @@
+import {validAddonVersion} from './addon-updates.js';
 export const MAPS = [
   ['super-easter-egg', 'Super Easter Egg (6 maps)'],
   ['shadows-of-evil', 'Shadows of Evil'], ['the-giant', 'The Giant'],
@@ -93,6 +94,7 @@ export function snapshot(input) {
     current: input.current && input.current !== '-' ? clean(input.current) : null,
     splits, practice: input.practice === true, complete: input.complete === true, suppressAlerts: input.suppressAlerts === true,
     observedAt: Number.isSafeInteger(input.observedAt) ? input.observedAt : Date.now() };
+  if(input.addonVersion!=null){check(validAddonVersion(input.addonVersion),'Invalid addon version.');result.addonVersion=input.addonVersion;}
   if (result.phase === 'NotRunning') check(splits.length === 0, 'Idle snapshots cannot contain splits.');
   result.complete = result.complete && result.index >= 0 && result.splits.length === result.index;
   if(result.profile.map==='super-easter-egg') {

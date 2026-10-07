@@ -22,6 +22,10 @@ class Tests
     {
         try
         {
+            Check(AddonUpdates.Describe("0.2.8","0.2.9","0.2.7").Contains("is available"),"optional update notice");
+            Check(AddonUpdates.Describe("0.2.6","0.2.9","0.2.7").Contains("Important update"),"important update notice");
+            Check(AddonUpdates.Describe("0.2.10","0.2.9","0.2.7").Contains("up to date"),"numeric version ordering");
+            bool invalidRelease=false;try{AddonUpdates.Describe("0.2.8","bad","0.2.7");}catch{invalidRelease=true;}Check(invalidRelease,"invalid manifest rejected");
             foreach (var map in Detector.Maps.Where(m => m.Enabled && m.Id != "super-easter-egg")) Check(Detect(map.Name + " Any% Solo").Map == map.Id, "map " + map.Name);
             Check(!Detector.CategoriesForMap("zetsubou-no-shima").Contains("No Gums"), "ZNS category restriction");
             Check(!Detector.CategoriesForMap("super-easter-egg").Contains("No Gums"), "Super EE category restriction");
@@ -61,6 +65,7 @@ class Tests
             var state = new LiveSplitState(run, null, null, null, null);
             run.AttemptCount = 34324;
             var countProbe = Protocol.Capture(state, new RunProfile { map="der-eisendrache", category="No Gums", players=1, timing="RealTime" }, "count-probe", 1, false, false);
+            Check(countProbe.addonVersion==AddonUpdates.InstalledVersion,"snapshots report addon version");
             Check(countProbe.attemptCount == 34324 && run.AttemptCount == 34324, "saved attempt count captured without mutation");
             var model = new TimerModel { CurrentState = state };
             using(var settingsProbe=new TrackerComponent(state)) {

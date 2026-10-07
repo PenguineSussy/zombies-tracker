@@ -14,7 +14,7 @@ using LiveSplit.Model;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;
 
-[assembly: AssemblyVersion("0.2.7.0")]
+[assembly: AssemblyVersion("0.2.8.0")]
 [assembly: ComponentFactory(typeof(LiveSplit.ZombiesTracker.Factory))]
 
 namespace LiveSplit.ZombiesTracker
@@ -28,7 +28,7 @@ namespace LiveSplit.ZombiesTracker
         public string UpdateName { get { return ComponentName; } }
         public string XMLURL { get { return ""; } }
         public string UpdateURL { get { return ""; } }
-        public Version Version { get { return new Version(0, 2, 7); } }
+        public Version Version { get { return new Version(0, 2, 8); } }
     }
     public sealed class AddonOptions
     {
@@ -50,6 +50,7 @@ namespace LiveSplit.ZombiesTracker
         readonly LiveSplitState state;
         readonly SettingsPanel panel;
         readonly Timer timer;
+        readonly AddonUpdates updates = new AddonUpdates();
         AddonOptions options = new AddonOptions();
         UploadQueue uploader;
         readonly JavaScriptSerializer json = new JavaScriptSerializer();
@@ -85,6 +86,7 @@ namespace LiveSplit.ZombiesTracker
         void Tick(object sender, EventArgs e)
         {
             if (!activated || disposed || runtime.Owner != this) return;
+            updates.Tick(options.Server); panel.UpdateText = updates.Status;
             try { EnsureUploader(); } catch (Exception ex) { panel.StatusText = "Connection waiting: " + ex.Message; return; }
             if ((DateTime.UtcNow - lastHeartbeat).TotalSeconds >= 5) Capture(false);
             if (uploader != null) uploader.Flush();
@@ -192,7 +194,7 @@ namespace LiveSplit.ZombiesTracker
                 }
             }
             catch (Exception ex) { canSave = false; panel.StatusText = "Cannot save key: " + ex.Message; }
-            put("Version", "0.2.7"); put("Enabled", (options.Enabled && canSave).ToString()); put("Server", options.Server);
+            put("Version", "0.2.8"); put("Enabled", (options.Enabled && canSave).ToString()); put("Server", options.Server);
             put("ProtectedToken", protectedToken);
             put("Map", options.Map); put("Category", options.Category); put("Practice", options.Practice.ToString());
             return root;
@@ -233,7 +235,7 @@ namespace LiveSplit.ZombiesTracker
             disposed = true; timer.Stop(); timer.Dispose();
             state.OnStart -= Started; state.OnSplit -= Changed; state.OnUndoSplit -= Changed; state.OnSkipSplit -= Changed;
             state.OnPause -= Changed; state.OnResume -= Changed; state.OnUndoAllPauses -= Changed; state.OnReset -= Reset;
-            if (uploader != null) uploader.Dispose(); panel.Dispose();
+            updates.Dispose(); if (uploader != null) uploader.Dispose(); panel.Dispose();
         }
     }
     public sealed class SettingsPanel : UserControl
@@ -246,6 +248,8 @@ namespace LiveSplit.ZombiesTracker
         readonly CheckBox practice = new CheckBox { Text = "Practice (excluded from records and alerts)", AutoSize = true };
         readonly Label detection = new Label { AutoSize = true, MaximumSize = new Size(450, 0) };
         readonly Label status = new Label { AutoSize = true, MaximumSize = new Size(450, 0) };
+        readonly Label updateStatus = new Label { AutoSize = true, MaximumSize = new Size(450, 0) };
+        public string UpdateText { set { updateStatus.Text = value; } }
         public string DetectionText { set { detection.Text = value; } }
         public string StatusText { set { status.Text = value; } }
         public SettingsPanel(Action<AddonOptions> apply, Action clear)
@@ -255,6 +259,10 @@ namespace LiveSplit.ZombiesTracker
             Controls.Add(table);
             Action<Control> add = control => { control.Margin = new Padding(3, 4, 3, 4); control.Width = 450; table.Controls.Add(control); };
             add(new Label { Text = "Solo BO3 Easter Egg Speedruns / RTA", AutoSize = true });
+            add(updateStatus);
+            var updateLink = new LinkLabel { Text = "Download latest addon (close LiveSplit before installing)", AutoSize = true };
+            updateLink.LinkClicked += delegate { Try(delegate { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(AddonUpdates.DownloadUrl) { UseShellExecute = true }); }); };
+            add(updateLink);
             add(enabled); add(new Label { Text = "Tracker server", AutoSize = true }); add(server);
             add(new Label { Text = "Private runner key (encrypted for this Windows account)", AutoSize = true }); add(token);
             add(new Label { Text = "Map", AutoSize = true }); map.Items.Add("Automatic detection"); foreach (var m in Detector.Maps.Where(m => m.Enabled)) map.Items.Add(m); map.SelectedIndex = 0; add(map);
