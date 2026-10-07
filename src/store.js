@@ -311,7 +311,7 @@ export class Store {
       for (const job of this.list('outbox')) if (job.player === p.id) this.db.prepare('DELETE FROM outbox WHERE id=?').run(job.id);
       for (const sub of this.list('subscriptions')) if (sub.player === p.id) this.db.prepare('DELETE FROM subscriptions WHERE id=?').run(sub.id);
       this.db.prepare('DELETE FROM players WHERE id=?').run(p.id);
-      for(const row of this.list('metadata'))if(['saved-records','chat-announcement'].includes(row.kind)&&row.player===p.id)this.db.prepare('DELETE FROM metadata WHERE id=?').run(row.id);
+      for(const row of this.list('metadata'))if(['saved-records','chat-announcement','browser-session'].includes(row.kind)&&row.player===p.id)this.db.prepare('DELETE FROM metadata WHERE id=?').run(row.id);
     });
   }
 }

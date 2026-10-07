@@ -39,7 +39,7 @@ export class ChatConnections {
     check(this.pending.size<1000,'Please try connecting again later.',429);
     const state=randomBytes(32).toString('base64url'),cookie=randomBytes(32).toString('base64url');
     const callback=`${origin.origin}/api/chatbot/callback/${provider}`;
-    this.pending.set(state,{provider,player:player.id,keyHash:digest(runnerKey),cookieHash:digest(cookie),callback,expires:Date.now()+600000});
+    this.pending.set(state,{provider,player:player.id,keyHash:this.store.db.prepare('SELECT token FROM players WHERE id=?').get(player.id).token,cookieHash:digest(cookie),callback,expires:Date.now()+600000});
     const query=new URLSearchParams({client_id:config.clientId,redirect_uri:callback,response_type:'code',state,scope:provider==='twitch'?'channel:bot':'https://www.googleapis.com/auth/youtube.readonly'});
     if(provider==='youtube'){query.set('access_type','offline');query.set('prompt','select_account consent');}else query.set('force_verify','true');
     return {url:(provider==='twitch'?'https://id.twitch.tv/oauth2/authorize?':'https://accounts.google.com/o/oauth2/v2/auth?')+query,cookie:`chat_oauth_${provider}=${cookie}; HttpOnly; SameSite=Lax; Path=/api/chatbot/callback/${provider}; Max-Age=600${origin.protocol==='https:'?'; Secure':''}`};

@@ -1,3 +1,4 @@
+import {browserCookie,createBrowserSession,clearBrowserSession,browserSession,checkBrowserOrigin} from './browser-sessions.js';
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -79,7 +80,10 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
         if(req.method==='GET' && path==='/api/admin/benchmarks')return send(store.list('benchmarks'));
         check(false,'Not found.',404);
       }
-      const p=store.authenticate(token);
+      if(req.method==='POST'&&path==='/api/login') {limit(req,'login',20);checkBrowserOrigin(req,env);const p=store.authenticate(token);const session=createBrowserSession(store,req,p);res.setHeader('Set-Cookie',browserCookie(session.value,env));return send({expiresAt:session.expiresAt});}
+      if(req.method==='POST'&&path==='/api/logout') {checkBrowserOrigin(req,env);clearBrowserSession(store,req);res.setHeader('Set-Cookie',browserCookie('',env,true));return send({signedOut:true});}
+      let loginExpiresAt=null;
+      const p=token?store.authenticate(token):(()=>{const session=browserSession(store,req);checkBrowserOrigin(req,env);loginExpiresAt=session.expiresAt;return session.player;})();
       if(req.method==='GET'&&path==='/api/me/chatbot')return send(chatbot.view(p));
       if(req.method==='GET'&&path==='/api/me/chatbot/youtube/broadcasts'){limit(req,'broadcasts',10);return send(await chatbot.broadcasts(p));}
       if(path.startsWith('/api/me/chatbot/')) {
@@ -89,7 +93,7 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
         if(req.method==='POST'&&operation==='settings'){const result=await chatbot.settings(provider,p,data);restartChat();return send(result);}
         if(req.method==='DELETE'&&!operation){const result=chatbot.disconnect(provider,p);restartChat();return send(result);}
       }
-      if(req.method==='GET'&&path==='/api/me')return send(p);
+      if(req.method==='GET'&&path==='/api/me')return send({...p,loginExpiresAt});
       if(req.method==='POST'&&path==='/api/me/streams')return send(store.streams(p,data));
       if(req.method==='POST'&&path==='/api/ingest'){check(!p.source||p.source.type==='direct','This runner uses therun.gg; switch to direct before sending LiveSplit updates.',409);return send(store.ingest(p.id,data));}
       if(req.method==='POST'&&path==='/api/me/privacy')return send(store.privacy(p,data.public));
