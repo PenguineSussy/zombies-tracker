@@ -229,10 +229,10 @@ export class Store {
   answer(input) {
     const q = typeof input === 'string' ? parseCommand(input) : input;
     if (!q) return null;
-    if (q.command === 'help') return 'Commands: !current @player | !best @player bow session/alltime | !splits @player | !pace @player | !pb [@player] [map] [category] | !wr <map> [category] (default: Mega Gums) | !splits @player alltime | !session @player | !sessionpb [@player]. Use registered tracker usernames.';
+    if (q.command === 'help') return 'Commands: !current @player | !best @player bow session/alltime | !splits @player | !pace @player | !pb [@player] [map] [category] | !wr <map> [category] (default: Mega Gums) | !splits @player alltime | !session @player | !sessionpb [@player]. In linked chats, omit @player for the channel runner. Add @player for anyone else. WR uses a map.';
     try {
       if(q.error)return q.error;
-      if(['pb','sessionpb'].includes(q.command)&&!q.player)return 'This chat is not linked to a runner. Use !pb @runner DE, or connect your channel on the Chatbot page.';
+      if(q.command!=='wr'&&!q.player)return 'This chat is not linked to a runner. Add @runner to your command, or connect your channel on the Chatbot page.';
       if(q.command==='wr') {
         if(q.error) return q.error;
         const selected=profile(q.profile);

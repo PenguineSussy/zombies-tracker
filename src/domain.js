@@ -115,7 +115,7 @@ export function snapshot(input) {
   return result;
 }
 
-export function parseCommand(text) {
+export function parseCommand(text, defaultPlayer) {
   const words = String(text).trim().match(/"[^"]+"|\S+/g)?.map(s => s.replace(/^"|"$/g, '')) ?? [];
   if (words[0]?.startsWith('@')) words.shift();
   const command = words.shift()?.toLowerCase();
@@ -144,8 +144,8 @@ export function parseCommand(text) {
     if(!category) return {command:'wr',error:'Choose No Gums, Classic Gums, Mega Gums, or Any%.'};
     return {command:'wr',profile:{map:match.map,category}};
   }
-  const player = words.shift()?.replace(/^@/, '').toLowerCase();
-  if (!player || !/^[a-z0-9_]{3,30}$/.test(player)) return { command: 'help' };
+  const player = defaultPlayer!==undefined&&!words[0]?.startsWith('@')?(defaultPlayer??undefined):words.shift()?.replace(/^@/, '').toLowerCase();
+  if (player && !/^[a-z0-9_]{3,30}$/.test(player)) return { command: 'help' };
   let scope = 'session';
   if (['session', 'alltime'].includes(words.at(-1)?.toLowerCase())) scope = words.pop().toLowerCase();
   return { command: command.slice(1), player, split: words.join(' '), scope };

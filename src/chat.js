@@ -10,13 +10,14 @@ export class ChatResponder {
     for(const [id,at] of this.cooldowns) if(now-at>600000) this.cooldowns.delete(id);
     if(this.ids.has(messageId)) return null;
     this.ids.set(messageId,now);
-    const command=parseCommand(text); if(!command) return null;
+    const owners=this.provider?connections(this.store).filter(c=>c.provider===this.provider&&c.target===channel&&c.connected&&c.enabled&&this.store.get('players',c.player)):[];
+    const defaultPlayer=owners.length===1?owners[0].player:undefined;
+    const command=parseCommand(text,this.provider?(defaultPlayer??null):undefined); if(!command) return null;
     const userKey=`${channel}:${sender}`, channelKey=`channel:${channel}`;
     if(now-(this.cooldowns.get(userKey)??-Infinity)<5000 || now-(this.cooldowns.get(channelKey)??-Infinity)<this.cooldown(channel)*1000 || now-(this.cooldowns.get('global')??-Infinity)<1600) return null;
     this.cooldowns.set(userKey,now); this.cooldowns.set(channelKey,now); this.cooldowns.set('global',now);
     if(['pb','sessionpb'].includes(command.command)&&!command.player&&this.provider) {
-      const owners=connections(this.store).filter(c=>c.provider===this.provider&&c.target===channel&&c.connected&&c.enabled&&this.store.get('players',c.player));
-      if(owners.length===1)command.player=owners[0].player;
+      command.player=defaultPlayer;
     }
     let result=this.store.answer(command);
     if(command.command==='session' && result?.length>this.limit) {
