@@ -1,5 +1,6 @@
 import {profileKey,profileLabel,time} from './domain.js';
 import {resolveSplits} from './split-rules.js';
+import {wrCheckpoint} from './wr-checkpoints.js';
 
 export function capturePacePB(store,player,snapshot,id){
  const saved=snapshot.records??store.get('metadata',`saved-records:${player.id}:${profileKey(snapshot.profile)}`);
@@ -32,8 +33,13 @@ export function paceAnswer(store,p){
   !pb?'PB pace unavailable: no saved PB yet.':!compatible?'PB pace unavailable: checkpoint layout does not match the PB.':'PB checkpoints unavailable; update the LiveSplit addon to 0.2.6 and reconnect.';
  const benchmark=a.benchmark;
  const wrSplits=benchmark?resolveSplits(a.profile,Object.entries(benchmark.splits).map(([name,ms],index)=>({index,name,ms})),{timing:false}):[];
- const wrRef=wrSplits.find(s=>s.name===last.name)?.ms;
- if(wrRef!=null)result+=` WR checkpoint: ${deltaText(last.ms,wrRef)} WR.`;
+ const confirmed=wrCheckpoint(store,a.profile,last.originalName??last.name);
+ const wrRef=confirmed?.ms??wrSplits.find(s=>s.name===last.name)?.ms;
+ if(wrRef!=null){
+  const precision=confirmed?.precisionMs??50;
+  const actual=Math.round(last.ms/precision)*precision;
+  result+=` WR checkpoint: ${precision===1000?'~':''}${deltaText(actual,wrRef)} WR.`;
+ }
  else {const wr=store.get('metadata',`zwr:${profileKey(a.profile)}`);if(wr?.ms!=null)result+=` WR finish: ${time(wr.ms)} (checkpoint pace unavailable).`;}
  return `${p.name}${state} | ${result} | ${profileLabel(a.profile)}${a.practice?' · Practice':''}`;
 }
