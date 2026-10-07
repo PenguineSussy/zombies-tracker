@@ -78,7 +78,7 @@ function syncLoginUI(){
   $('signed-in-name').textContent=me?'Signed in as '+me.name:'';
 }
 function expiryNote(){syncLoginUI();
-  $('login-status').textContent=loginExpiresAt?'Saved sign-in expires '+new Date(loginExpiresAt).toLocaleString()+'. '+(loginExpiresAt-Date.now()<=3*86400000?'Your sign-in expires soon. Keep your runner key ready to sign in again.':'You will need your runner key again after 30 days.'):'';
+  $('login-status').textContent=loginExpiresAt?'Saved sign-in expires '+new Date(loginExpiresAt).toLocaleString('en-US',{month:'long',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'})+' (your local time). '+(loginExpiresAt-Date.now()<=3*86400000?'Your sign-in expires soon. Keep your runner key ready to sign in again.':'You will need your runner key again after 30 days.'):'';
 }
 function clearLogin(){token='';me=null;loginExpiresAt=null;rememberExpiry(null);$('new-key').textContent='';$('new-key-box').hidden=true;$('runner-key').value='';$('account-state').textContent='Not signed in';$('source-status').textContent='';expiryNote();void loadChatbot();}
 async function saveKey(value){const result=await api('/api/login',{method:'POST',key:value});token='';loginExpiresAt=result.expiresAt;rememberExpiry(loginExpiresAt);$('runner-key').value='';expiryNote();}
