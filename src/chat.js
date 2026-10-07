@@ -13,7 +13,7 @@ export class ChatResponder {
     const userKey=`${channel}:${sender}`, channelKey=`channel:${channel}`;
     if(now-(this.cooldowns.get(userKey)??-Infinity)<5000 || now-(this.cooldowns.get(channelKey)??-Infinity)<this.cooldown(channel)*1000 || now-(this.cooldowns.get('global')??-Infinity)<1600) return null;
     this.cooldowns.set(userKey,now); this.cooldowns.set(channelKey,now); this.cooldowns.set('global',now);
-    if(command.command==='pb'&&!command.player&&this.provider) {
+    if(['pb','sessionpb'].includes(command.command)&&!command.player&&this.provider) {
       const owners=connections(this.store).filter(c=>c.provider===this.provider&&c.target===channel&&c.connected&&c.enabled&&this.store.get('players',c.player));
       if(owners.length===1)command.player=owners[0].player;
     }

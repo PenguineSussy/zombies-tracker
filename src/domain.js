@@ -119,8 +119,9 @@ export function parseCommand(text) {
   const words = String(text).trim().match(/"[^"]+"|\S+/g)?.map(s => s.replace(/^"|"$/g, '')) ?? [];
   if (words[0]?.startsWith('@')) words.shift();
   const command = words.shift()?.toLowerCase();
-  if (!['!current', '!best', '!splits', '!pace', '!session', '!pb', '!wr', '!help'].includes(command)) return null;
+  if (!['!current', '!best', '!splits', '!pace', '!session', '!pb', '!wr', '!sessionpb', '!help'].includes(command)) return null;
   if (command === '!help') return { command: 'help' };
+  if(command==='!sessionpb'){const player=words.shift()?.replace(/^@/,'').toLowerCase();return !words.length&&(!player||/^[a-z0-9_]{3,30}$/.test(player))?{command:'sessionpb',player}:{command:'help'};}
   if (command === '!pb') {
     let player;
     if(words[0]?.startsWith('@')) {
