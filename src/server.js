@@ -1,3 +1,5 @@
+import {runnerArchived} from './runner-visibility.js';
+import {publicActivity} from './activity.js';
 import {browserCookie,createBrowserSession,clearBrowserSession,browserSession,checkBrowserOrigin} from './browser-sessions.js';
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -50,16 +52,18 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
         const content=await readFile(resolve(root,'downloads/Zombies-Tracker-LiveSplit.zip'));
         res.writeHead(200,{'Content-Type':'application/zip','Content-Disposition':'attachment; filename="Zombies-Tracker-LiveSplit.zip"'});res.end(content);return;
       }
-      if(req.method==='GET' && ['/','/app.js','/watch.js','/style.css','/monty-logo.png'].includes(path)) {
+      if(req.method==='GET' && ['/','/app.js','/watch.js','/activity.js','/style.css','/monty-logo.png'].includes(path)) {
         const file=path==='/'?'index.html':path.slice(1);const content=await readFile(resolve(root,file));
         res.writeHead(200,{'Content-Type':file.endsWith('.png')?'image/png':file.endsWith('.js')?'text/javascript; charset=utf-8':file.endsWith('.css')?'text/css; charset=utf-8':'text/html; charset=utf-8'});res.end(content);return;
       }
-      if(req.method==='GET' && path==='/health')return send({ok:true,version:'0.4.1'});
+      if(req.method==='GET' && path==='/health')return send({ok:true,version:'0.9.0'});
       limit(req,'all',600);
       if(req.method==='GET' && path==='/api/catalog')return send({maps:ENABLED_MAPS,allMaps:MAPS,categories:CATEGORIES,categoriesByMap:Object.fromEntries(ENABLED_MAPS.map(m=>[m.id,categoriesForMap(m.id)])),integrations:{discord:!!env.DISCORD_PUBLIC_KEY,twitch:!!env.TWITCH_CHANNEL_IDS,youtube:!!env.YOUTUBE_LIVE_CHAT_IDS,therun:true}});
-      if(req.method==='GET' && path==='/api/players')return send(store.list('players').filter(p=>p.public).slice(0,200).map(p=>({id:p.id,name:p.name,status:store.view(p.id).status,profile:p.profile,source:p.source?.type??'direct',streams:publicStreams(p,store.clock())})));
+      if(req.method==='GET' && path==='/api/activity')return send(publicActivity(store));
+      if(req.method==='GET' && path==='/api/players')return send(store.list('players').filter(p=>p.public).slice(0,200).map(p=>runnerArchived(p,store.clock())?{id:p.id,name:p.name,status:'offline',lastSeen:p.lastSeen,archived:true}:({id:p.id,name:p.name,status:store.view(p.id).status,lastSeen:p.lastSeen,archived:false,profile:p.profile,source:p.source?.type??'direct',streams:publicStreams(p,store.clock())})));
       if(req.method==='GET' && path.startsWith('/api/players/')) {
         const v=store.view(decodeURIComponent(path.slice('/api/players/'.length)));
+        if(!v.private&&runnerArchived(v,store.clock()))return send({id:v.id,name:v.name,status:'offline',lastSeen:v.lastSeen,archived:true});
         // Do not expose private source configuration, benchmark internals, or alert metadata.
         return send({id:v.id,name:v.name,private:v.private,status:v.status,lastSeen:v.lastSeen,profile:v.profile,session:v.private?null:store.sessionStats(v),streams:publicStreams(v,store.clock()),
           attempt:v.attempt?{attemptCount:v.attempt.attemptCount??null,phase:v.attempt.phase,current:v.attempt.current,stageMap:v.attempt.stageMap,elapsedMs:v.attempt.elapsedMs,splits:v.attempt.splits,complete:v.attempt.complete,practice:v.attempt.practice}:null});
@@ -128,6 +132,7 @@ if(process.argv[1] && import.meta.url===pathToFileURL(resolve(process.argv[1])).
   app.server.listen(port,host,()=>console.log(`Zombies Tracker: http://${host}:${port}\nPlatform connectors activate only when configured. No OBS integration.`));
   process.on('SIGINT',()=>app.stop());process.on('SIGTERM',()=>app.stop());
 }
+
 
 
 

@@ -118,15 +118,41 @@ async function loadMe(){
 function showTab(id){document.querySelectorAll('.panel').forEach(p=>p.hidden=p.id!==id);document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('selected',t.dataset.tab===id));}
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{showTab(t.dataset.tab);if(t.dataset.tab==='integrations')void loadChatbot().catch(e=>notice(e.message,true));}));
 document.querySelectorAll('input[name="source"]').forEach(r=>r.addEventListener('change',()=>{$('direct-fields').hidden=r.value!=='direct';$('therun-fields').hidden=r.value!=='therun';}));
-async function refresh(){
-  const players=await api('/api/players');const list=$('runner-list');list.replaceChildren();
-  if(!players.length){const box=node('div',null,'empty');box.append(node('h3','Your community starts here.'),node('p','Register a runner in LiveSplit, or run the local demo from the project folder.'));list.append(box);}
-  for(const p of players){const b=node('button',null,'runner');const state=p.status==='Running'?'RUNNING':p.status==='NotRunning'?'IDLE':p.status.toUpperCase();b.append(node('span',state,'pill'+(p.status==='Running'?' live':'')),node('strong',p.name),node('small',(catalog.allMaps??catalog.maps).find(m=>m.id===p.profile?.map)?.name??'Waiting for first connection'),node('small',`${p.source==='therun'?'therun.gg':'LiveSplit'}${p.profile?' · '+(p.profile.category?'Solo · '+p.profile.category+' · RTA':'Legacy category'):''}`));b.addEventListener('click',()=>void details(p.id).catch(e=>notice(e.message,true)));list.append(b);}
-  updateStreams(players);if(selected)await details(selected);
+let runnerCache=[],runnerPage=0,archivePage=0;
+const runnerPageSize=4;
+function renderRunners(){
+ const query=$('runner-search').value.trim().replace(/^@/,'').toLowerCase();
+ const active=runnerCache.filter(p=>!p.archived),archived=runnerCache.filter(p=>p.archived);
+ const order=(a,b)=>(a.status==='Running'?0:1)-(b.status==='Running'?0:1)||a.name.localeCompare(b.name);
+ const matches=(query?runnerCache.filter(p=>p.name.toLowerCase().includes(query)||p.id.includes(query)):active).sort(order);
+ archived.sort((a,b)=>(b.lastSeen??0)-(a.lastSeen??0)||a.name.localeCompare(b.name));
+ $('runner-count').textContent=query?matches.length+(matches.length===1?' matching runner':' matching runners'):active.filter(p=>p.status==='Running').length+' running · '+active.length+' recently connected';
+ 
+ function card(p){
+  const b=node('button',null,'runner');const state=p.archived?'OFFLINE':p.status==='Running'?'RUNNING':p.status==='NotRunning'?'IDLE':p.status.toUpperCase();
+  b.append(node('span',state,'pill'+(p.status==='Running'?' live':'')),node('strong',p.name),node('small',p.archived?'Run history is private':(catalog.allMaps??catalog.maps).find(m=>m.id===p.profile?.map)?.name??'Waiting for first connection'),node('small',p.archived?'':p.profile?.category?'Solo · '+p.profile.category+' · RTA':'No run recorded'));
+  const age=p.lastSeen==null?null:Math.max(0,Date.now()-p.lastSeen);
+  const ago=age==null?'Never connected':age<60000?'just now':age<3600000?Math.floor(age/60000)+' min ago':age<86400000?Math.floor(age/3600000)+' hr ago':Math.floor(age/86400000)+' days ago';
+  const seen=node('small',age==null?ago:'Last seen '+ago,'runner-last-seen');if(p.lastSeen!=null)seen.title=new Date(p.lastSeen).toLocaleString();b.append(seen);
+  b.addEventListener('click',()=>void details(p.id).catch(e=>notice(e.message,true)));return b;
+ }
+ function page(rows,current,listId,controls,label,prev,next){
+  const pages=Math.max(1,Math.ceil(rows.length/runnerPageSize));current=Math.min(current,pages-1);
+  const list=$(listId);list.replaceChildren();for(const p of rows.slice(current*runnerPageSize,(current+1)*runnerPageSize))list.append(card(p));
+  if(!rows.length)list.append(node('p',query?'No runners match that name.':'No recently connected runners. Search a name to check when they were last seen.','muted'));
+  $(controls).hidden=rows.length<=runnerPageSize;$(label).textContent='Page '+(current+1)+' of '+pages;$(prev).disabled=current===0;$(next).disabled=current>=pages-1;return current;
+ }
+ runnerPage=page(matches,runnerPage,'runner-list','runner-pagination','runners-page','runners-prev','runners-next');
+
 }
+$('runner-search').addEventListener('input',()=>{runnerPage=0;renderRunners();});
+for(const [id,delta,archive]of [['runners-prev',-1,false],['runners-next',1,false]])$(id).addEventListener('click',()=>{if(archive)archivePage+=delta;else runnerPage+=delta;renderRunners();});
+async function refresh(){runnerCache=await api('/api/players');renderRunners();updateStreams(runnerCache);if(selected)await details(selected);}
 async function details(id){
   selected=id;const p=await api('/api/players/'+encodeURIComponent(id));$('detail-title').textContent=p.name;const box=$('detail');box.replaceChildren();
+  if(p.archived){box.append(node('p','Offline · Last seen '+(p.lastSeen?new Date(p.lastSeen).toLocaleString():'never'),'muted'),node('p','Archived run details are private. Sign in to your own account to export your history.','small muted'));return;}
   if(p.private){box.append(node('p','This runner is no longer sharing tracking data.','muted'));return;}
+  if(p.lastSeen)box.append(node('p','Last seen: '+new Date(p.lastSeen).toLocaleString(),'small muted'));
   box.append(node('p',`${p.status}${p.attempt?.current?' · Current: '+p.attempt.current:''}`,'muted'));
   if(p.attempt)box.append(node('p',`LiveSplit RTA at last update: ${format(p.attempt.elapsedMs)}${p.attempt.stageMap?' · '+catalog.maps.find(m=>m.id===p.attempt.stageMap)?.name:''}`,'muted'));
   box.append(node('p',p.attempt?.attemptCount!=null?`LiveSplit total attempts (loaded splits): ${p.attempt.attemptCount.toLocaleString()}`:'LiveSplit total attempts: unavailable — update to addon 0.2.5.','muted'));
@@ -157,3 +183,4 @@ setInterval(()=>{if(!document.hidden&&catalog){void refresh().catch(()=>{$('serv
 
 window.addEventListener('storage',e=>{if(e.key==='montyLoginExpires'){if(!e.newValue){if(me){clearLogin();notice('Signed out in another tab.');}}else void loadMe().catch(()=>{});}});
 setInterval(()=>{if(me&&loginExpiresAt){if(Date.now()>=loginExpiresAt){clearLogin();notice('Your 30-day sign-in has expired. Enter your runner key to sign in again.',true);}else expiryNote();}},10000);
+
