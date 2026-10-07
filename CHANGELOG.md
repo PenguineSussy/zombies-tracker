@@ -1,5 +1,11 @@
 # Changes
 
+## LiveSplit addon 0.2.7 — October 7, 2026
+
+- Require a recognized BO3 game and supported map before uploading.
+- Prevent saved map overrides from relabeling other games or maps.
+- Show tracking-paused guidance for unsupported split files.
+
 ## Bot 0.9.0 — October 7, 2026
 
 - Compact, automatically scrolling runner activity with pause and hide controls.

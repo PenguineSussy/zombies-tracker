@@ -1,4 +1,4 @@
-# Dr Monty Bot — LiveSplit addon 0.2.6
+# Dr Monty Bot — LiveSplit addon 0.2.7
 
 Tracks Black Ops III Solo Easter Egg runs in RTA. No separate companion or terminal is needed.
 
@@ -20,7 +20,7 @@ Use clear split-file metadata, for example:
 - Game: `Call of Duty: Black Ops III`
 - Category: `Der Eisendrache - Mega Gums - Solo`
 
-Detection reads map/category metadata, run labels, saved filename and recognizable split names. It does not inspect game memory. If detection is unclear, select a map/category override in the addon settings.
+Detection reads map/category metadata, run labels, saved filename and recognizable split names. It does not inspect game memory. A recognized BO3 game name and supported map are required. Blank or other game names stop tracking, even with a map override. A map override must match the detected map; it cannot enable an unknown or disabled map. If detection is unclear, correct the Game Name and Category Name in Edit Splits. Category overrides remain available.
 
 Categories: **No Gums, Classic Gums, Mega Gums, Any%**. Zetsubou No Shima and Super Easter Egg exclude No Gums. Ascension and Shangri-La allow only Any%. Multiplayer labels block uploads.
 
@@ -54,7 +54,8 @@ Use only one upload source per runner. Events queue securely during brief outage
 - **401/403:** check your runner key.
 - **409:** check the selected website source and stop duplicate uploaders.
 - **400:** check map/category, split names and your Windows clock.
-- **No map/category:** use clear metadata or select an override.
+- **Unsupported game/map:** tracking is paused. Use a supported BO3 split file and correct its game/map labels. The website will go offline after its connection timeout; previous history is retained.
+- **No category:** use clear category metadata or select a category override.
 - **Queue/storage error:** restore connectivity or disk access. Review pending uploads before discarding them; discarding permanently removes unsent events and is allowed only while reset.
 
 ## Source and building

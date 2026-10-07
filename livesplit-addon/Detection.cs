@@ -113,6 +113,10 @@ namespace LiveSplit.ZombiesTracker
         }
         public static Detection Detect(string game, string category, string fileTitle, IDictionary<string, string> variables, IEnumerable<string> splits, string manualMap)
         {
+            // Overrides must never bypass the supported-game boundary.
+            var supportedGames = new[] { "bo3", "black ops 3", "black ops iii", "call of duty black ops 3", "call of duty black ops iii" };
+            if (!supportedGames.Contains(Normalize(game)))
+                return new Detection { Reason = "Unsupported game/map - tracking paused. Set Edit Splits > Game Name to Call of Duty: Black Ops III. A map override cannot enable other games." };
             var names = splits.ToArray();
             var primary = new List<string> { game, category, fileTitle };
             foreach (var item in variables)
@@ -120,13 +124,14 @@ namespace LiveSplit.ZombiesTracker
             Detection result;
             if (!string.IsNullOrWhiteSpace(manualMap))
             {
-                var m = Maps.FirstOrDefault(x => x.Id == manualMap && x.Enabled);
-                result = new Detection { Map = m == null ? null : m.Id, Reason = m == null ? "Invalid map override." : m.Name + " (manual override)" };
+                // Independently identify the split file so a saved override cannot relabel a new map.
+                result = Detect(game, category, fileTitle, variables, names, "");
+                if (!result.Success) return result;
+                if (result.Map != manualMap)
+                    return new Detection { Reason = "Unsupported game/map - tracking paused. The selected map does not match the split file. Use automatic detection or correct the map selection." };
             }
             else
             {
-                if (!string.IsNullOrWhiteSpace(game) && !Has(game, "Black Ops 3") && !Has(game, "Black Ops III") && !Has(game, "BO3"))
-                    return new Detection { Reason = "Game is not labeled Black Ops 3 / Black Ops III / BO3. Correct Edit Splits, or explicitly choose a map override." };
                 bool super = primary.Any(t => Has(t, "Super Easter Egg") || Has(t, "Super EE") || Has(t, "SuperEE"));
                 result = super ? new Detection { Map = "super-easter-egg", Reason = "Super Easter Egg (6 maps) detected from run labels" } : Resolve(Matches(primary, true), "game/category, map variable, or split-file name");
                 if (result == null) result = Resolve(Matches(names, false), "split names");
@@ -143,7 +148,7 @@ namespace LiveSplit.ZombiesTracker
                         .Select(pair => Maps.First(m => m.Id == pair.Key)).ToList();
                     result = Resolve(candidates, "distinctive milestone pair");
                 }
-                if (result == null) result = new Detection { Reason = "Map unknown. Include the map in Edit Splits > Category Name or the .lss filename, or choose an override." };
+                if (result == null) result = new Detection { Reason = "Unsupported game/map - tracking paused. Include a supported map in Edit Splits > Category Name or the .lss filename. An override cannot enable an unknown map." };
             }
             var playerText = new List<string> { category, fileTitle };
             foreach (var v in variables)

@@ -41,6 +41,14 @@ class Tests
             Check(Detect("Der Eisendrache Solo 2P").NonSolo, "contradictory multiplayer");
             Check(Detect("Der Eisendrache Co-op").NonSolo, "coop");
             Check(!Detector.Detect("Call of Duty Black Ops II", "Origins", "", new Dictionary<string,string>(), new string[0], "").Success, "wrong game");
+            foreach (var game in new[]{"", "Call of Duty: Black Ops 4", "Call of Duty: Black Ops II", "Minecraft", "BO3 custom game"})
+                foreach (var selected in new[]{"", "der-eisendrache"})
+                    Check(!Detector.Detect(game, "Der Eisendrache Mega Gums", "DE", new Dictionary<string,string>(), new[]{"Lightning Bow", "Wisps"}, selected).Success, "reject unsupported game despite BO3 map hints/override: " + game);
+            foreach (var game in new[]{"BO3", "Black Ops 3", "Black Ops III", "Call of Duty: Black Ops III"})
+                Check(Detector.Detect(game,"DE Mega Gums","",new Dictionary<string,string>(),new string[0],"der-eisendrache").Success,"supported game with matching override: " + game);
+            Check(!Detector.Detect("BO3","Dead of the Night","",new Dictionary<string,string>(),new[]{"Power","Boss"},"der-eisendrache").Success,"unknown map cannot inherit override");
+            Check(!Detector.Detect("BO3","Kino der Toten","",new Dictionary<string,string>(),new string[0],"der-eisendrache").Success,"disabled map cannot inherit override");
+            Check(!Detector.Detect("BO3","Origins","",new Dictionary<string,string>(),new string[0],"der-eisendrache").Success,"stale override cannot relabel supported map");
             Check(Detector.Detect("BO3", "Easter Egg", "", new Dictionary<string,string>{{"Map","Moon"}}, new string[0], "").Map == "moon", "metadata");
             Check(Detector.Detect("BO3", "Easter Egg", "Origins - Mega Gums", new Dictionary<string,string>(), new string[0], "").Map == "origins", "filename");
             foreach (var category in Detector.Categories) Check(Detector.Category(new[]{"DE " + category + " Solo"}, "") == category, "category " + category);
