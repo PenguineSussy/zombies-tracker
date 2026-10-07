@@ -19,9 +19,10 @@ test('session groups map/categories, counts observed resets, and excludes missin
   send('attempt-moon',{profile:{map:'moon',category:'Any%'},splits:[],index:0});
   const p=store.get('players',player.id),s=store.sessionStats(p),g=s.groups.find(g=>g.profile.category==='No Gums');
   assert.equal(s.attempts,5);assert.equal(s.resets,1);assert.equal(s.durationMs,2000);assert.equal(s.groups.length,3);
-  assert.equal(g.fastestMs,280000);assert.equal(g.splits[0].averageMs,240000);assert.equal(g.splits[0].bestMs,200000);assert.equal(g.splits[0].count,2);
+  assert.equal(g.fastestMs,null);assert.equal(g.splits.length,0);assert.equal(g.isCurrentProfile,false);
   assert.equal(s.current.map,'moon');assert.equal(s.unconfirmedEnds,2);
-  assert.match(store.answer('!session @Runner'),/average 4:00/);
+  assert.match(store.answer('!session @Runner'),/previously played/);
+  assert.doesNotMatch(store.answer('!session @Runner'),/average 4:00/);
   const reply=new ChatResponder(store,190,()=>now).respond('chat','viewer','1','!session @Runner');
   assert.match(reply,/1 resets/);assert.match(reply,/https:\/\/doctormonty.beer/);assert.ok(reply.length<=190);
   now+=31000;store.session(store.get('players',player.id),'end');const ended=store.sessionStats(store.get('players',player.id));now+=60000;
