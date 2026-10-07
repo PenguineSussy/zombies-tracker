@@ -1,50 +1,42 @@
-# Component 0.2.1 compatibility update
+# Dr Monty Bot — LiveSplit addon 0.2.6
 
-Unchanged settings no longer rebuild the uploader or reset its attempt ID. Temporary layout-editor clones do not acquire upload connections. LiveSplit's OK saves valid settings without requiring Apply. Invalid changes during a run preserve the prior configuration, and key-serialization errors remain inside the addon.
+Tracks Black Ops III Solo Easter Egg runs in RTA. No separate companion or terminal is needed.
 
-The reported split-background/display issue has not been reproduced in a normal interactive LiveSplit session. These fixes address identified settings defects, not every possible layout issue. Save your layout before replacing the DLL. If it interferes with your layout, remove it and use the optional therun.gg source.
+## Install or update
 
-Tests include confirming unchanged settings during an active run and serializing an inactive editor clone. Production DPAPI and interactive layout rendering still require verification under your normal Windows account.
+1. Save your splits and layout, then close LiveSplit.
+2. Extract the ZIP and copy `LiveSplit.ZombiesTracker.dll` into LiveSplit's `Components` folder.
+3. Reopen LiveSplit. Choose **Edit Layout → + → Other → Zombies Tracker**. Add it only once. When updating, keep your existing component.
+4. On https://doctormonty.beer, open **LiveSplit**, register or sign in, and enable the LiveSplit addon source.
+5. Open the component's settings. Enter the server URL and your private runner key, enable upload, and save your layout.
+6. Check the detected map/category before starting. Use Practice for test runs.
 
-# Zombies Tracker for LiveSplit 0.2
+Your key is encrypted for your Windows account. Do not share configured layouts or keys. Updates are installed manually while LiveSplit is closed.
 
-Windows desktop LiveSplit component for https://doctormonty.beer. Tracks Solo Black Ops 3 Easter Egg speedruns in RTA, in No Gums, Classic Gums, Mega Gums, or Any%. No TCP server, PowerShell window, Node installation, or separate companion is needed to use this DLL.
+## Map and category detection
 
-## Install
+Use clear split-file metadata, for example:
 
-1. Finish/reset your timer, save your splits/layout, and close LiveSplit.
-2. Extract the addon ZIP. Copy `LiveSplit.ZombiesTracker.dll` into your LiveSplit `Components` folder. On this computer that is `C:\livesplit\Components`. Windows may request administrator permission for that folder.
-3. Reopen LiveSplit. Right-click > Edit Layout > + > Other > Zombies Tracker. Add it only once. It is a background component with no visual timer area.
-4. Double-click Zombies Tracker to open its settings (or select it in Layout Settings).
-5. On https://doctormonty.beer, open Runner setup and register/sign in. A runner key from the old localhost installation is not valid here. Click **Enable LiveSplit addon source**.
-6. Stop the old companion. In addon settings enter the server URL and your private runner key. Leave map/category on Automatic detection, or use the overrides when needed. Enable upload, click Apply, and save your LiveSplit layout.
-7. Check the detection/status messages, start a test run, and look for your runner on the website. Mark practice tests as Practice to exclude them from records and alerts.
+- Game: `Call of Duty: Black Ops III`
+- Category: `Der Eisendrache - Mega Gums - Solo`
 
-Your key is encrypted using Windows DPAPI in the saved layout and can only be decrypted by the same Windows account. Do not share configured layouts or runner keys. Automatic component updates are not enabled; replace the DLL manually while LiveSplit is closed.
+Detection reads map/category metadata, run labels, saved filename and recognizable split names. It does not inspect game memory. If detection is unclear, select a map/category override in the addon settings.
 
-## Automatic detection
+Categories: **No Gums, Classic Gums, Mega Gums, Any%**. Zetsubou No Shima and Super Easter Egg exclude No Gums. Ascension and Shangri-La allow only Any%. Multiplayer labels block uploads.
 
-Example Edit Splits fields:
+The addon uses your own split names; no aliases are required. Names must be unique, 1–80 characters and contain no `<`, `>` or `@`. Reset before changing run details.
 
-* Game Name: `Call of Duty: Black Ops III`
-* Category Name: `Der Eisendrache - No Gums - Solo`
-* Filename (optional): `Der Eisendrache - No Gums.lss`
+## What it tracks
 
-The addon checks game/category text, the split file's basename, and map/category metadata variables first. Full map names in segment names are a fallback. It also recognizes these conservative milestone pairs when no map is otherwise identified: Lightning/Storm Bow + Wisps (DE), KT4 + Masamune (ZNS), Dragon Egg + Valkyrie (GK), Apothicon Sword + Shadowman (SOE). Generic Bow, Power, Boss, or Crackle alone is not enough. Short map abbreviations are accepted only in run labels, not arbitrary segment names. This reads the split file; it does not inspect game memory or verify what the player is actually playing.
+- Live timer, checkpoints, starts, finishes, pauses, undo and resets.
+- Loaded split-file attempt count, separately from tracked session resets.
+- RTA Personal Best and its checkpoint times, saved best cumulative splits and best segments.
 
-All ten enabled maps support detection from their names. Nacht, Verruckt, Shi No Numa and Kino remain disabled. Unknown/conflicting maps or gum categories pause uploads and show a settings message. Map and gum category overrides are available. Identified multiplayer labels (2P–4P, co-op, duo, etc.) block uploads even with a map override. Unlabeled player count is treated as Solo because this tracker is Solo-only; actual game player count cannot be verified from unlabeled splits.
+Comparisons are read independently of the selected display comparison. The addon does not change your comparisons or split layout. Deleted history cannot be recovered. Saved PBs are runner-provided records, not verified leaderboard submissions.
 
-Gum categories are detected from the category/file title and gum/category variables. Include `No Gums`, `Classic Gums`, `Mega Gums`, or `Any%`. The addon always reads `RealTime` from LiveSplit, irrespective of the display's selected timing method. RTA here means LiveSplit Real Time (which follows LiveSplit's pause behavior), not a game-memory-derived clock. Never pause the timer if your category disallows it.
+## Super Easter Egg
 
-Split names must be unique and 1–80 characters without `<`, `>` or `@`. The addon uses the runner's split names, with the tracker's normal case and whitespace normalization. Version 0.2.3 removes split aliases and ignores alias settings in older layouts or imported configurations. Changing run details during a run stops uploads until reset. Save the split file so its filename can participate in detection.
-
-## Offline behavior and troubleshooting
-
-## Map category limits and Super Easter Egg
-
-Zetsubou No Shima and Super Easter Egg allow Classic Gums, Mega Gums, or Any%. Ascension and Shangri-La allow only Any%. Other maps offer all four categories. Invalid combinations stop uploads; rename the LiveSplit category or choose a permitted override before starting.
-
-For Super Easter Egg, use one continuous LiveSplit file with category `Super Easter Egg - Classic Gums - Solo` (substitute your gum category). Include Shadows of Evil, The Giant, Der Eisendrache, Zetsubou No Shima, Gorod Krovi, and Revelations. The first five may be in your chosen order; Revelations must be last. Keep each map's splits together, prefix each checkpoint with its map (for example `DE - Bow`), and end each map block with `Map - Complete`. A minimal file has these six splits:
+Use one continuous timer with all six maps; Revelations must be last. Keep each map's splits together. Prefix checkpoints with their map and finish each map with a completion marker:
 
 1. `SOE - Complete`
 2. `The Giant - Complete`
@@ -53,41 +45,26 @@ For Super Easter Egg, use one continuous LiveSplit file with category `Super Eas
 5. `GK - Complete`
 6. `Revelations - Complete`
 
-Do not reset between maps. All checkpoint and elapsed times are cumulative LiveSplit Real Time values. The tracker never creates an independent clock or adds separate map timers. The website shows the latest received RTA sample; the five-second addon heartbeat and ten-second page refresh can introduce a short display delay. Pauses, skips, undo and reset follow LiveSplit. Preserve the map prefixes and completion markers in your split names. A finished run without all six map completions is marked incomplete.
+Do not reset between maps. All times are cumulative LiveSplit RTA. The website can lag briefly behind LiveSplit while updates arrive.
 
-## Connection recovery
+## Connection help
 
-Starts, splits, skips, undo, pauses/resumes, finishes and resets are captured through LiveSplit events. A heartbeat runs every five seconds while uploading. Network requests happen in the background. Pending events are saved in an encrypted, bounded queue under `%LOCALAPPDATA%\ZombiesTracker\LiveSplit`; they are retried in order. Recovered events suppress notifications. An ordinary brief network outage retains the attempt ID. Restarting LiveSplit creates a new observed attempt after draining queued events; no attempt continuity across a process restart is promised.
+Use only one upload source per runner. Events queue securely during brief outages and retry in order. Restarting LiveSplit does not preserve attempt continuity.
 
-Only run one uploader per runner: the addon, the old companion, or therun.gg. Duplicate addon instances for the same server/key are blocked. A separate old companion cannot be detected automatically.
+- **401/403:** check your runner key.
+- **409:** check the selected website source and stop duplicate uploaders.
+- **400:** check map/category, split names and your Windows clock.
+- **No map/category:** use clear metadata or select an override.
+- **Queue/storage error:** restore connectivity or disk access. Review pending uploads before discarding them; discarding permanently removes unsent events and is allowed only while reset.
 
-* HTTP 401/403: check the runner key and whether it was rotated. Reset/finish, correct settings and Apply.
-* HTTP 409: ensure the website source is Direct LiveSplit and stop other uploaders. Closed-attempt queue conflicts require reviewing/discarding the old pending queue and resetting LiveSplit. Nothing is silently deleted.
-* HTTP 400: verify category, names, timer values and your Windows clock. Correct the issue before retrying. An invalid queued event may require explicitly discarding the queue.
-* Queue full/storage error: stop tracking and restore connectivity/disk access. Capacity is 10,000 events; new events cannot be recorded beyond it. A Windows/account change may make DPAPI data unreadable.
-* Discard pending uploads permanently removes unsent updates, with an explicit confirmation. It is only allowed while the timer is reset.
-* No map/category: rename your category as shown above, or select an override. Check settings before running. The addon cannot infer an unlabeled gum loadout.
+## Source and building
 
-## Build and validation
+All addon source is in `source/` in this download and `livesplit-addon/` in the repository. On Windows, with LiveSplit installed:
 
-Source is included. Run `build.ps1 -LiveSplitDir 'path to LiveSplit'` from a terminal only if rebuilding. The installed .NET Framework C# compiler is used, with references to LiveSplit.Core, UpdateManager and SpeedrunComSharp from your LiveSplit installation. No LiveSplit assemblies are redistributed in this archive.
+```powershell
+.\build.ps1 -LiveSplitDir 'C:\livesplit'
+```
 
-Built against the local LiveSplit installation. Automated tests use the actual LiveSplit TimerModel and a local tracker HTTP/SQLite fixture. The test-only binary substitutes the DPAPI codec because the development sandbox cannot access the interactive Windows user's DPAPI profile. **The shipped `dist` DLL uses real DPAPI and fails closed if encryption is unavailable.** Interactive layout installation and DPAPI persistence still need a check in your normal LiveSplit session. Do not install a DLL from `test-bin`.
+The build uses the installed .NET Framework compiler and LiveSplit's own assemblies. The result is `dist/LiveSplit.ZombiesTracker.dll`. LiveSplit assemblies are not redistributed.
 
-Source API reference: https://github.com/LiveSplit/LiveSplit/tree/master/src/LiveSplit.Core
-
-# Version 0.2.4: saved records
-
-Close LiveSplit, replace `Components/LiveSplit.ZombiesTracker.dll` with the DLL in this ZIP, then reopen LiveSplit and your splits. Existing addon settings and runner key remain usable.
-
-This version uploads the loaded split file's RTA Personal Best, best cumulative split times reconstructed from saved history, and Best Segment times. It reads these independently of the selected comparison and never writes comparisons or layout settings. Original split-name capitalization is preserved. Saved records synchronize when the addon connects, when run details change, and while idle/finished. Old files or deleted LiveSplit history cannot be recovered by the addon.
-
-Commands: `!best @name Rocket alltime`, `!splits @name alltime`, and `!pb @name`. Bests show cumulative split time followed by the segment time in parentheses. Missing values are reported as unavailable. Session statistics exclude imported history. PBs remain self-reported LiveSplit/tracker times, not verified leaderboard submissions.
-
-
-### 0.2.5 — attempt totals
-Reports LiveSplit Run.AttemptCount on each snapshot without changing the run. The website labels this as the total for the loaded splits, separate from tracked session attempts. Different split files can have different totals; counts are not added together. Close LiveSplit before replacing the component DLL.
-
-### 0.2.6 — PB checkpoint pace
-
-Uploads each Personal Best comparison split in RTA, separately from best splits and gold segments. Read-only; no layout or comparison settings are changed. Close LiveSplit, replace the component DLL, reopen and reconnect to upload PB checkpoints for !pace.
+Run `test.ps1` for native tests. The HTTP integration test requires the full bot repository; see its `DEVELOPMENT.md`. Never install the test-only DLL from `test-bin`: the release DLL uses Windows DPAPI for key protection.
