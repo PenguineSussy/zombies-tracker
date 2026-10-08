@@ -32,7 +32,7 @@ export function resolveSplits(profile,rows,{timing=true,finished=false}={}) {
  const rules=SPLIT_RULES[profile?.map]??[];
  const allowTiming=timing&&['Mega Gums','Any%'].includes(profile?.category)&&!['moon','origins'].includes(profile?.map);
  const result=rows.map(s=>({...s,originalName:s.originalName??s.displayName??s.name}));
- const chosen=rows.map(s=>{const hits=rules.filter(r=>r.aliases.includes(n(s.autosplitName??s.originalName??s.displayName??s.name)));return hits.length===1?hits[0]:null;});
+ const chosen=rows.map(s=>{if(s.manualName)return {name:s.manualName,aliases:[n(s.manualName)]};const hits=rules.filter(r=>r.aliases.includes(n(s.autosplitName??s.originalName??s.displayName??s.name)));return hits.length===1?hits[0]:null;});
  for(let i=0;i<rows.length;i++){
   if(chosen[i]||!allowTiming||!Number.isFinite(rows[i].ms))continue;
   if(profile?.map==='zetsubou-no-shima'&&['kt4','kt 4','kt'].includes(n(result[i].originalName)))continue;
@@ -54,7 +54,7 @@ export function resolveSplits(profile,rows,{timing=true,finished=false}={}) {
  }
  // Don't collapse two separate checkpoints into one record when both use aliases.
  const counts=new Map();for(const r of chosen)if(r)counts.set(r.name,(counts.get(r.name)??0)+1);
- return result.map((s,i)=>{const r=chosen[i];return r&&counts.get(r.name)===1?{...s,name:r.name.toLowerCase(),displayName:r.name}:s;});
+ return result.map((s,i)=>{const r=chosen[i];return r&&counts.get(r.name)===1?{...s,name:r.name.toLowerCase(),displayName:r.name,needsAlias:false}:{...s,needsAlias:rules.length>0&&!s.manualName&&!s.autosplitName};});
 }
 export function displayAttempt(a){return a?{...a,current:a.current?splitName(a.profile,a.current):a.current,splits:resolveSplits(a.profile,a.splits??[],{finished:a.phase==='Ended'&&a.complete})}:a;}
 
@@ -64,11 +64,11 @@ export function resolveRecords(profile,rows) {
  const explicit=resolveSplits(profile,rows,{timing:false});
  const comparisons=['pbSplitMs','bestSplitMs'].map(field=>resolveSplits(profile,rows.map(s=>({...s,ms:s[field]})),{finished:true}));
  const resolved=explicit.map((s,i)=>{
-  if(splitName(profile,s.autosplitName??s.originalName??s.name)!==(s.autosplitName??s.originalName??s.name)||s.autosplitName)return s;
+  if(s.manualName||splitName(profile,s.autosplitName??s.originalName??s.name)!==(s.autosplitName??s.originalName??s.name)||s.autosplitName)return s;
   const hints=comparisons.map(c=>c[i]).filter(v=>v.inferred);
   const names=new Set(hints.map(v=>v.name));
   if(names.size!==1)return s;
-  return {...s,name:hints[0].name,displayName:hints[0].displayName,inferred:true};
+  return {...s,name:hints[0].name,displayName:hints[0].displayName,inferred:true,needsAlias:false};
  });
  return resolved.map((s,i)=>resolved.filter(v=>v.name===s.name).length>1?{...rows[i]}:s);
 }

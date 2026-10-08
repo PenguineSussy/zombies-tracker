@@ -144,7 +144,7 @@ export class Store {
           const label = split.displayName ?? split.name;
           for (const sub of this.list('subscriptions')) {
             if (!sub.enabled || (sub.player !== '*' && sub.player !== p.id) || profileKey(sub.profile) !== profileKey(a.profile) || (sub.split !== split.name && sub.split !== a.splits[i].name)) continue;
-            const confirmed = wrCheckpoint(this, a.profile, split.originalName ?? split.name);
+            const confirmed = wrCheckpoint(this, a.profile, split.manualName ?? split.originalName ?? split.name);
             const ref = confirmed?.ms ?? a.benchmark?.splits[split.name] ?? a.benchmark?.splits[a.splits[i].name];
             const precision = confirmed?.precisionMs ?? 1, actual = Math.round(split.ms / precision) * precision;
             const qualifies = sub.mode === 'milestone' || (sub.mode === 'under' && split.ms <= sub.thresholdMs) || (sub.mode === 'wr' && ref != null && actual < ref);
@@ -239,6 +239,22 @@ export class Store {
     return lines.join(' | ');
   }
   answer(input) {
+    const q=typeof input==='string'?parseCommand(input,undefined,this.list('players').map(p=>p.id)):input;
+    const reply=this.answerCore(q);
+    if(!q?.player||q.error||!['current','best','splits','pace','session'].includes(q.command))return reply;
+    try {
+      const p=this.view(q.player);if(p.private)return reply;
+      const selected=q.profile?profile(q.profile):p.profile;
+      if(q.profile&&['current','pace'].includes(q.command)&&profileKey(selected)!==profileKey(p.profile))return reply;
+      let rows=[];
+      if(q.command==='best'){const b=this.best(p,q.split,q.scope,selected);if(b)rows=[b];}
+      else if(q.command==='splits'&&q.scope==='alltime')rows=this.savedRecords(p,selected)?.splits??[];
+      else if(q.command==='session'||(q.command==='splits'&&q.scopeExplicit))rows=this.attempts(p.id).filter(a=>a.sessionId===this.sessionWindow(p)?.id&&profileKey(a.profile)===profileKey(selected)).flatMap(a=>a.splits);
+      else if(p.status!=='offline')rows=q.command==='pace'?p.attempt?.splits.slice(-1)??[]:p.attempt?.splits??[];
+      return rows.some(r=>r.needsAlias)?'Split not recognized. Set its alias in LiveSplit → Zombies Tracker → Split aliases. | '+reply:reply;
+    } catch {return reply;}
+  }
+  answerCore(input) {
     const q = typeof input === 'string' ? parseCommand(input,undefined,this.list('players').map(p=>p.id)) : input;
     if (!q) return null;
     if (q.command === 'help') return 'Commands: !current · !pb map · !wr map [category] · !best split session/alltime · !splits [alltime] · !pace · !session · !sessionpb. In linked chats, omit @name for that runner; add name or @name for anyone else. On the site, include a runner name. Add a map and optional category to select saved stats; otherwise the detected profile is used. Map PB/WR defaults to Mega Gums for BO3.';

@@ -9,7 +9,7 @@ export function capturePacePB(store,player,snapshot,id){
  if(saved?.pbMs>0&&(!best||saved.pbMs<=best.elapsedMs)){
   // A tracked copy of the exact PB may supply checkpoints missing in older addons.
   if(best?.elapsedMs===saved.pbMs&&saved.splits.every(s=>s.pbSplitMs==null))return {pbMs:best.elapsedMs,splits:best.splits.map(s=>({...s,name:s.originalName??s.name,pbSplitMs:s.ms}))};
-  return {pbMs:saved.pbMs,splits:saved.splits.map(s=>({index:s.index,name:s.name,pbSplitMs:s.pbSplitMs??null}))};
+  return {pbMs:saved.pbMs,splits:saved.splits.map(s=>({...s,index:s.index,name:s.name,pbSplitMs:s.pbSplitMs??null}))};
  }
  return best?{pbMs:best.elapsedMs,splits:best.splits.map(s=>({...s,name:s.originalName??s.name,pbSplitMs:s.ms}))}:null;
 }
@@ -34,7 +34,7 @@ export function paceAnswer(store,p){
   !pb?'PB pace unavailable: no saved PB yet.':!compatible?'PB pace unavailable: checkpoint layout does not match the PB.':'PB checkpoints unavailable; update the LiveSplit addon and reconnect.';
  const benchmark=a.benchmark;
  const wrSplits=benchmark?resolveSplits(a.profile,Object.entries(benchmark.splits).map(([name,ms],index)=>({index,name,ms})),{timing:false}):[];
- const confirmed=wrCheckpoint(store,a.profile,last.originalName??last.name);
+ const confirmed=wrCheckpoint(store,a.profile,last.manualName??last.originalName??last.name);
  const wrRef=confirmed?.ms??wrSplits.find(s=>s.name===last.name)?.ms;
  if(wrRef!=null){
   const precision=confirmed?.precisionMs??50;

@@ -97,11 +97,6 @@ export function snapshot(input) {
   if(input.addonVersion!=null){check(validAddonVersion(input.addonVersion),'Invalid addon version.');result.addonVersion=input.addonVersion;}
   if (result.phase === 'NotRunning') check(splits.length === 0, 'Idle snapshots cannot contain splits.');
   result.complete = result.complete && result.index >= 0 && result.splits.length === result.index;
-  if(result.profile.map==='super-easter-egg') {
-    const completed=result.splits.map(s=>superStage(s.name,true)).filter(Boolean);
-    result.stageMap=superStage(result.current)??(result.phase==='Ended'?'revelations':null);
-    result.complete=result.complete&&new Set(completed).size===6&&completed.length===6&&completed.at(-1)==='revelations';
-  }
   if(input.resetEvent!=null){check(typeof input.resetEvent==='boolean','Invalid reset event.');result.resetEvent=input.resetEvent;}
   if(input.attemptCount!=null) {
     check(Number.isSafeInteger(input.attemptCount)&&input.attemptCount>=0&&input.attemptCount<=2147483647,'Invalid LiveSplit attempt count.');
@@ -122,6 +117,22 @@ export function snapshot(input) {
     result.splits=result.splits.map(s=>({...s,autosplitName:hints[s.index]}));
     if(result.current&&result.index>=0)result.current=hints[result.index]??result.current;
     if(result.records)result.records.splits=result.records.splits.map(s=>({...s,autosplitName:hints[s.index]}));
+  }
+  if(input.manualNames!=null) {
+    check(Array.isArray(input.manualNames)&&input.manualNames.length>0&&input.manualNames.length<=500,'Invalid manual alias layout.');
+    const names=input.manualNames.map(v=>v==null?null:clean(v));
+    check(result.index<=names.length&&(!result.records||result.records.splits.length===names.length),'Manual aliases do not match run.');
+    const mapped=s=>names[s.index]?{...s,originalName:s.displayName??s.name,manualName:names[s.index],name:key(names[s.index]),displayName:names[s.index]}:s;
+    result.splits=result.splits.map(mapped);
+    if(result.records)result.records.splits=result.records.splits.map(mapped);
+    check(new Set(result.splits.map(s=>s.name)).size===result.splits.length,'Duplicate mapped checkpoints.');
+    if(result.records)check(new Set(result.records.splits.map(s=>s.name)).size===result.records.splits.length,'Duplicate mapped saved checkpoints.');
+    if(result.current&&result.index>=0)result.current=names[result.index]??result.current;
+  }
+  if(result.profile.map==='super-easter-egg') {
+    const completed=result.splits.map(s=>superStage(s.name,true)).filter(Boolean);
+    result.stageMap=superStage(result.current)??(result.phase==='Ended'?'revelations':null);
+    result.complete=result.complete&&new Set(completed).size===6&&completed.length===6&&completed.at(-1)==='revelations';
   }
   return result;
 }
