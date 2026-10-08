@@ -2,7 +2,7 @@ import {replyProfile,duration,lastSeen,achievedDate,replyTiming as timingLabel} 
 import {recordActivity} from './activity.js';
 import {capturePacePB,paceAnswer} from './pace.js';
 import {queueAnnouncements} from './announcements.js';
-import {splitName,resolveSplits,displayAttempt} from './split-rules.js';
+import {splitName,resolveSplits,resolveRecords,displayAttempt} from './split-rules.js';
 import { DatabaseSync } from 'node:sqlite';
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
@@ -168,6 +168,10 @@ export class Store {
     check(p, 'Player has not registered.', 404);
     if (!p.public) return { id: p.id, name: p.name, private: true };
     const a = p.activeAttempt ? displayAttempt(this.get('attempts', p.activeAttempt)) : null;
+    if(a?.current) {
+      const saved=this.savedRecords(p)?.splits.find(s=>(s.originalName??s.name).toLowerCase()===a.current.toLowerCase());
+      if(saved?.displayName)a.current=saved.displayName;
+    }
     return { ...p, status: !p.lastSeen || this.clock() - p.lastSeen > (p.source?.type === 'therun' ? 120000 : 30000) ? 'offline' : a?.phase ?? 'NotRunning', attempt: a };
   }
   best(p, split, scope, selectedProfile = p.profile) {
@@ -192,7 +196,7 @@ export class Store {
     const best=rows.sort((a,b)=>a.ms-b.ms)[0];
     return best||saved ? {...(best??saved),ms:best?.ms??null,displayName:saved?.displayName??best?.displayName??best?.name,bestSegmentMs:segments.length?Math.min(...segments):null}:null;
   }
-  savedRecords(p,selected=p.profile){const records=selected?this.get('metadata',`saved-records:${p.id}:${profileKey(selected)}`):null;return records?{...records,splits:resolveSplits(selected,records.splits,{timing:false})}:null;}
+  savedRecords(p,selected=p.profile){const records=selected?this.get('metadata',`saved-records:${p.id}:${profileKey(selected)}`):null;return records?{...records,splits:resolveRecords(selected,records.splits)}:null;}
   sessionStats(p, selected=p.profile) {
     const session=this.sessionWindow(p);
     if(!session) return null;

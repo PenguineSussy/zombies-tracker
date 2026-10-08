@@ -114,6 +114,15 @@ export function snapshot(input) {
     check(new Set(saved.map(s=>s.name)).size===saved.length,'Saved split names must be unique.');
     result.records={pbMs:validTime(input.records.pbMs),splits:saved};
   }
+  if(input.autosplitNames!=null) {
+    check(Array.isArray(input.autosplitNames)&&input.autosplitNames.length>0&&input.autosplitNames.length<=500,'Invalid autosplitter layout.');
+    const hints=input.autosplitNames.map(v=>clean(v));
+    check(new Set(hints.map(key)).size===hints.length,'Duplicate autosplitter checkpoints.');
+    check(result.index<=hints.length&&(!result.records||result.records.splits.length===hints.length),'Autosplitter layout does not match run.');
+    result.splits=result.splits.map(s=>({...s,autosplitName:hints[s.index]}));
+    if(result.current&&result.index>=0)result.current=hints[result.index]??result.current;
+    if(result.records)result.records.splits=result.records.splits.map(s=>({...s,autosplitName:hints[s.index]}));
+  }
   return result;
 }
 

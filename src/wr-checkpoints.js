@@ -119,11 +119,11 @@ const reviewed={
  'shadows-of-evil':{Rift:'2:11',Sword:'7:35',Flag:'11:08',End:'19:26'},
  'the-giant':{End:'1:03.50'},
  'der-eisendrache':{Bow:'4:37',Crackle:'6:56',TP:'9:45',Key:'14:52','Boss Enter':'20:29',End:'25:42.70'},
- 'zetsubou-no-shima':{Bunker:'3:50',Skull:'7:39','KT4/Rainbow Round End':'11:54','Boss Enter':'16:32',End:'20:06.05'},
+ 'zetsubou-no-shima':{Bunker:'3:50',Skull:'7:39','Rainbow Round End':'11:54','Boss Enter':'16:32',End:'20:06.05'},
  'gorod-krovi':{'Fly 1':'4:59',Spit:'6:40','Fly 2':'8:56',Challenges:'15:58',Download:'23:24',End:'31:01.30'},
  revelations:{Keeper:'3:07',Exit:'7:49',House:'11:58','Boss 1':'17:35',Basketball:'20:15','Boss 2':'21:51',End:'23:04.25'},
  moon:{Power:'0:44.50','Samantha Says':'4:34.75',Terminals:'5:51.95','Vril Sphere':'10:28.20','Canister 1':'11:14.00','Canister 2':'14:51.25',End:'18:59.90'},
- origins:{'Ice Staff':'6:35','Fire Enter':'11:18','Lightning Enter':'14:38','Fire Dupe':'15:44','Ice Leave':'18:58',Upgrade:'21:50',End:'30:49.55'},
+ origins:{'Ice Staff':'6:35','Fire Enter':'11:18','Lightning Enter':'14:38','Ice Leave':'18:58',Upgrade:'21:50',End:'30:49.55'},
  'shangri-la':{Tiles:'1:38',Crystal:'3:16',Napalm:'5:48',Radio:'8:20',End:'10:16'},
  'super-easter-egg':{'Shadows of Evil':'20:28','The Giant':'22:10','Der Eisendrache':'49:19','Zetsubou no Shima':'1:11:52','Gorod Krovi':'1:44:52',Revelations:'2:12:56.15'},
 };
