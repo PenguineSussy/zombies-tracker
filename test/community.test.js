@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {Store} from '../src/store.js';
 import {createApp} from '../src/server.js';
 import {streamLink,publicStreams} from '../src/streams.js';
-import {checkTwitchStreams} from '../src/stream-monitor.js';
+import {checkTwitchStreams,checkYouTubeStreams} from '../src/stream-monitor.js';
 import {streamCandidates,distinctSlots,playerUrl} from '../public/watch.js';
 import {ChatResponder} from '../src/chat.js';
 const profile={map:'der-eisendrache',category:'No Gums'};
@@ -41,6 +41,7 @@ test('Twitch bot live checks, stale expiry, privacy, and multistream deduplicati
   let live=true;
   const token={request:async url=>{assert.match(url,/user_login=runner/);return new Response(JSON.stringify({data:live?[{user_login:'runner',type:'live'}]:[]}));}};
   await checkTwitchStreams(store,token,'client');
+  await checkYouTubeStreams(store,{request:async()=>new Response(JSON.stringify({items:[{id:'abcdefghijk',status:{privacyStatus:'public'},snippet:{liveBroadcastContent:'live'},liveStreamingDetails:{actualStartTime:'2026-10-08T12:00:00Z'}}]}))});
   let updated=store.get('players',p.id);assert.equal(publicStreams(updated,now).twitchStatus,'live');
   const candidates=streamCandidates([{...updated,streams:publicStreams(updated,now)}]);assert.equal(candidates.length,2);
   assert.equal(distinctSlots(candidates,candidates.map(c=>c.key)).filter(Boolean).length,1);
