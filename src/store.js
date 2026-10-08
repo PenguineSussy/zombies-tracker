@@ -159,7 +159,7 @@ export class Store {
             if (!qualifies || a.notified.includes(dedup)) continue;
             a.notified.push(dedup);
             const jobId = `${a.id}:${dedup}`;
-            const comparison = ref == null ? 'WR checkpoint comparison unavailable.' : `${precision === 1000 ? '~' : ''}${time(Math.abs(ref - actual))} ${actual < ref ? 'ahead of' : actual > ref ? 'behind' : 'level with'} the ${confirmed ? 'reviewed' : 'configured'} WR checkpoint.`;
+            const comparison = ref == null ? 'WR checkpoint comparison unavailable.' : `${precision === 1000 ? '~' : ''}${time(Math.abs(ref - actual))} ${actual < ref ? 'ahead of' : actual > ref ? 'behind' : 'level with'} WR`;
             this.put('outbox', jobId, { id: jobId, attempt: id, player: p.id, subscription: sub.id,
               split, channel: sub.channel, role: sub.role, status: 'pending', tries: 0, nextTry: now, createdAt: now,
               content: `${p.name} | ${profileLabel(a.profile)}\n${label}: ${time(split.ms)}\n${comparison}${!confirmed && a.benchmark ? '\nBenchmark source: ' + a.benchmark.source : ''}` });
