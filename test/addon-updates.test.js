@@ -6,7 +6,9 @@ test('addon notices distinguish unknown, outdated and newer versions',()=>{
  assert.equal(addonStatus({}).state,'unknown');
  assert.equal(addonStatus({addon:{version:'0.2.6'}}).state,'required');
  assert.equal(addonStatus({addon:{version:'0.2.7'}}).state,'available');
- assert.equal(addonStatus({addon:{version:'0.2.10'}}).state,'current');
+ assert.equal(addonStatus({addon:{version:addonRelease.latestVersion}}).state,'current');
+ assert.equal(addonStatus({addon:{version:'999.0.0'}}).state,'current');
+ assert.equal(addonStatus({addon:{version:'0.2.10'}}).state,'available');
  assert.equal(compareVersions('0.2.10','0.2.9'),1);
 });
 test('release is public; reported addon version is owner-only and accepts legacy uploads',async()=>{
