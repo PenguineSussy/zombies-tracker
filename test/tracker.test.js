@@ -21,7 +21,7 @@ test('time parser preserves milliseconds, hours, comma fractions and countdown',
   assert.equal(time(451123),'7:31.123');assert.throws(()=>milliseconds('1:99'));
 });
 test('command parser accepts bot mention and multiword milestones',()=>{
-  assert.deepEqual(parseCommand('@MyBot !best @Player1 lightning bow alltime'),{command:'best',player:'player1',split:'lightning bow',scope:'alltime'});
+  assert.deepEqual(parseCommand('@MyBot !best @Player1 lightning bow alltime'),{command:'best',player:'player1',split:'lightning bow',scope:'alltime',scopeExplicit:true});
   assert.equal(parseCommand('hello !current @Player1'),null);
 });
 test('registration is case-insensitive, keys rotate and public state excludes credentials',t=>{
