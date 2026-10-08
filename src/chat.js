@@ -19,7 +19,7 @@ export class ChatResponder {
     if(['pb','sessionpb'].includes(command.command)&&!command.player&&this.provider) {
       command.player=defaultPlayer;
     }
-    let result=this.store.answer(command);
+    let result=command.command==='help'?'Commands: !current · !pb map · !wr map [category] · !best split session/alltime · !splits [alltime] · !pace · !session · !sessionpb · add player name to specify player':this.store.answer(command);
     if(command.command==='session' && result?.length>this.limit) {
       const p=this.store.view(command.player);
       if(!p.private)result=this.store.sessionAnswer(p,true,command.profile??null);
