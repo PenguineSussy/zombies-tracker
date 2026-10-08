@@ -1,4 +1,4 @@
-# Dr Monty Bot — LiveSplit addon 0.2.8
+# Dr Monty Bot — LiveSplit addon 0.2.9
 
 Tracks Black Ops III Solo Easter Egg runs in RTA. No separate companion or terminal is needed.
 
@@ -26,11 +26,11 @@ Use clear split-file metadata, for example:
 - Game: `Call of Duty: Black Ops III`
 - Category: `Der Eisendrache - Mega Gums - Solo`
 
-Detection reads map/category metadata, run labels, saved filename and recognizable split names. It does not inspect game memory. A recognized BO3 game name and supported map are required. Blank or other game names stop tracking, even with a map override. A map override must match the detected map; it cannot enable an unknown or disabled map. If detection is unclear, correct the Game Name and Category Name in Edit Splits. Category overrides remain available.
+Detection reads map/category metadata, run labels, saved filename and recognizable split names. It does not inspect game memory. Game Name may be the supported map itself (for example `Der Eisendrache`, `Origins`, or `DE`), or the BO3 game name with map information elsewhere. A map-only title is treated as BO3 in this BO3-only release. Blank, unknown, and explicitly different game names still stop tracking, even with a map override. A map override must match the detected map; it cannot enable an unknown or disabled map. If detection is unclear, correct the Game Name and Category Name in Edit Splits. Category Name is used for gum detection. A blank Category Name defaults to Mega Gums, or Any% on Ascension and Shangri-La. A nonempty unrecognized or conflicting category pauses uploads. Category overrides remain available.
 
 Categories: **No Gums, Classic Gums, Mega Gums, Any%**. Zetsubou No Shima and Super Easter Egg exclude No Gums. Ascension and Shangri-La allow only Any%. Multiplayer labels block uploads.
 
-The addon uses your own split names; no aliases are required. Names must be unique, 1–80 characters and contain no `<`, `>` or `@`. Reset before changing run details.
+The addon preserves your LiveSplit split names and comparisons; no alias editor is required. Version 0.2.9 reads the compatible BO3 ASL component’s public `split_names` dictionary and checked settings without running or editing the script. It uploads checkpoint hints only when the enabled count and recognized name anchors agree with the run layout. Missing/extra splits, conflicting maps, or multiple ASL components disable those hints. The server applies the shared LittleMontyBot names and conservative timing rules to live and saved records. Ambiguous names stay unchanged; Moon and Origins never use timing-only guesses. Removed Fire Dupe and Lightning/Fire milestones are not mapped; ZNS uses Rainbow Round End, separate from KT4. Names must be unique, 1–80 characters and contain no `<`, `>` or `@`. Reset before changing run details.
 
 ## What it tracks
 

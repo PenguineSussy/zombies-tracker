@@ -44,6 +44,12 @@ namespace LiveSplit.ZombiesTracker
             }
             return found.Count == 1 ? found.First() : null;
         }
+        public static string RunCategory(string category, string manual, string map)
+        {
+            if (!string.IsNullOrWhiteSpace(manual)) return Category(new string[0], manual);
+            if (string.IsNullOrWhiteSpace(category)) return CategoriesForMap(map).Contains("Mega Gums") ? "Mega Gums" : "Any%";
+            return Category(new[]{category}, "");
+        }
         public static readonly MapInfo[] Maps = {
             new MapInfo("super-easter-egg", "Super Easter Egg (6 maps)", true, "Super Easter Egg", "Super EE", "SuperEE"),
             new MapInfo("shadows-of-evil", "Shadows of Evil", true, "SOE"),
@@ -115,8 +121,9 @@ namespace LiveSplit.ZombiesTracker
         {
             // Overrides must never bypass the supported-game boundary.
             var supportedGames = new[] { "bo3", "black ops 3", "black ops iii", "call of duty black ops 3", "call of duty black ops iii" };
-            if (!supportedGames.Contains(Normalize(game)))
-                return new Detection { Reason = "Unsupported game/map - tracking paused. Set Edit Splits > Game Name to Call of Duty: Black Ops III. A map override cannot enable other games." };
+            bool mapTitle = Maps.Any(m => m.Enabled && m.Aliases.Any(a => Normalize(a) == Normalize(game)));
+            if (!supportedGames.Contains(Normalize(game)) && !mapTitle)
+                return new Detection { Reason = "Unsupported game/map - tracking paused. Set Game Name to a supported BO3 map (for example Der Eisendrache), or Call of Duty: Black Ops III with a map label. Other games are not enabled." };
             var names = splits.ToArray();
             var primary = new List<string> { game, category, fileTitle };
             foreach (var item in variables)

@@ -26,6 +26,19 @@ class Tests
             Check(AddonUpdates.Describe("0.2.6","0.2.9","0.2.7").Contains("Important update"),"important update notice");
             Check(AddonUpdates.Describe("0.2.10","0.2.9","0.2.7").Contains("up to date"),"numeric version ordering");
             bool invalidRelease=false;try{AddonUpdates.Describe("0.2.8","bad","0.2.7");}catch{invalidRelease=true;}Check(invalidRelease,"invalid manifest rejected");
+            foreach(var map in Detector.Maps.Where(m=>m.Enabled&&m.Id!="super-easter-egg"))
+                Check(Detector.Detect(map.Name,"","",new Dictionary<string,string>(),new string[0],"").Map==map.Id,"map-only title "+map.Id);
+            Check(Detector.RunCategory("","","der-eisendrache")=="Mega Gums","empty category defaults Mega");
+            Check(Detector.RunCategory("","","ascension")=="Any%","Any only category default");
+            Check(Detector.RunCategory("No Gums Mega Gums","","der-eisendrache")==null,"conflict not defaulted");
+            Check(Detector.RunCategory("Typo","","der-eisendrache")==null,"nonempty unknown category not defaulted");
+            var settings=new XmlDocument();settings.LoadXml("<Settings><Split>True</Split><CustomSettings><Setting id='zm_castle'>True</Setting><Setting id='Bow'>False</Setting><Setting id='Rocket Test TP'>True</Setting><Setting id='First TP'>True</Setting></CustomSettings></Settings>");
+            var order=new Dictionary<int,string>{{0,"Bow"},{1,"Rocket Test TP"},{2,"First TP"}};
+            Check(AutosplitBridge.Select(order,settings.DocumentElement,"zm_castle",2).SequenceEqual(new[]{"Rocket Test TP","First TP"}),"selected ASL order");
+            Check(AutosplitBridge.Select(order,settings.DocumentElement,"zm_castle",3)==null,"extra manual split disables index mapping");
+            Check(AutosplitBridge.Select(order,settings.DocumentElement,"zm_zod",2)==null,"other map cannot borrow settings");
+            Check(AutosplitBridge.Compatible("der-eisendrache",new[]{"Penguine Eats Bread","TP"},new[]{"Rocket Test TP","First TP"}),"custom names with consistent anchors");
+            Check(!AutosplitBridge.Compatible("der-eisendrache",new[]{"Bow","TP"},new[]{"Rocket Test TP","First TP"}),"contradictory named anchor rejected");
             foreach (var map in Detector.Maps.Where(m => m.Enabled && m.Id != "super-easter-egg")) Check(Detect(map.Name + " Any% Solo").Map == map.Id, "map " + map.Name);
             Check(!Detector.CategoriesForMap("zetsubou-no-shima").Contains("No Gums"), "ZNS category restriction");
             Check(!Detector.CategoriesForMap("super-easter-egg").Contains("No Gums"), "Super EE category restriction");

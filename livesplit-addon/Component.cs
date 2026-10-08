@@ -14,7 +14,7 @@ using LiveSplit.Model;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;
 
-[assembly: AssemblyVersion("0.2.8.0")]
+[assembly: AssemblyVersion("0.2.9.0")]
 [assembly: ComponentFactory(typeof(LiveSplit.ZombiesTracker.Factory))]
 
 namespace LiveSplit.ZombiesTracker
@@ -28,7 +28,7 @@ namespace LiveSplit.ZombiesTracker
         public string UpdateName { get { return ComponentName; } }
         public string XMLURL { get { return ""; } }
         public string UpdateURL { get { return ""; } }
-        public Version Version { get { return new Version(0, 2, 8); } }
+        public Version Version { get { return new Version(0, 2, 9); } }
     }
     public sealed class AddonOptions
     {
@@ -109,9 +109,7 @@ namespace LiveSplit.ZombiesTracker
                 var variables = Variables();
                 string title = Path.GetFileNameWithoutExtension(state.Run.FilePath ?? "");
                 var detected = Detector.Detect(state.Run.GameName, state.Run.CategoryName, title, variables, state.Run.Select(s => s.Name), options.Map);
-                var categoryTexts = new List<string> { state.Run.CategoryName, title };
-                categoryTexts.AddRange(variables.Where(v => Detector.Normalize(v.Key).Contains("gum") || Detector.Normalize(v.Key).Contains("category")).Select(v => v.Value));
-                var category = Detector.Category(categoryTexts, options.Category);
+                var category = Detector.RunCategory(state.Run.CategoryName, options.Category, detected.Map);
                 panel.DetectionText = detected.Reason + "\r\n" + (category == null ? "Gum category unknown or conflicting; choose a category override." : category + " / Solo / Easter Egg / RTA");
                 if (!options.Enabled || uploader == null) { panel.StatusText = "Not uploading. Configure settings, then enable and Apply."; return; }
                 if (detected.NonSolo) throw new InvalidOperationException("Multiplayer detected. Only Solo runs are supported; no upload sent.");
@@ -119,7 +117,9 @@ namespace LiveSplit.ZombiesTracker
                 if (!Detector.CategoriesForMap(detected.Map).Contains(category)) { panel.StatusText = "Not uploading: this map allows only " + string.Join(", ", Detector.CategoriesForMap(detected.Map)) + "."; return; }
                 string phase = state.CurrentPhase.ToString();
                 var profile = new RunProfile { map = detected.Map, category = category, players = 1, timing = "RealTime" };
-                string fingerprint = json.Serialize(profile) + "|" + options.Practice + "|" + string.Join("|", state.Run.Select(s => s.Name));
+                string bridgeStatus;
+                var autosplitNames = AutosplitBridge.Read(state, detected.Map, out bridgeStatus);
+                string fingerprint = json.Serialize(profile) + "|" + options.Practice + "|" + string.Join("|", state.Run.Select(s => s.Name)) + "|" + string.Join("|",autosplitNames??new string[0]);
                 bool idle = state.CurrentPhase == TimerPhase.NotRunning;
                 // Never turn an existing attempt into another category after an edit.
                 if (!idle && !forceNew && frozen != null && frozen != fingerprint)
@@ -132,12 +132,13 @@ namespace LiveSplit.ZombiesTracker
                     snapshot.records = Protocol.ReadRecords(state.Run);
                     lastRecords = DateTime.UtcNow;
                 }
+                snapshot.autosplitNames = autosplitNames;
                 snapshot.resetEvent = resetEvent;
                 uploader.Enqueue(snapshot);
                 sequence++; first = false; forceNew = false; suppressNext = false; lastPhase = phase; lastHeartbeat = DateTime.UtcNow;
                 runtime.Config=json.Serialize(options); runtime.Id=id; runtime.Identity=identity; runtime.LastPhase=lastPhase; runtime.Frozen=frozen;
                 runtime.Sequence=sequence; runtime.First=first; runtime.ForceNew=forceNew; runtime.SuppressNext=suppressNext;
-                panel.StatusText = uploader.Status + " / " + uploader.Count + " pending / " + phase;
+                panel.StatusText = uploader.Status + " / " + uploader.Count + " pending / " + phase + " / " + bridgeStatus;
             }
             catch (Exception ex) { panel.StatusText = "Not uploading: " + ex.Message; }
         }
@@ -194,7 +195,7 @@ namespace LiveSplit.ZombiesTracker
                 }
             }
             catch (Exception ex) { canSave = false; panel.StatusText = "Cannot save key: " + ex.Message; }
-            put("Version", "0.2.8"); put("Enabled", (options.Enabled && canSave).ToString()); put("Server", options.Server);
+            put("Version", "0.2.9"); put("Enabled", (options.Enabled && canSave).ToString()); put("Server", options.Server);
             put("ProtectedToken", protectedToken);
             put("Map", options.Map); put("Category", options.Category); put("Practice", options.Practice.ToString());
             return root;

@@ -21,6 +21,7 @@ namespace LiveSplit.ZombiesTracker
     }
     public sealed class Snapshot
     {
+        public string[] autosplitNames { get; set; }
         public string addonVersion { get; set; }
         public string attemptId { get; set; }
         public int attemptCount { get; set; }
