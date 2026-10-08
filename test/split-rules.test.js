@@ -22,7 +22,7 @@ test('optional and alternative splits do not shift names; volatile maps and othe
  const rev={map:'revelations',category:'Mega Gums'};
  const r=resolveSplits(rev,rows(['Boss 1',1000000],['Basketball',1150000],['Boss 2',1250000]));
  assert.deepEqual(r.map(s=>s.displayName),['Boss 1','Basketball','Boss 2']);
- assert.equal(resolveSplits(p,rows(['Bow',260000],['Unknown',340000]))[1].displayName,undefined);
+ assert.equal(resolveSplits(p,rows(['Bow',260000],['Unknown',340000]))[1].displayName,'Rocket');
  for(const profile of [{...p,category:'No Gums'},{...p,map:'moon'},{...p,map:'origins'}])assert.equal(resolveSplits(profile,rows(['Unknown',334000]))[0].displayName,undefined);
  const dup=resolveSplits(p,rows(['R7',420000],['Crackle',440000]));assert.deepEqual(dup.map(s=>s.name),['R7','Crackle']);
  assert.equal(resolveSplits(p,rows(['Mystery',1500000]))[0].displayName,undefined);

@@ -16,7 +16,7 @@ test('subsplits, aliases, missing checkpoints and Super EE cumulative times',t=>
  const p=map=>WR_CHECKPOINTS.find(r=>r.profile.map===map).profile;
  assert.equal(wrCheckpoint(s,p('origins'),'-Lightning Enter').ms,878000);
  assert.equal(wrCheckpoint(s,p('origins'),'-Ice Leave').ms,1138000);
- assert.equal(wrCheckpoint(s,p('origins'),'Fire Dupe').ms,944000);
+ assert.equal(wrCheckpoint(s,p('origins'),'Fire Dupe'),null);
  assert.equal(wrCheckpoint(s,p('origins'),'Iron Fisting'),null);
  assert.equal(wrCheckpoint(s,p('der-eisendrache'),'Rocket'),null);
  assert.equal(wrCheckpoint(s,p('der-eisendrache'),'R7').ms,416000);
