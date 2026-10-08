@@ -8,6 +8,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { check, clean, key, snapshot, profile, profileKey, profileLabel, time, parseCommand, requireEnabledMap } from './domain.js';
 import {streamLink} from './streams.js';
+import {wrCheckpoint} from './wr-checkpoints.js';
 
 const hash = token => createHash('sha256').update(String(token)).digest('hex');
 const decode = row => row ? JSON.parse(row.body) : null;
@@ -135,20 +136,25 @@ export class Store {
         }
       }
       if (!a.practice && p.public && !s.suppressAlerts && now - s.observedAt <= 30000) {
-        for (const split of a.splits) {
+        // Alerts match the checkpoint name shown on the site (aliases resolved) or the runner's own split name.
+        const resolved = resolveSplits(a.profile, a.splits, { finished: a.phase === 'Ended' && a.complete });
+        for (const [i, split] of resolved.entries()) {
           if (previousSplits.some(x => x.index === split.index && x.ms === split.ms)) continue;
+          const label = split.displayName ?? split.name;
           for (const sub of this.list('subscriptions')) {
-            if (!sub.enabled || (sub.player !== '*' && sub.player !== p.id) || profileKey(sub.profile) !== profileKey(a.profile) || sub.split !== split.name) continue;
-            const ref = a.benchmark?.splits[split.name];
-            const qualifies = sub.mode === 'milestone' || (sub.mode === 'under' && split.ms <= sub.thresholdMs) || (sub.mode === 'wr' && ref != null && split.ms < ref);
+            if (!sub.enabled || (sub.player !== '*' && sub.player !== p.id) || profileKey(sub.profile) !== profileKey(a.profile) || (sub.split !== split.name && sub.split !== a.splits[i].name)) continue;
+            const confirmed = wrCheckpoint(this, a.profile, split.originalName ?? split.name);
+            const ref = confirmed?.ms ?? a.benchmark?.splits[split.name] ?? a.benchmark?.splits[a.splits[i].name];
+            const precision = confirmed?.precisionMs ?? 1, actual = Math.round(split.ms / precision) * precision;
+            const qualifies = sub.mode === 'milestone' || (sub.mode === 'under' && split.ms <= sub.thresholdMs) || (sub.mode === 'wr' && ref != null && actual < ref);
             const dedup = `${sub.id}:${split.index}`;
             if (!qualifies || a.notified.includes(dedup)) continue;
             a.notified.push(dedup);
             const jobId = `${a.id}:${dedup}`;
-            const comparison = ref == null ? 'WR checkpoint comparison unavailable.' : `${time(Math.abs(ref - split.ms))} ${split.ms < ref ? 'ahead of' : split.ms > ref ? 'behind' : 'level with'} the configured WR checkpoint.`;
+            const comparison = ref == null ? 'WR checkpoint comparison unavailable.' : `${precision === 1000 ? '~' : ''}${time(Math.abs(ref - actual))} ${actual < ref ? 'ahead of' : actual > ref ? 'behind' : 'level with'} the ${confirmed ? 'reviewed' : 'configured'} WR checkpoint.`;
             this.put('outbox', jobId, { id: jobId, attempt: id, player: p.id, subscription: sub.id,
               split, channel: sub.channel, role: sub.role, status: 'pending', tries: 0, nextTry: now, createdAt: now,
-              content: `${p.name} | ${profileLabel(a.profile)}\n${split.name}: ${time(split.ms)}\n${comparison}\nSelf-reported timer data.${a.benchmark ? '\nBenchmark source: ' + a.benchmark.source : ''}` });
+              content: `${p.name} | ${profileLabel(a.profile)}\n${label}: ${time(split.ms)}\n${comparison}\nSelf-reported timer data.${!confirmed && a.benchmark ? '\nBenchmark source: ' + a.benchmark.source : ''}` });
           }
         }
       }
@@ -301,8 +307,9 @@ export class Store {
     check(input.player === '*' || /^[a-z0-9_]{3,30}$/.test(input.player), 'Invalid player.');
     check(['wr', 'under', 'milestone'].includes(input.mode), 'Choose wr, under, or milestone.');
     if (input.mode === 'under') check(Number.isSafeInteger(input.thresholdMs) && input.thresholdMs >= 0, 'Threshold in milliseconds required.');
-    const sub = { id: randomUUID(), profile: profile(input.profile), guild: input.guild, channel: input.channel,
-      role: input.role || null, player: input.player, split: key(input.split), mode: input.mode,
+    const selected = profile(input.profile);
+    const sub = { id: randomUUID(), profile: selected, guild: input.guild, channel: input.channel,
+      role: input.role || null, player: input.player, split: key(splitName(selected, input.split)), mode: input.mode,
       thresholdMs: input.thresholdMs ?? null, enabled: true };
     this.put('subscriptions', sub.id, sub); return sub;
   }

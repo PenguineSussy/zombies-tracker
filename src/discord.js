@@ -1,5 +1,6 @@
 import { createPublicKey, verify, createHash } from 'node:crypto';
-import { check, milliseconds } from './domain.js';
+import { check, milliseconds, ENABLED_MAPS, CATEGORIES, categoriesForMap, profile, profileLabel } from './domain.js';
+import { SPLIT_RULES, splitName } from './split-rules.js';
 
 export function verifyDiscord(publicKey, timestamp, signature, raw, now = Date.now()) {
   if (!/^[a-f0-9]{64}$/i.test(publicKey ?? '') || !/^\d+$/.test(timestamp ?? '') || !/^[a-f0-9]{128}$/i.test(signature ?? '') || Math.abs(now/1000 - Number(timestamp)) > 300) return false;
@@ -12,10 +13,13 @@ const stringOption = (name, description, required = true) => ({ name, descriptio
 export const discordCommands = [
   ...['current', 'splits', 'pace', 'session', 'pb'].map(name => ({ name, description: `Show a runner's ${name}`, options: [stringOption('player', 'Registered tracker username')] })),
   { name: 'best', description: 'Session or all-time recorded checkpoint best', options: [stringOption('player', 'Registered tracker username'), stringOption('split', 'Milestone name, e.g. bow'), { ...stringOption('scope', 'Record scope', false), choices: [{name:'Session',value:'session'}, {name:'All-time recorded',value:'alltime'}] }] },
-  { name: 'track-alert', description: 'Configure an alert in this channel for a runner’s current profile', default_member_permissions: '32', dm_permission: false,
-    options: [stringOption('player','Registered tracker username'), stringOption('split','Milestone name'),
-      { ...stringOption('mode','When to notify'), choices:[{name:'Ahead of WR checkpoint',value:'wr'},{name:'At or under a time',value:'under'},{name:'Every completion',value:'milestone'}] },
-      {name:'role',description:'Optional role to ping',type:8,required:false}, stringOption('threshold','Required for under: e.g. 7:35',false)] },
+  { name: 'track-alert', description: 'Post in this channel (and optionally ping a role) when a runner reaches a split', default_member_permissions: '32', dm_permission: false,
+    options: [stringOption('player','Registered tracker username, or * for every public runner'), stringOption('split','Checkpoint name, e.g. Boss Enter'),
+      {name:'role',description:'Role to ping',type:8,required:false},
+      { ...stringOption('mode','When to notify (default: every time the split is reached)',false), choices:[{name:'Every time the split is reached',value:'milestone'},{name:'At or under a time',value:'under'},{name:'Ahead of WR checkpoint',value:'wr'}] },
+      stringOption('threshold','Required for under: e.g. 7:35',false),
+      { ...stringOption('map','Map (default: the runner’s current map)',false), choices:ENABLED_MAPS.map(m=>({name:m.name,value:m.id})) },
+      { ...stringOption('category','Category (default: the runner’s current category, or Mega Gums)',false), choices:CATEGORIES.map(c=>({name:c,value:c})) }] },
   { name: 'track-alerts', description: 'List this server’s alert subscription IDs', default_member_permissions: '32', dm_permission: false },
   { name: 'track-unalert', description: 'Remove an alert', default_member_permissions: '32', dm_permission: false, options:[stringOption('id','Subscription ID from /track-alerts')] }
 ];
@@ -30,11 +34,20 @@ export function discordInteraction(store, interaction) {
       const permissions = BigInt(interaction.member?.permissions ?? '0');
       check(interaction.guild_id && ((permissions & 32n) !== 0n || (permissions & 8n) !== 0n), 'Manage Server permission required.', 403);
       if (name === 'track-alert') {
-        const player = store.view(options.player); check(!player.private && player.profile, 'Runner must have a public profile and have connected at least once.');
-        const sub = store.subscribe({ ...options, player:player.id, guild:interaction.guild_id, channel:interaction.channel_id, profile:player.profile, thresholdMs: options.threshold ? milliseconds(options.threshold) : null });
-        content = `Alert created: ${sub.id}. Uses this runner's current map/category. Role notifications require the bot to be allowed to mention that role.`;
+        const anyone = options.player === '*', player = anyone ? null : store.view(options.player);
+        check(anyone || !player.private, 'That runner is not sharing tracking data.');
+        const map = options.map ?? player?.profile?.map;
+        check(map, anyone ? 'Choose a map for an alert covering every runner.' : 'Choose a map, or have the runner connect LiveSplit once first.');
+        const category = options.category ?? (player?.profile?.map === map ? player.profile.category : categoriesForMap(map).includes('Mega Gums') ? 'Mega Gums' : categoriesForMap(map)[0]);
+        const selected = profile({ map, category }), mode = options.mode ?? 'milestone';
+        check(mode !== 'under' || options.threshold, 'Add a threshold for an under alert, e.g. 7:35.');
+        const sub = store.subscribe({ split:options.split, role:options.role, mode, player:anyone ? '*' : player.id, guild:interaction.guild_id, channel:interaction.channel_id, profile:selected, thresholdMs: options.threshold ? milliseconds(options.threshold) : null });
+        const rules = SPLIT_RULES[selected.map] ?? [], label = splitName(selected, options.split);
+        content = `Alert created (${sub.id}): ${anyone ? 'any public runner' : player.name} / ${label} / ${profileLabel(selected)}${sub.role ? ` / pings <@&${sub.role}>` : ''}.`
+          + (rules.length && !rules.some(r => r.name === label) ? `\nNote: "${label}" is not a standard checkpoint for this map, so it only matches a LiveSplit split with exactly that name. Standard: ${rules.map(r => r.name).join(', ')}.` : '')
+          + (sub.role ? '\nThe bot needs Send Messages here, and the role must be mentionable (or the bot needs Mention All Roles).' : '');
       } else if (name === 'track-alerts') {
-        content = store.list('subscriptions').filter(s => s.guild === interaction.guild_id).map(s => `${s.id}: ${s.player} / ${s.split} / ${s.mode}`).join('\n') || 'No alerts configured.';
+        content = store.list('subscriptions').filter(s => s.guild === interaction.guild_id).map(s => `${s.id}: ${s.player === '*' ? 'any runner' : s.player} / ${s.split} / ${s.mode} / ${profileLabel(s.profile)} / <#${s.channel}>${s.role ? ` / <@&${s.role}>` : ''}`).join('\n') || 'No alerts configured.';
       } else {
         const sub = store.get('subscriptions', options.id); check(sub?.guild === interaction.guild_id, 'Alert not found.', 404);
         store.db.prepare('DELETE FROM subscriptions WHERE id=?').run(sub.id); content = 'Alert removed.';
