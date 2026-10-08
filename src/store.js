@@ -1,3 +1,4 @@
+import {replyProfile,duration,lastSeen,achievedDate,replyTiming as timingLabel} from './reply-format.js';
 import {recordActivity} from './activity.js';
 import {capturePacePB,paceAnswer} from './pace.js';
 import {queueAnnouncements} from './announcements.js';
@@ -222,24 +223,21 @@ export class Store {
   sessionAnswer(p, compact=false) {
     const s=this.sessionStats(p);
     if(!s)return `${p.name}: No recorded session.`;
-    const link=`https://doctormonty.beer/?runner=${encodeURIComponent(p.id)}`;
-    const summary=`${p.name}: ${s.active?'Session':'Last session'} ${time(s.durationMs)}; ${s.resets} resets; ${s.attempts} attempts.`;
-    if(compact)return `${summary} Stats: ${link}`;
-    const lines=[summary,`Full session: ${link}`,s.current?`Currently: ${profileLabel(s.current)}`:'Currently: no active tracked run.'];
-    for(const g of s.groups) {
-      if(!g.isCurrentProfile){lines.push(`${g.label}: previously played; ${g.resets} session resets; ${time(g.durationMs)} tracked time.`);continue;}
-      lines.push(`${g.label}: ${g.attempts} attempts, ${g.finishes} complete finishes; session PB ${g.fastestMs==null?'unavailable':time(g.fastestMs)}.`);
-      if(g.furthest)lines.push(`Furthest checkpoint: ${g.furthest.name}. ${g.resets} session resets on this map/category.`);
-      lines.push(...g.splits.map(v=>`${v.name}: average ${time(v.averageMs)}, fastest ${time(v.bestMs)} (${v.count} samples).`));
+    const group=s.groups.find(g=>g.isCurrentProfile);
+    const summary=`${p.name} | ${s.active?'Session':'Last session'}: ${duration(s.durationMs)} · ${s.attempts} attempts · ${s.resets} resets`;
+    const lines=[summary,s.current?`Playing: ${replyProfile(s.current)}`:'No active tracked run',`Fastest finish: ${time(group?.fastestMs)}`];
+    const splitRows=group?.splits??[];
+    lines.push(...(compact?splitRows.slice(0,1):splitRows).map(v=>`${v.name}: average ${time(v.averageMs)}, best ${time(v.bestMs)}`));
+    if(!compact){
+      for(const g of s.groups.filter(g=>!g.isCurrentProfile))lines.push(`Previously: ${replyProfile(g.profile)} · ${g.resets} resets · ${duration(g.durationMs)} tracked`);
+      if(s.unconfirmedEnds)lines.push(`${s.unconfirmedEnds} unconfirmed endings excluded from resets`);
     }
-    lines.push('Split times are cumulative RTA checkpoints; practice and missing splits are excluded from time statistics. Reset count includes detected resets only.');
-    if(s.unconfirmedEnds)lines.push(`${s.unconfirmedEnds} attempt endings were not observed and are not counted as confirmed resets.`);
-    return lines.join('\n');
+    return lines.join(' | ');
   }
   answer(input) {
     const q = typeof input === 'string' ? parseCommand(input) : input;
     if (!q) return null;
-    if (q.command === 'help') return 'Commands: !current @player | !best @player bow session/alltime | !splits @player | !pace @player | !pb [@player] [map] [category] | !wr <map> [category] (default: Mega Gums) | !splits @player alltime | !session @player | !sessionpb [@player]. In linked chats, omit @player for the channel runner. Add @player for anyone else. WR uses a map.';
+    if (q.command === 'help') return 'Commands: !current · !pb map · !wr map [category] · !best split session/alltime · !splits [alltime] · !pace · !session · !sessionpb. In linked chats, omit @name for that runner; add @name for anyone else. On the site, include @name. Map PB/WR defaults to Mega Gums for BO3.';
     try {
       if(q.error)return q.error;
       if(q.command!=='wr'&&!q.player)return 'This chat is not linked to a runner. Add @runner to your command, or connect your channel on the Chatbot page.';
@@ -248,36 +246,36 @@ export class Store {
         const selected=profile(q.profile);
         requireEnabledMap(selected.map);
         const wr=this.get('metadata',`zwr:${profileKey(selected)}`);
-        return `${profileLabel(selected)} | ${wr?.ms!=null?`SOLO WR: ${time(wr.ms)} — ${wr.holder}. Achieved: ${wr.achievedDate??'unavailable'}.`:'Solo WR unavailable for this category.'}`;
+        return `${replyProfile(selected)} | ${wr?.ms!=null?`SOLO WR: ${time(wr.ms)} ${timingLabel(selected)} — ${wr.holder} | Achieved: ${achievedDate(wr.achievedDate)}`:'Solo WR unavailable for this category.'}`;
       }
       const p = this.view(q.player);
       if (p.private) return `${p.name} isn't sharing tracking data.`;
-      const a = p.attempt, label = p.profile ? profileLabel(p.profile) : 'No category selected';
+      const a = p.attempt, label = replyProfile(p.profile);
       const last = a?.splits.at(-1);
       if (q.command === 'current') {
-        if (p.status === 'offline') return `${p.name}: ${p.source?.type === 'therun' ? 'no recent therun.gg update (playing status unknown)' : 'tracker offline'}${p.lastSeen ? '; last seen ' + new Date(p.lastSeen).toISOString() : ''}.`;
-        if (!a || a.phase === 'NotRunning') return `${p.name}: connected, no active run. ${label}`;
-        return `${p.name} | ${label} | ${a.phase === 'Ended' ? 'Finished' : a.phase === 'Paused' ? 'Paused' : p.source?.type === 'therun' ? 'Last reported timer' : 'Running'} at ${time(a.elapsedMs)}. ${last ? 'Last completed: ' + (last.displayName??last.name) + ' at ' + time(last.ms) + '. ' : ''}${a.current && a.phase !== 'Ended' ? 'Current: ' + a.current + '.' : ''} Session resets: ${this.sessionStats(p)?.groups.find(g=>g.isCurrentProfile)?.resets??0}. Completed: ${a.splits.map(s=>(s.displayName??s.name)+' '+time(s.ms)).join(', ')||'none'}.${a.practice ? ' Practice attempt.' : ''}`;
+        if (p.status === 'offline') return `${p.name}'s tracker is offline.${p.lastSeen?' Last connected '+lastSeen(p.lastSeen,this.clock())+'.':''}${p.source?.type==='therun'?' No recent therun.gg update; playing status unknown.':''}`;
+        if (!a || a.phase === 'NotRunning') return `${p.name} is connected and waiting to start a run.`;
+        return `${p.name} | ${label} | ${a.phase==='Ended'?'Finished':a.phase==='Paused'?'Paused':p.source?.type==='therun'?'Last reported timer':'Running'}: ${time(a.elapsedMs)} ${timingLabel(p.profile)}${last?' | Last split: '+(last.displayName??last.name)+' — '+time(last.ms):''}${a.current&&a.phase!=='Ended'?' | Next: '+a.current:''} | Resets: ${this.sessionStats(p)?.groups.find(g=>g.isCurrentProfile)?.resets??0}${a.practice?' | Practice attempt':''}`;
       }
       if (q.command === 'best') {
         check(q.split, 'Specify a split, e.g. !best @player bow session.');
         const selected = q.profile ? profile(q.profile) : p.profile;
         const b = this.best(p, q.split, q.scope, selected);
-        return `${p.name} | ${selected ? profileLabel(selected) : label} | ${q.scope === 'alltime' ? 'All-time' : 'Session'} best ${b?.displayName??clean(q.split)}: ${b?.ms!=null ? time(b.ms) : 'unavailable'} (${time(b?.bestSegmentMs)}). Split (segment), RTA.${b?.inferred?' Inferred split match.':''}`;
+        return `${p.name} | ${selected ? replyProfile(selected) : label} | ${q.scope === 'alltime' ? 'All-time' : 'Session'} best ${b?.displayName??clean(q.split)}: ${b?.ms!=null ? time(b.ms) : 'unavailable'} (${time(b?.bestSegmentMs)} segment) ${timingLabel(selected??p.profile)}${b?.inferred?' Inferred split match.':''}`;
       }
       if(q.command==='splits'&&q.scope==='alltime') {
         const names=new Set([...(this.savedRecords(p)?.splits.map(s=>s.name)??[]),...this.attempts(p.id).filter(a=>!a.practice&&profileKey(a.profile)===profileKey(p.profile)).flatMap(a=>a.splits.map(s=>s.name))]);
         const rows=[...names].map(name=>this.best(p,name,'alltime')).filter(Boolean);
-        return p.name+' | '+label+' | All-time split (segment): '+(rows.map(b=>(b.displayName??b.name)+': '+time(b.ms)+' ('+time(b.bestSegmentMs)+')').join(' · ')||'unavailable');
+        return p.name+' | '+label+' | All-time bests (split/segment): '+(rows.map(b=>(b.displayName??b.name)+' — '+time(b.ms)+' ('+time(b.bestSegmentMs)+')').join(' · ')||'unavailable');
       }
-      if (q.command === 'splits') return `${p.name} | ${label} | ${a?.splits.length ? a.splits.map(s => (s.displayName??s.name) + ' ' + time(s.ms)).join(' · ') : 'No checkpoints recorded.'}${a && !a.complete ? ' Partial history.' : ''}`;
+      if (q.command === 'splits') return `${p.name} | ${label} | Current run: ${a?.splits.length ? a.splits.map(s => (s.displayName??s.name) + ' — ' + time(s.ms)).join(' · ') : 'No checkpoints recorded.'}${a && !a.complete ? ' Partial history.' : ''}`;
       if (q.command === 'pace') return paceAnswer(this,p);
       if (q.command === 'session') {
         return this.sessionAnswer(p);
       }
       if(q.command==='sessionpb') {
         const group=this.sessionStats(p)?.groups.find(g=>g.isCurrentProfile);
-        return `${p.name} | ${label} | Session PB: ${time(group?.fastestMs)} (completed tracked runs).`;
+        return `${p.name} | ${label} | Session PB: ${time(group?.fastestMs)} ${timingLabel(p.profile)}`;
       }
       if (q.command === 'pb') {
         const selected=q.profile?profile(q.profile):p.profile;
@@ -286,7 +284,7 @@ export class Store {
         const best = this.attempts(p.id).filter(a => a.phase === 'Ended' && a.complete && !a.practice && profileKey(a.profile) === profileKey(selected)).sort((a,b) => a.elapsedMs - b.elapsedMs)[0];
         const saved=this.savedRecords(p,selected)?.pbMs;
         const fromSaved=saved!=null && (!best || saved<=best.elapsedMs);
-        return `${p.name} | ${profileLabel(selected)} | PB: ${fromSaved?time(saved):best?time(best.elapsedMs):'unavailable'}${fromSaved?' (LiveSplit Personal Best)':best?' (tracker completed run)':''}.`;
+        return `${p.name} | ${replyProfile(selected)} | PB: ${fromSaved?time(saved):best?time(best.elapsedMs):'unavailable'} ${timingLabel(selected)}`;
       }
       return 'Unknown command.';
     } catch (error) { if (error.status) return error.message; throw error; }

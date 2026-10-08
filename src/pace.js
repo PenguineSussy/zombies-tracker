@@ -1,3 +1,4 @@
+import {replyProfile,deltaDuration} from './reply-format.js';
 import {profileKey,profileLabel,time} from './domain.js';
 import {resolveSplits} from './split-rules.js';
 import {wrCheckpoint} from './wr-checkpoints.js';
@@ -28,9 +29,9 @@ export function paceAnswer(store,p){
   return actual&&expected&&actual.name===expected.name;
  });
  const ref=compatible?reference.find(s=>s.index===last.index)?.pbSplitMs:null;
- const deltaText=(value,baseline)=>`${time(Math.abs(value-baseline))} ${value<baseline?'ahead of':value>baseline?'behind':'level with'}`;
- let result=ref!=null?`PB pace at ${last.displayName??last.name}: ${deltaText(last.ms,ref)} PB (${time(last.ms)} vs ${time(ref)}).`:
-  !pb?'PB pace unavailable: no saved PB yet.':!compatible?'PB pace unavailable: checkpoint layout does not match the PB.':'PB checkpoints unavailable; update the LiveSplit addon to 0.2.6 and reconnect.';
+ const deltaText=(value,baseline)=>`${deltaDuration(Math.abs(value-baseline))} ${value<baseline?'ahead of':value>baseline?'behind':'level with'}`;
+ let result=ref!=null?`${last.displayName??last.name}: ${time(last.ms)} | ${deltaText(last.ms,ref)} PB`:
+  !pb?'PB pace unavailable: no saved PB yet.':!compatible?'PB pace unavailable: checkpoint layout does not match the PB.':'PB checkpoints unavailable; update the LiveSplit addon and reconnect.';
  const benchmark=a.benchmark;
  const wrSplits=benchmark?resolveSplits(a.profile,Object.entries(benchmark.splits).map(([name,ms],index)=>({index,name,ms})),{timing:false}):[];
  const confirmed=wrCheckpoint(store,a.profile,last.originalName??last.name);
@@ -38,8 +39,8 @@ export function paceAnswer(store,p){
  if(wrRef!=null){
   const precision=confirmed?.precisionMs??50;
   const actual=Math.round(last.ms/precision)*precision;
-  result+=` WR checkpoint: ${precision===1000?'~':''}${deltaText(actual,wrRef)} WR.`;
+  result+=` · ${precision===1000?'Approximately ':''}${deltaText(actual,wrRef)} WR checkpoint`;
  }
  else {const wr=store.get('metadata',`zwr:${profileKey(a.profile)}`);if(wr?.ms!=null)result+=` WR finish: ${time(wr.ms)} (checkpoint pace unavailable).`;}
- return `${p.name}${state} | ${result} | ${profileLabel(a.profile)}${a.practice?' · Practice':''}`;
+ return `${p.name}${state} | ${result} | ${replyProfile(a.profile)}${a.practice?' · Practice':''}`;
 }
