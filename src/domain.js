@@ -117,7 +117,7 @@ export function snapshot(input) {
   return result;
 }
 
-export function parseCommand(text, defaultPlayer) {
+function legacyCommand(text, defaultPlayer) {
   const words = String(text).trim().match(/"[^"]+"|\S+/g)?.map(s => s.replace(/^"|"$/g, '')) ?? [];
   if (words[0]?.startsWith('@')) words.shift();
   const command = words.shift()?.toLowerCase();
@@ -131,7 +131,7 @@ export function parseCommand(text, defaultPlayer) {
       if(!/^[a-z0-9_]{3,30}$/.test(player))return {command:'pb',error:'Use !pb [@runner] [map] [category].'};
     }
     if(!words.length)return {command:'pb',player};
-    const selected=parseCommand('!wr '+words.join(' '));
+    const selected=legacyCommand('!wr '+words.join(' '));
     // Retain the old unmentioned username syntax only when it is not a map.
     if(!player&&words.length===1&&selected.error?.startsWith('Use !wr')&&/^[a-z0-9_]{3,30}$/i.test(words[0]))return {command:'pb',player:words[0].toLowerCase()};
     return {command:'pb',player,...(selected.error?{error:selected.error.replace('!wr <map>','!pb [@runner] <map>').replace('!wr Der Eisendrache','!pb @Penguine Der Eisendrache')}:{profile:selected.profile})};
@@ -151,4 +151,37 @@ export function parseCommand(text, defaultPlayer) {
   let scope = 'session';
   if (['session', 'alltime'].includes(words.at(-1)?.toLowerCase())) scope = words.pop().toLowerCase();
   return { command: command.slice(1), player, split: words.join(' '), scope };
+}
+
+// Map and split words take precedence over unmentioned runner names.
+export function parseCommand(text, defaultPlayer, runnerIds=[]) {
+ const words=String(text).trim().match(/"[^"]+"|\S+/g)?.map(s=>s.replace(/^"|"$/g,''))??[];
+ if(words[0]?.startsWith('@'))words.shift();
+ const command=words.shift()?.toLowerCase();
+ if(!['!current','!best','!splits','!pace','!session','!pb','!wr','!sessionpb','!help'].includes(command))return null;
+ if(command==='!help')return {command:'help'};
+ const name=command.slice(1);
+ if(name==='wr'&&words[0]?.startsWith('@'))return {command:name,error:'Use !wr <map> [category].'};
+ let player=defaultPlayer??undefined;
+ if(words[0]?.startsWith('@'))player=words.shift().slice(1).toLowerCase();
+ else if(words[0] && runnerIds.includes(words[0].toLowerCase()) && legacyCommand('!wr '+words[0]).error)player=words.shift().toLowerCase();
+ else if(defaultPlayer===undefined && words[0] && legacyCommand('!wr '+words.join(' ')).error?.startsWith('Use !wr') && /^[a-z0-9_]{3,30}$/i.test(words[0]))player=words.shift().toLowerCase();
+ if(player&&!/^[a-z0-9_]{3,30}$/.test(player))return {command:name,error:'Use a valid runner name.'};
+ if(name==='wr') {
+  if(!words.length)return player?{command:name,player}:{command:name,error:'Use !wr <map> [category], or use !wr in a linked chat.'};
+  return legacyCommand('!wr '+words.join(' '));
+ }
+ let scope='session';
+ const scopeAt=words.findIndex(w=>['session','alltime'].includes(w.toLowerCase()));
+ if(scopeAt>=0)scope=words.splice(scopeAt,1)[0].toLowerCase();
+ let selected;
+ for(let i=0;i<words.length;i++) {
+  const candidate=legacyCommand('!wr '+words.slice(i).join(' '));
+  if(!candidate.error || !candidate.error.startsWith('Use !wr')) {
+   if(candidate.error)return {command:name,player,error:candidate.error};
+   selected=candidate.profile;words.splice(i);break;
+  }
+ }
+ if(name!=='best'&&words.length)return {command:name,player,error:'Unknown map or category. Use a supported map name or abbreviation.'};
+ return {command:name,player,scope,...(scopeAt>=0?{scopeExplicit:true}:{}),split:words.join(' '),...(selected?{profile:selected}:{})};
 }

@@ -193,7 +193,7 @@ export class Store {
     return best||saved ? {...(best??saved),ms:best?.ms??null,displayName:saved?.displayName??best?.displayName??best?.name,bestSegmentMs:segments.length?Math.min(...segments):null}:null;
   }
   savedRecords(p,selected=p.profile){const records=selected?this.get('metadata',`saved-records:${p.id}:${profileKey(selected)}`):null;return records?{...records,splits:resolveSplits(selected,records.splits,{timing:false})}:null;}
-  sessionStats(p) {
+  sessionStats(p, selected=p.profile) {
     const session=this.sessionWindow(p);
     if(!session) return null;
     const attempts=this.attempts(p.id).filter(a=>a.sessionId===session.id && a.phase!=='NotRunning');
@@ -218,14 +218,14 @@ export class Store {
     return {...session,active:session.endedAt==null,durationMs:Math.max(0,(session.endedAt??this.clock())-session.startedAt),current,
       attempts:attempts.length,resets:attempts.filter(a=>a.resetObserved===true).length,
       unconfirmedEnds:attempts.filter(a=>a.phase==='Reset'&&a.resetObserved!==true).length,
-      groups:[...groups.values()].map(g=>{const isCurrentProfile=p.profile&&profileKey(g.profile)===profileKey(p.profile);return {...g,isCurrentProfile,fastestMs:isCurrentProfile?g.fastestMs:null,furthest:isCurrentProfile?g.furthest:null,splits:isCurrentProfile?[...g.splits.values()].map(({totalMs,...s})=>({...s,averageMs:Math.round(totalMs/s.count)})):[]};})};
+      groups:[...groups.values()].map(g=>{const isCurrentProfile=selected&&profileKey(g.profile)===profileKey(selected);return {...g,isCurrentProfile,fastestMs:isCurrentProfile?g.fastestMs:null,furthest:isCurrentProfile?g.furthest:null,splits:isCurrentProfile?[...g.splits.values()].map(({totalMs,...s})=>({...s,averageMs:Math.round(totalMs/s.count)})):[]};})};
   }
-  sessionAnswer(p, compact=false) {
-    const s=this.sessionStats(p);
+  sessionAnswer(p, compact=false, selected=null) {
+    const s=this.sessionStats(p,selected??p.profile);
     if(!s)return `${p.name}: No recorded session.`;
     const group=s.groups.find(g=>g.isCurrentProfile);
     const summary=`${p.name} | ${s.active?'Session':'Last session'}: ${duration(s.durationMs)} · ${s.attempts} attempts · ${s.resets} resets`;
-    const lines=[summary,s.current?`Playing: ${replyProfile(s.current)}`:'No active tracked run',`Fastest finish: ${time(group?.fastestMs)}`];
+    const lines=[summary,...(selected?[`Selected: ${replyProfile(selected)}`]:[]),s.current?`Playing: ${replyProfile(s.current)}`:'No active tracked run',`Fastest finish: ${time(group?.fastestMs)}`];
     const splitRows=group?.splits??[];
     lines.push(...(compact?splitRows.slice(0,1):splitRows).map(v=>`${v.name}: average ${time(v.averageMs)}, best ${time(v.bestMs)}`));
     if(!compact){
@@ -235,22 +235,28 @@ export class Store {
     return lines.join(' | ');
   }
   answer(input) {
-    const q = typeof input === 'string' ? parseCommand(input) : input;
+    const q = typeof input === 'string' ? parseCommand(input,undefined,this.list('players').map(p=>p.id)) : input;
     if (!q) return null;
-    if (q.command === 'help') return 'Commands: !current · !pb map · !wr map [category] · !best split session/alltime · !splits [alltime] · !pace · !session · !sessionpb. In linked chats, omit @name for that runner; add @name for anyone else. On the site, include @name. Map PB/WR defaults to Mega Gums for BO3.';
+    if (q.command === 'help') return 'Commands: !current · !pb map · !wr map [category] · !best split session/alltime · !splits [alltime] · !pace · !session · !sessionpb. In linked chats, omit @name for that runner; add name or @name for anyone else. On the site, include a runner name. Add a map and optional category to select saved stats; otherwise the detected profile is used. Map PB/WR defaults to Mega Gums for BO3.';
     try {
       if(q.error)return q.error;
       if(q.command!=='wr'&&!q.player)return 'This chat is not linked to a runner. Add @runner to your command, or connect your channel on the Chatbot page.';
       if(q.command==='wr') {
         if(q.error) return q.error;
-        const selected=profile(q.profile);
+        const owner=!q.profile&&q.player?this.view(q.player):null;
+        if(owner?.private)return `${owner.name} isn't sharing tracking data.`;
+        const selected=profile(q.profile??owner?.profile);
         requireEnabledMap(selected.map);
         const wr=this.get('metadata',`zwr:${profileKey(selected)}`);
         return `${replyProfile(selected)} | ${wr?.ms!=null?`SOLO WR: ${time(wr.ms)} ${timingLabel(selected)} — ${wr.holder} | Achieved: ${achievedDate(wr.achievedDate)}`:'Solo WR unavailable for this category.'}`;
       }
       const p = this.view(q.player);
       if (p.private) return `${p.name} isn't sharing tracking data.`;
-      const a = p.attempt, label = replyProfile(p.profile);
+      const selected=q.profile?profile(q.profile):p.profile;
+      if(q.profile)requireEnabledMap(selected.map);
+      const matches=!selected||!p.profile||profileKey(selected)===profileKey(p.profile);
+      if(!matches&&['current','pace'].includes(q.command))return `${p.name} | ${replyProfile(selected)} | No current run for this map and category. Playing: ${replyProfile(p.profile)}`;
+      const a = matches?p.attempt:null, label = replyProfile(selected);
       const last = a?.splits.at(-1);
       if (q.command === 'current') {
         if (p.status === 'offline') return `${p.name}'s tracker is offline.${p.lastSeen?' Last connected '+lastSeen(p.lastSeen,this.clock())+'.':''}${p.source?.type==='therun'?' No recent therun.gg update; playing status unknown.':''}`;
@@ -264,18 +270,23 @@ export class Store {
         return `${p.name} | ${selected ? replyProfile(selected) : label} | ${q.scope === 'alltime' ? 'All-time' : 'Session'} best ${b?.displayName??clean(q.split)}: ${b?.ms!=null ? time(b.ms) : 'unavailable'} (${time(b?.bestSegmentMs)} segment) ${timingLabel(selected??p.profile)}${b?.inferred?' Inferred split match.':''}`;
       }
       if(q.command==='splits'&&q.scope==='alltime') {
-        const names=new Set([...(this.savedRecords(p)?.splits.map(s=>s.name)??[]),...this.attempts(p.id).filter(a=>!a.practice&&profileKey(a.profile)===profileKey(p.profile)).flatMap(a=>a.splits.map(s=>s.name))]);
-        const rows=[...names].map(name=>this.best(p,name,'alltime')).filter(Boolean);
+        const names=new Set([...(this.savedRecords(p,selected)?.splits.map(s=>s.name)??[]),...this.attempts(p.id).filter(a=>!a.practice&&profileKey(a.profile)===profileKey(selected)).flatMap(a=>a.splits.map(s=>s.name))]);
+        const rows=[...names].map(name=>this.best(p,name,'alltime',selected)).filter(Boolean);
         return p.name+' | '+label+' | All-time bests (split/segment): '+(rows.map(b=>(b.displayName??b.name)+' — '+time(b.ms)+' ('+time(b.bestSegmentMs)+')').join(' · ')||'unavailable');
       }
+      if(q.command==='splits'&&q.scope==='session'&&(q.scopeExplicit||q.profile)) {
+        const group=this.sessionStats(p,selected)?.groups.find(g=>g.isCurrentProfile);
+        return `${p.name} | ${label} | Session bests (split/segment): `+(group?.splits.map(s=>{const b=this.best(p,s.name,'session',selected);return `${b?.displayName??s.name} — ${time(b?.ms)} (${time(b?.bestSegmentMs)})`;}).join(' · ')||'unavailable');
+      }
+      if(q.command==='splits'&&!matches)return `${p.name} | ${label} | No current run for this map and category. Use !splits ${p.id} ${selected.map} alltime for saved bests.`;
       if (q.command === 'splits') return `${p.name} | ${label} | Current run: ${a?.splits.length ? a.splits.map(s => (s.displayName??s.name) + ' — ' + time(s.ms)).join(' · ') : 'No checkpoints recorded.'}${a && !a.complete ? ' Partial history.' : ''}`;
       if (q.command === 'pace') return paceAnswer(this,p);
       if (q.command === 'session') {
-        return this.sessionAnswer(p);
+        return this.sessionAnswer(p,false,q.profile?selected:null);
       }
       if(q.command==='sessionpb') {
-        const group=this.sessionStats(p)?.groups.find(g=>g.isCurrentProfile);
-        return `${p.name} | ${label} | Session PB: ${time(group?.fastestMs)} ${timingLabel(p.profile)}`;
+        const group=this.sessionStats(p,selected)?.groups.find(g=>g.isCurrentProfile);
+        return `${p.name} | ${label} | Session PB: ${time(group?.fastestMs)} ${timingLabel(selected)}`;
       }
       if (q.command === 'pb') {
         const selected=q.profile?profile(q.profile):p.profile;

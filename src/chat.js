@@ -12,7 +12,7 @@ export class ChatResponder {
     this.ids.set(messageId,now);
     const owners=this.provider?connections(this.store).filter(c=>c.provider===this.provider&&c.target===channel&&c.connected&&c.enabled&&this.store.get('players',c.player)):[];
     const defaultPlayer=owners.length===1?owners[0].player:undefined;
-    const command=parseCommand(text,this.provider?(defaultPlayer??null):undefined); if(!command) return null;
+    const command=parseCommand(text,this.provider?(defaultPlayer??null):undefined,this.store.list("players").map(p=>p.id)); if(!command) return null;
     const userKey=`${channel}:${sender}`, channelKey=`channel:${channel}`;
     if(now-(this.cooldowns.get(userKey)??-Infinity)<5000 || now-(this.cooldowns.get(channelKey)??-Infinity)<this.cooldown(channel)*1000 || now-(this.cooldowns.get('global')??-Infinity)<1600) return null;
     this.cooldowns.set(userKey,now); this.cooldowns.set(channelKey,now); this.cooldowns.set('global',now);
@@ -22,7 +22,7 @@ export class ChatResponder {
     let result=this.store.answer(command);
     if(command.command==='session' && result?.length>this.limit) {
       const p=this.store.view(command.player);
-      if(!p.private)result=this.store.sessionAnswer(p,true);
+      if(!p.private)result=this.store.sessionAnswer(p,true,command.profile??null);
     }
     if(result?.length>this.limit && result.includes(' | ')) {
       const parts=result.split(' | ');
