@@ -47,5 +47,6 @@ test('wr alerts use reviewed WR checkpoints when no benchmark is configured',t=>
   store.subscribe({guild:'123456',channel:'234567',player:'*',profile:P,split:'bow',mode:'wr'});
   store.ingest(player.id,event());assert.equal(store.list('outbox').length,0);
   store.ingest(player.id,event({attemptId:'attempt-002',elapsedMs:271000,splits:[{index:0,name:'Bow',ms:270000}]}));
-  assert.match(store.list('outbox')[0].content,/~0:07 ahead of the reviewed WR checkpoint/);
+  assert.match(store.list('outbox')[0].content,/~0:07 ahead of WR/);
+  assert.doesNotMatch(store.list('outbox')[0].content,/reviewed WR checkpoint|configured WR checkpoint/);
 });
