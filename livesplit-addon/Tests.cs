@@ -22,6 +22,16 @@ class Tests
     {
         try
         {
+            var aliasRows=new[]{new SplitLink{Map="der-eisendrache",Source="My split",Target="Rocket"},new SplitLink{Map="revelations",Source="My split",Target="Exit"}};
+            Check(ManualAliases.Resolve(aliasRows,"der-eisendrache",new[]{"My split","R7"},new[]{"Bow","Crackle"})[0]=="Rocket","manual alias overrides autosplitter");
+            Check(ManualAliases.Resolve(aliasRows,"der-eisendrache",new[]{"My split","R7"},new[]{"Bow","Crackle"})[1]=="Crackle","unmapped split retains automatic hint");
+            Check(ManualAliases.Resolve(aliasRows,"revelations",new[]{"My split"},null)[0]=="Exit","aliases are map scoped");
+            Check(!ManualAliases.Targets("origins").Contains("Fire Dupe"),"removed milestones stay removed");
+            Check(ManualAliases.Targets("super-easter-egg").Contains("Der Eisendrache - Rocket"),"Super EE has map-prefixed checkpoints");
+            var superLinks=ManualAliases.Core.Select((id,i)=>new SplitLink{Map="super-easter-egg",Source="Custom "+i,Target=Detector.Maps.First(m=>m.Id==id).Name+" - Complete"}).ToArray();
+            Check(Detector.Detect("Super Easter Egg","","",new Dictionary<string,string>(),superLinks.Select(r=>r.Source),"",superLinks).Success,"custom Super EE completion aliases pass detection");
+            bool collision=false;try{ManualAliases.Resolve(aliasRows,"der-eisendrache",new[]{"My split","Rocket"},null);}catch{collision=true;}Check(collision,"duplicate mapped checkpoints blocked");
+            using(var editor=new AliasEditor()){editor.LoadLinks(aliasRows);Check(editor.Read().Count==2,"alias editor roundtrip retains every map");}
             Check(AddonUpdates.Describe("0.2.8","0.2.9","0.2.7").Contains("is available"),"optional update notice");
             Check(AddonUpdates.Describe("0.2.6","0.2.9","0.2.7").Contains("Important update"),"important update notice");
             Check(AddonUpdates.Describe("0.2.10","0.2.9","0.2.7").Contains("up to date"),"numeric version ordering");
@@ -83,7 +93,9 @@ class Tests
             var model = new TimerModel { CurrentState = state };
             using(var settingsProbe=new TrackerComponent(state)) {
                 var settingsDoc=new XmlDocument(); settingsDoc.LoadXml("<Settings><Enabled>False</Enabled><ProtectedToken>" + Convert.ToBase64String(Protection.Protect(Encoding.UTF8.GetBytes("synthetic-test-key"))) + "</ProtectedToken></Settings>");
+                var linksNode=settingsDoc.CreateElement("SplitAliases");linksNode.InnerText=new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(aliasRows);settingsDoc.DocumentElement.AppendChild(linksNode);
                 settingsProbe.SetSettings(settingsDoc.DocumentElement);
+                Check(settingsProbe.GetSettings(new XmlDocument())["SplitAliases"].InnerText.Contains("Rocket"),"manual aliases survive settings XML");
                 string saved=settingsProbe.GetSettings(new XmlDocument()).OuterXml;
                 Check(saved==settingsProbe.GetSettings(new XmlDocument()).OuterXml, "unchanged settings keep identical encrypted XML across render checks");
                 settingsProbe.SetSettings(settingsProbe.GetSettings(new XmlDocument()));

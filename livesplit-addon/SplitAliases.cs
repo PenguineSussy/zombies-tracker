@@ -1,6 +1,7 @@
 // Generated from src/split-rules.js; regenerate with node scripts/generate-split-aliases.mjs.
 using System.Collections.Generic;
 namespace LiveSplit.ZombiesTracker { public static class SplitAliases {
+public static string[] Canonical(string map) { return System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Distinct(System.Linq.Enumerable.Select(System.Linq.Enumerable.Where(Names, p=>p.Key.StartsWith(map+"|")),p=>p.Value))); }
 static readonly Dictionary<string,string> Names = new Dictionary<string,string> {
 {"shadows-of-evil|rift","Rift"},
 {"shadows-of-evil|portal","Rift"},

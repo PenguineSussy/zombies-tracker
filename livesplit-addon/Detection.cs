@@ -117,7 +117,7 @@ namespace LiveSplit.ZombiesTracker
                 : new Detection { Reason = maps[0].Name + " is disabled on this tracker." };
             return null;
         }
-        public static Detection Detect(string game, string category, string fileTitle, IDictionary<string, string> variables, IEnumerable<string> splits, string manualMap)
+        public static Detection Detect(string game, string category, string fileTitle, IDictionary<string, string> variables, IEnumerable<string> splits, string manualMap, IEnumerable<SplitLink> aliases = null)
         {
             // Overrides must never bypass the supported-game boundary.
             var supportedGames = new[] { "bo3", "black ops 3", "black ops iii", "call of duty black ops 3", "call of duty black ops iii" };
@@ -132,7 +132,7 @@ namespace LiveSplit.ZombiesTracker
             if (!string.IsNullOrWhiteSpace(manualMap))
             {
                 // Independently identify the split file so a saved override cannot relabel a new map.
-                result = Detect(game, category, fileTitle, variables, names, "");
+                result = Detect(game, category, fileTitle, variables, names, "", aliases);
                 if (!result.Success) return result;
                 if (result.Map != manualMap)
                     return new Detection { Reason = "Unsupported game/map - tracking paused. The selected map does not match the split file. Use automatic detection or correct the map selection." };
@@ -168,7 +168,7 @@ namespace LiveSplit.ZombiesTracker
             }
             result.Players = counts.Count == 1 ? (int?)counts.First() : null;
             result.NonSolo = counts.Any(c => c > 1) || playerText.Any(t => Has(t, "coop") || Has(t, "co op") || Has(t, "duo") || Has(t, "cooperative"));
-            if(result.Map=="super-easter-egg") { var error=ValidateSuper(names); if(error!=null) { result.Map=null; result.Reason=error; } }
+            if(result.Map=="super-easter-egg") { var error=ValidateSuper(ManualAliases.Resolve(aliases,"super-easter-egg",names,null)); if(error!=null) { result.Map=null; result.Reason=error; } }
             return result;
         }
     }

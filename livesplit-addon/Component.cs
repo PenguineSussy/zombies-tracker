@@ -14,7 +14,7 @@ using LiveSplit.Model;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;
 
-[assembly: AssemblyVersion("0.2.9.0")]
+[assembly: AssemblyVersion("1.0.0.0")]
 [assembly: ComponentFactory(typeof(LiveSplit.ZombiesTracker.Factory))]
 
 namespace LiveSplit.ZombiesTracker
@@ -28,13 +28,14 @@ namespace LiveSplit.ZombiesTracker
         public string UpdateName { get { return ComponentName; } }
         public string XMLURL { get { return ""; } }
         public string UpdateURL { get { return ""; } }
-        public Version Version { get { return new Version(0, 2, 9); } }
+        public Version Version { get { return new Version(1, 0, 0); } }
     }
     public sealed class AddonOptions
     {
         public bool Enabled;
         public string Server = "https://doctormonty.beer", Token = "", Map = "", Category = "";
         public bool Practice;
+        public List<SplitLink> Aliases = new List<SplitLink>();
     }
     public sealed class TrackerComponent : LogicComponent
     {
@@ -108,7 +109,7 @@ namespace LiveSplit.ZombiesTracker
             {
                 var variables = Variables();
                 string title = Path.GetFileNameWithoutExtension(state.Run.FilePath ?? "");
-                var detected = Detector.Detect(state.Run.GameName, state.Run.CategoryName, title, variables, state.Run.Select(s => s.Name), options.Map);
+                var detected = Detector.Detect(state.Run.GameName, state.Run.CategoryName, title, variables, state.Run.Select(s => s.Name), options.Map, options.Aliases);
                 var category = Detector.RunCategory(state.Run.CategoryName, options.Category, detected.Map);
                 panel.DetectionText = detected.Reason + "\r\n" + (category == null ? "Gum category unknown or conflicting; choose a category override." : category + " / Solo / Easter Egg / RTA");
                 if (!options.Enabled || uploader == null) { panel.StatusText = "Not uploading. Configure settings, then enable and Apply."; return; }
@@ -119,7 +120,9 @@ namespace LiveSplit.ZombiesTracker
                 var profile = new RunProfile { map = detected.Map, category = category, players = 1, timing = "RealTime" };
                 string bridgeStatus;
                 var autosplitNames = AutosplitBridge.Read(state, detected.Map, out bridgeStatus);
-                string fingerprint = json.Serialize(profile) + "|" + options.Practice + "|" + string.Join("|", state.Run.Select(s => s.Name)) + "|" + string.Join("|",autosplitNames??new string[0]);
+                var linkedNames = ManualAliases.Resolve(options.Aliases, detected.Map, state.Run.Select(s => s.Name).ToArray(), autosplitNames);
+                bool hasManual = options.Aliases.Any(r=>r.Map==detected.Map && state.Run.Any(segment=>Detector.Normalize(segment.Name)==Detector.Normalize(r.Source)));
+                string fingerprint = json.Serialize(profile) + "|" + options.Practice + "|" + string.Join("|", state.Run.Select(s => s.Name)) + "|" + string.Join("|",linkedNames);
                 bool idle = state.CurrentPhase == TimerPhase.NotRunning;
                 // Never turn an existing attempt into another category after an edit.
                 if (!idle && !forceNew && frozen != null && frozen != fingerprint)
@@ -133,6 +136,7 @@ namespace LiveSplit.ZombiesTracker
                     lastRecords = DateTime.UtcNow;
                 }
                 snapshot.autosplitNames = autosplitNames;
+                snapshot.manualNames = hasManual ? state.Run.Select(segment=> { var row=options.Aliases.FirstOrDefault(r=>r.Map==detected.Map && Detector.Normalize(r.Source)==Detector.Normalize(segment.Name)); return row==null?null:row.Target; }).ToArray() : null;
                 snapshot.resetEvent = resetEvent;
                 uploader.Enqueue(snapshot);
                 sequence++; first = false; forceNew = false; suppressNext = false; lastPhase = phase; lastHeartbeat = DateTime.UtcNow;
@@ -153,6 +157,7 @@ namespace LiveSplit.ZombiesTracker
         {
             if (json.Serialize(value) == json.Serialize(options)) return;
             UploadQueue.ValidateServer(value.Server);
+            value.Aliases = ManualAliases.Validate(value.Aliases);
             if (uploader != null) { uploader.Dispose(); uploader = null; }
             options = value;
             forceNew = true; first = true; suppressNext = true; frozen = null;
@@ -195,8 +200,9 @@ namespace LiveSplit.ZombiesTracker
                 }
             }
             catch (Exception ex) { canSave = false; panel.StatusText = "Cannot save key: " + ex.Message; }
-            put("Version", "0.2.9"); put("Enabled", (options.Enabled && canSave).ToString()); put("Server", options.Server);
+            put("Version", "1.0.0"); put("Enabled", (options.Enabled && canSave).ToString()); put("Server", options.Server);
             put("ProtectedToken", protectedToken);
+            put("SplitAliases", json.Serialize(options.Aliases));
             put("Map", options.Map); put("Category", options.Category); put("Practice", options.Practice.ToString());
             return root;
         }
@@ -207,6 +213,7 @@ namespace LiveSplit.ZombiesTracker
                 Map = read("Map", ""), Category = read("Category", ""), Practice = read("Practice", "False") == "True" };
             try
             {
+                value.Aliases = ManualAliases.Validate(json.Deserialize<List<SplitLink>>(read("SplitAliases", "[]")));
                 string encrypted = read("ProtectedToken", "");
                 value.Token = encrypted == "" ? "" : Encoding.UTF8.GetString(Protection.Unprotect(Convert.FromBase64String(encrypted)));
                 protectedToken = encrypted;
@@ -246,6 +253,7 @@ namespace LiveSplit.ZombiesTracker
         readonly TextBox token = new TextBox { UseSystemPasswordChar = true };
         readonly ComboBox map = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
         readonly ComboBox category = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
+        readonly AliasEditor aliasEditor = new AliasEditor();
         readonly CheckBox practice = new CheckBox { Text = "Practice (excluded from records and alerts)", AutoSize = true };
         readonly Label detection = new Label { AutoSize = true, MaximumSize = new Size(450, 0) };
         readonly Label status = new Label { AutoSize = true, MaximumSize = new Size(450, 0) };
@@ -270,6 +278,8 @@ namespace LiveSplit.ZombiesTracker
             add(new Label { Text = "Gum category", AutoSize = true }); category.Items.Add("Automatic detection"); category.Items.AddRange(Detector.Categories); category.SelectedIndex = 0; add(category);
             map.SelectedIndexChanged += delegate { RefreshCategories(); };
             add(practice);
+            add(aliasEditor);
+            add(new Label {Text="Aliases change tracker labels only. Finish or reset, Apply, then save your layout. For Super EE choose map-prefixed checkpoints and a Complete marker for each map.",AutoSize=true,MaximumSize=new Size(450,0)});
             var import = new Button { Text = "Import downloaded config.json", AutoSize = true };
             import.Click += delegate {
                 using (var dialog = new OpenFileDialog { Filter = "Tracker configuration|*.json" })
@@ -303,10 +313,11 @@ namespace LiveSplit.ZombiesTracker
         {
             return new AddonOptions { Enabled = enabled.Checked, Server = server.Text.Trim(), Token = token.Text.Trim(),
                 Map = map.SelectedItem is MapInfo ? ((MapInfo)map.SelectedItem).Id : "", Category = category.SelectedIndex > 0 ? (string)category.SelectedItem : "",
-                Practice = practice.Checked };
+                Practice = practice.Checked, Aliases = aliasEditor.Read() };
         }
         public void LoadOptions(AddonOptions value)
         {
+            aliasEditor.LoadLinks(value.Aliases);
             enabled.Checked = value.Enabled; server.Text = value.Server; token.Text = value.Token; practice.Checked = value.Practice;
             map.SelectedIndex = 0; foreach (var item in map.Items) if (item is MapInfo && ((MapInfo)item).Id == value.Map) map.SelectedItem = item;
             category.SelectedIndex = Math.Max(0, category.Items.IndexOf(value.Category));

@@ -1,4 +1,4 @@
-# Dr Monty Bot — LiveSplit addon 0.2.9
+# Dr Monty Bot — LiveSplit addon 1.0.0
 
 Tracks Black Ops III Solo Easter Egg runs in RTA. No separate companion or terminal is needed.
 
@@ -75,3 +75,11 @@ All addon source is in `source/` in this download and `livesplit-addon/` in the 
 The build uses the installed .NET Framework compiler and LiveSplit's own assemblies. The result is `dist/LiveSplit.ZombiesTracker.dll`. LiveSplit assemblies are not redistributed.
 
 Run `test.ps1` for native tests. The HTTP integration test requires the full bot repository; see its `DEVELOPMENT.md`. Never install the test-only DLL from `test-bin`: the release DLL uses Windows DPAPI for key protection.
+
+## Split aliases
+
+In Edit Layout → Zombies Tracker, select a map under Split aliases. Enter your exact LiveSplit split name and select the matching tracker checkpoint. Finish or reset the run, Apply settings, then save your layout. Delete a mapping row to restore automatic matching. Mappings stay separate for each map and never rename your LiveSplit splits.
+
+For Super Easter Egg, select that entry and choose map-prefixed checkpoints. Each of the six map blocks must end with its Map - Complete checkpoint; Revelations must be last. All times stay cumulative.
+
+Saved aliases take priority, then compatible autosplitter hints, then rules-based matching. Unrecognized checkpoints receive alias-setup guidance only after those methods fail.
