@@ -155,7 +155,7 @@ export class Store {
             const comparison = ref == null ? 'WR checkpoint comparison unavailable.' : `${precision === 1000 ? '~' : ''}${time(Math.abs(ref - actual))} ${actual < ref ? 'ahead of' : actual > ref ? 'behind' : 'level with'} the ${confirmed ? 'reviewed' : 'configured'} WR checkpoint.`;
             this.put('outbox', jobId, { id: jobId, attempt: id, player: p.id, subscription: sub.id,
               split, channel: sub.channel, role: sub.role, status: 'pending', tries: 0, nextTry: now, createdAt: now,
-              content: `${p.name} | ${profileLabel(a.profile)}\n${label}: ${time(split.ms)}\n${comparison}\nSelf-reported timer data.${!confirmed && a.benchmark ? '\nBenchmark source: ' + a.benchmark.source : ''}` });
+              content: `${p.name} | ${profileLabel(a.profile)}\n${label}: ${time(split.ms)}\n${comparison}${!confirmed && a.benchmark ? '\nBenchmark source: ' + a.benchmark.source : ''}` });
           }
         }
       }
@@ -271,7 +271,7 @@ export class Store {
         check(q.split, 'Specify a split, e.g. !best @player bow session.');
         const selected = q.profile ? profile(q.profile) : p.profile;
         const b = this.best(p, q.split, q.scope, selected);
-        return `${p.name} | ${selected ? replyProfile(selected) : label} | ${q.scope === 'alltime' ? 'All-time' : 'Session'} best ${b?.displayName??clean(q.split)}: ${b?.ms!=null ? time(b.ms) : 'unavailable'} (${time(b?.bestSegmentMs)} segment) ${timingLabel(selected??p.profile)}${b?.inferred?' Inferred split match.':''}`;
+        return `${p.name} | ${selected ? replyProfile(selected) : label} | ${q.scope === 'alltime' ? 'All-time' : 'Session'} best ${b?.displayName??clean(q.split)}: ${b?.ms!=null ? time(b.ms) : 'unavailable'} (${time(b?.bestSegmentMs)} segment) ${timingLabel(selected??p.profile)}`;
       }
       if(q.command==='splits'&&q.scope==='alltime') {
         const names=new Set([...(this.savedRecords(p,selected)?.splits.map(s=>s.name)??[]),...this.attempts(p.id).filter(a=>!a.practice&&profileKey(a.profile)===profileKey(selected)).flatMap(a=>a.splits.map(s=>s.name))]);

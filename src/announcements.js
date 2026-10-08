@@ -50,7 +50,7 @@ export function queueAnnouncements(store,p,a,previous) {
 
 export function announcementText(j,limit=450) {
   const label=j.type==='gold'?`${j.label} segment`:j.type==='pb'?'PB':'listed WR';
-  const result=`@${j.runner} ${j.type==='gold'?'GOLD':j.type==='pb'?'NEW PB':'WR TIME BEATEN'}! ${label}: ${time(j.ms)} RTA (previous ${time(j.before)}, improved by ${time(j.before-j.ms)}). ${context(j)}${j.type==='wr'?' — timer result, pending verification.':''}`;
+  const result=`@${j.runner} ${j.type==='gold'?'GOLD':j.type==='pb'?'NEW PB':'WR TIME BEATEN'}! ${label}: ${time(j.ms)} RTA (previous ${time(j.before)}, improved by ${time(j.before-j.ms)}). ${context(j)}`;
   return result.length<=limit?result:result.slice(0,limit-1)+'…';
 }
 
