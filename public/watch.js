@@ -1,8 +1,8 @@
 export function streamCandidates(players) {
-  return players.flatMap(p=>[
+  return players.flatMap(p=>Array.isArray(p.streams?.live)?p.streams.live.map(s=>({...s,id:p.id,name:p.name,verified:true,key:p.id+':'+s.platform+':'+s.url})):[
     p.streams?.twitchStatus==='live' && p.streams.twitch ? {...p.streams.twitch,id:p.id,name:p.name,verified:true}:null,
     p.streams?.youtubeLive && p.streams.youtube ? {...p.streams.youtube,id:p.id,name:p.name,verified:false}:null,
-  ].filter(Boolean)).map(c=>({...c,key:c.id+':'+c.platform}));
+  ].filter(Boolean)).map(c=>({...c,key:c.key??c.id+':'+c.platform}));
 }
 export function distinctSlots(candidates, keys) {
   const ids=new Set(),urls=new Set();

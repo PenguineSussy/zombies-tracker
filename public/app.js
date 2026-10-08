@@ -11,11 +11,9 @@ function action(id,fn,event='click'){$(id).addEventListener(event,async e=>{e.pr
 function node(tag,text,cls){const n=document.createElement(tag);if(text!=null)n.textContent=text;if(cls)n.className=cls;return n;}
 let candidates=[],streamKeys=['',''],streamDefaults=true;
 function fillStreams(){
-  $('twitch-url').value=me?.streams?.twitch?.url??'';$('youtube-url').value=me?.streams?.youtube?.url??'';
-  $('youtube-live').checked=(me?.streams?.liveUntil??0)>Date.now();
-  $('stream-check').textContent=me?.streams?.twitch?'Twitch: '+(me.streamStatus?.channel===me.streams.twitch.channel&&me.streamStatus?.checkedAt>Date.now()-120000?me.streamStatus.status:'awaiting bot verification'):'';
+  for(const provider of ['twitch','youtube'])for(const slot of [0,1,2]) $(provider+'-url'+(slot?'-'+slot:'')).value=(me?.streams?.[provider+'Accounts']??[me?.streams?.[provider]])?.[slot]?.url??'';
 }
-action('streams-form',async()=>{requireLogin();await api('/api/me/streams',{method:'POST',body:{twitch:$('twitch-url').value,youtube:$('youtube-url').value,live:$('youtube-live').checked}});await loadMe();fillStreams();await refresh();notice('Stream links saved. Twitch visibility requires a successful live check; YouTube uses your live setting.');},'submit');
+action('streams-form',async()=>{requireLogin();const body={live:false};for(const provider of ['twitch','youtube'])body[provider+'Accounts']=[0,1,2].map(slot=>$(provider+'-url'+(slot?'-'+slot:'')).value);await api('/api/me/streams',{method:'POST',body});await loadMe();fillStreams();await refresh();notice('Stream links saved. Live status is checked automatically for Twitch and YouTube.');},'submit');
 function updateStreams(players){
   candidates=streamCandidates(players);
   if(streamDefaults&&candidates.length){streamKeys=[candidates[0].key,candidates.find(c=>c.id!==candidates[0].id&&c.url!==candidates[0].url)?.key??''];streamDefaults=false;}
@@ -27,7 +25,7 @@ function renderStreams(){
   for(let i=0;i<2;i++) {
     const select=$(i?'stream-two':'stream-one'),box=$(i?'player-two':'player-one'),other=$('two-streams').checked?chosen[1-i]:null;
     const opts=[node('option','No stream')];opts[0].value='';
-    for(const c of candidates){const o=node('option',`${c.name} · ${c.platform==='twitch'?'Twitch · verified live':'YouTube · runner-reported'}`);o.value=c.key;o.disabled=!!other&&(other.id===c.id||other.url===c.url);opts.push(o);}
+    for(const c of candidates){const o=node('option',`${c.name} · ${c.platform==='twitch'?'Twitch':'YouTube'} · ${c.slot?'alternate '+c.slot:'main'} · verified live`);o.value=c.key;o.disabled=!!other&&(other.id===c.id||other.url===c.url);opts.push(o);}
     select.replaceChildren(...opts);select.value=chosen[i]?.key??'';
     const c=i&&!$('two-streams').checked?null:chosen[i];
     const renderKey=c?c.key+'|'+c.url:'';
@@ -88,12 +86,13 @@ async function loadChatbot(){
   if(!me){chatConfig=null;$('chatbot-login').textContent='Sign in with your runner key in LiveSplit to manage your channels.';}
   else {chatConfig=await api('/api/me/chatbot');$('chatbot-login').textContent=`Managing channels for ${me.name}`;}
   for(const provider of ['twitch','youtube']){
-    const c=chatConfig?.[provider];
-    $('connect-'+provider).disabled=!c?.available;
+    const c=chatConfig?.[provider]?.accounts?.[Number($(provider+'-account').value)]??chatConfig?.[provider];
+    for(const option of $(provider+'-account').options){const a=chatConfig?.[provider]?.accounts?.[Number(option.value)];option.textContent=(option.value==='0'?'Main account':'Alternate '+option.value)+(a?.connected?' · '+a.name:'');}
+    $('connect-'+provider).disabled=!chatConfig?.[provider]?.available;
     $('connect-'+provider).textContent=c?.connected?'Reconnect '+(provider==='twitch'?'Twitch':'YouTube'):'Connect '+(provider==='twitch'?'Twitch':'YouTube');
     $('disconnect-'+provider).hidden=!c?.connected;
     $(provider+'-chat-form').hidden=!c?.connected;
-    $(provider+'-status').textContent=c?.connected?`${c.name} · ${c.status}`:c&&!c.available?'Awaiting server setup':'Not connected';
+    $(provider+'-status').textContent=c?.connected?`${c.name} · ${c.status}`:chatConfig?.[provider]&&!chatConfig[provider].available?'Awaiting server setup':'Not connected';
     $(provider+'-enabled').checked=!!c?.enabled;
     $(provider+'-cooldown').value=c?.cooldownSeconds??15;
     for(const type of ['gold','pb','wr','communityWr'])$(provider+'-announce-'+type).checked=c?.announcements?.[type]===true;
@@ -103,11 +102,12 @@ async function loadChatbot(){
   }
 }
 for(const provider of ['twitch','youtube']){
-  action('connect-'+provider,async()=>{requireLogin();const r=await api(`/api/me/chatbot/${provider}/connect`,{method:'POST',body:{}});location.assign(r.url);});
-  action('disconnect-'+provider,async()=>{requireLogin();await api(`/api/me/chatbot/${provider}`,{method:'DELETE'});await loadChatbot();notice('Disconnected. Bot replies have been disabled for this connection.');});
-  action(provider+'-chat-form',async()=>{requireLogin();await api(`/api/me/chatbot/${provider}/settings`,{method:'POST',body:{enabled:$(provider+'-enabled').checked,cooldownSeconds:Number($(provider+'-cooldown').value),announcements:Object.fromEntries(['gold','pb','wr','communityWr'].map(type=>[type,$(provider+'-announce-'+type).checked])),...(provider==='youtube'?{broadcastId:$('youtube-broadcast').value}:{})}});await loadChatbot();notice('Chatbot settings saved. Connection status updates after the bot joins.');},'submit');
+  action('connect-'+provider,async()=>{requireLogin();const r=await api(`/api/me/chatbot/${provider}/connect`,{method:'POST',body:{slot:Number($(provider+'-account').value)}});location.assign(r.url);});
+  action('disconnect-'+provider,async()=>{requireLogin();await api(`/api/me/chatbot/${provider}?slot=${$(provider+'-account').value}`,{method:'DELETE'});await loadChatbot();notice('Disconnected. Bot replies have been disabled for this connection.');});
+  action(provider+'-chat-form',async()=>{requireLogin();await api(`/api/me/chatbot/${provider}/settings`,{method:'POST',body:{slot:Number($(provider+'-account').value),enabled:$(provider+'-enabled').checked,cooldownSeconds:Number($(provider+'-cooldown').value),announcements:Object.fromEntries(['gold','pb','wr','communityWr'].map(type=>[type,$(provider+'-announce-'+type).checked])),...(provider==='youtube'?{broadcastId:$('youtube-broadcast').value}:{})}});await loadChatbot();notice('Chatbot settings saved. Connection status updates after the bot joins.');},'submit');
 }
-action('load-broadcasts',async()=>{requireLogin();const broadcasts=await api('/api/me/chatbot/youtube/broadcasts');const opts=broadcasts.map(b=>{const o=node('option',b.title);o.value=b.id;return o;});if(!opts.length){const o=node('option','No active broadcasts with live chat');o.value='';opts.push(o);}$('youtube-broadcast').replaceChildren(...opts);});
+for(const provider of ['twitch','youtube'])action(provider+'-account',loadChatbot,'change');
+action('load-broadcasts',async()=>{requireLogin();const broadcasts=await api('/api/me/chatbot/youtube/broadcasts?slot='+$('youtube-account').value);const opts=broadcasts.map(b=>{const o=node('option',b.title);o.value=b.id;return o;});if(!opts.length){const o=node('option','No active broadcasts with live chat');o.value='';opts.push(o);}$('youtube-broadcast').replaceChildren(...opts);});
 function revealKey(value){$('new-key').textContent=value;$('new-key-box').hidden=false;}
 function download(name,data){const link=node('a');const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 async function loadMe(){
