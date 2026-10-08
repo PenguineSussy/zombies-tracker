@@ -33,7 +33,7 @@ test('normalized queries and session PB use stored data without rewriting it or 
  assert.match(s.answer('!best @runner Rocket session'),/Rocket: 5:34/);assert.match(s.answer('!best @runner Despair session'),/Rocket: 5:34/);
  assert.match(s.answer('!best @runner Round 7 session'),/Crackle: 7:31/);
  assert.equal(s.get('attempts','runner:rules-001').splits[0].name,'despair');
- assert.match(s.answer('!current @runner'),/Current: TP/);assert.match(s.answer('!sessionpb @runner'),/unavailable/);
+ assert.match(s.answer('!current @runner'),/Next: TP/);assert.match(s.answer('!sessionpb @runner'),/unavailable/);
  s.ingest(player.id,{attemptId:'rules-001',sequence:2,profile:p,phase:'Ended',index:2,elapsedMs:451000,splits:rows(['Despair',334000],['R7',451000]),complete:true,observedAt:Date.now()});
  assert.match(s.answer('!sessionpb @runner'),/7:31/);
  s.put('metadata','chat-connection:twitch:runner',{kind:'chat-connection',provider:'twitch',player:'runner',target:'channel',enabled:true,connected:true});

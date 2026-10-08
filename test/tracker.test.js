@@ -37,7 +37,7 @@ test('two runners have isolated history and timing methods do not mix',t=>{
 });
 test('checkpoint completion uses actual split time rather than current elapsed timer',t=>{
   const {store,player}=fixture(t);store.ingest(player.id,event({index:2,elapsedMs:470000,current:'Next step',splits:[{index:0,name:'bow',ms:283000},{index:1,name:'crackle',ms:451000}]}));
-  const answer=store.answer('!current @Player1');assert.match(answer,/Crackle at 7:31/);assert.match(answer,/Running at 7:50/);assert.match(answer,/Current: Next step/);
+  const answer=store.answer('!current @Player1');assert.match(answer,/Crackle — 7:31/);assert.match(answer,/Running: 7:50/);assert.match(answer,/Next: Next step/);
 });
 test('reset keeps session checkpoints; new session only resets session bests',t=>{
   const {store,player}=fixture(t);store.ingest(player.id,event());
@@ -77,9 +77,9 @@ test('freshness and privacy apply to command responses and alerts',t=>{
 });
 test('WR comparison is frozen per attempt and wrong categories never match',t=>{
   const {store,player,tick}=fixture(t);store.benchmark({profile:P,splits:{bow:290000},source:'https://example.org/record',holder:'Runner',verifiedDate:'2026-10-04'});
-  store.ingest(player.id,event());assert.match(store.answer('!pace @Player1'),/0:07 ahead/);
+  store.ingest(player.id,event());assert.match(store.answer('!pace @Player1'),/7 seconds ahead/);
   tick(1);store.benchmark({profile:P,splits:{bow:280000},source:'https://example.org/new',holder:'Runner2',verifiedDate:'2026-10-04'});
-  store.ingest(player.id,event({sequence:2}));assert.match(store.answer('!pace @Player1'),/0:07 ahead/);
+  store.ingest(player.id,event({sequence:2}));assert.match(store.answer('!pace @Player1'),/7 seconds ahead/);
   store.ingest(player.id,event({attemptId:'attempt-002',profile:{...P,category:'Mega Gums'}}));assert.match(store.answer('!pace @Player1'),/unavailable/);
 });
 test('outage replay records history but cannot send old milestone pings or look online',t=>{

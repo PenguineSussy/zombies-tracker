@@ -7,10 +7,10 @@ const records={pbMs:1625000,splits:[{index:0,name:'Rocket',bestSplitMs:334000,be
 function fixture(t){const store=new Store();t.after(()=>store.close());const {player}=store.register('Runner');const send=extra=>store.ingest(player.id,{attemptId:'records-001',sequence:1,profile,phase:'NotRunning',index:-1,elapsedMs:0,splits:[],observedAt:Date.now(),records,...extra});return {store,player,send};}
 test('saved records work before a tracked run; preserve case and separate split from segment',t=>{
  const {store,send}=fixture(t);send();
- assert.match(store.answer('!best @runner ROCKET alltime'),/Rocket: 5:34 \(5:34\)/);
- assert.match(store.answer('!best @runner r7 alltime'),/Crackle: 6:45 \(1:00\)/);
- assert.match(store.answer('!pb @runner'),/27:05 \(LiveSplit Personal Best\)/);
- assert.match(store.answer('!splits @runner alltime'),/Rocket: 5:34 \(5:34\).*Crackle: 6:45 \(1:00\)/);
+ assert.match(store.answer('!best @runner ROCKET alltime'),/Rocket: 5:34 \(5:34 segment\)/);
+ assert.match(store.answer('!best @runner r7 alltime'),/Crackle: 6:45 \(1:00 segment\)/);
+ assert.match(store.answer('!pb @runner'),/PB: 27:05 RTA/);
+ assert.match(store.answer('!splits @runner alltime'),/Rocket — 5:34 \(5:34\).*Crackle — 6:45 \(1:00\)/);
  assert.match(store.answer('!best @runner Rocket session'),/unavailable/);
 });
 test('records are isolated by category, runner and practice; invalid and stale uploads cannot change them',t=>{
@@ -26,8 +26,8 @@ test('records are isolated by category, runner and practice; invalid and stale u
 test('skipped checkpoints never create a segment best and imported records survive heartbeats',t=>{
  const {store,send}=fixture(t);send();send({sequence:2,records:null});assert.match(store.answer('!pb @runner'),/27:05/);
  send({attemptId:'running-01',phase:'Running',index:2,elapsedMs:500000,splits:[{index:1,name:'R7',ms:400000}],records:null});
- assert.match(store.answer('!best @runner R7 alltime'),/6:40 \(1:00\)/);
- assert.match(store.answer('!best @runner R7 session'),/6:40 \(unavailable\)/);
+ assert.match(store.answer('!best @runner R7 alltime'),/6:40 \(1:00 segment\)/);
+ assert.match(store.answer('!best @runner R7 session'),/6:40 \(unavailable segment\)/);
 });
 const board=(id,time,holder='Example')=>`<div class="Board active" data-players="1" data-json="${id}"><div class="Row TopRank"><div class="Rank">1</div><div class="Name">${holder}</div><a class="Achieved">${time}</a></div></div>`;
 test('ZWR selects exact Solo gum board; does not borrow co-op or reversed records',()=>{
@@ -43,16 +43,16 @@ test('WR commands select maps independently of runners, default Mega Gums and va
   const p={...profile,category};const id='zwr:'+JSON.stringify(p);
   store.put('metadata',id,{id,profile:p,ms,holder:'Example',achievedDate:'2025-09-23',checkedAt:Date.now(),source:'https://zwr.gg/'});
  }
- assert.match(store.answer('!wr Der Eisendrache'),/Mega Gums · RTA.*25:42/);
- assert.match(store.answer('!wr Der Eisendrache Any%'),/Any% · RTA.*25:58/);
- assert.match(store.answer('@littlemontybot !WR de ANY%'),/Any% · RTA.*25:58/);
+ assert.match(store.answer('!wr Der Eisendrache'),/Mega Gums.*25:42 RTA/);
+ assert.match(store.answer('!wr Der Eisendrache Any%'),/Any%.*25:58 RTA/);
+ assert.match(store.answer('@littlemontybot !WR de ANY%'),/Any%.*25:58 RTA/);
  assert.match(store.answer('!wr @Penguine'),/Use !wr <map>/);
  assert.match(store.answer('!wr'),/Use !wr <map>/);
  assert.match(store.answer('!wr Der Eisendrache typo'),/Choose No Gums/);
  assert.match(store.answer('!wr Zetsubou No Shima No Gums'),/allows only/);
  assert.match(store.answer('!wr Ascension'),/allows only: Any%/);
- assert.match(store.answer('!wr Ascension Any%'),/Ascension.*Any% · RTA/);
- assert.match(store.answer('!wr Super Easter Egg'),/Super Easter Egg.*Mega Gums · RTA/);
+ assert.match(store.answer('!wr Ascension Any%'),/Ascension.*Any%/);
+ assert.match(store.answer('!wr Super Easter Egg'),/Super Easter Egg.*Mega Gums/);
  assert.doesNotMatch(store.answer('!wr Der Eisendrache'),/RealTime/);
 });
 
@@ -72,7 +72,7 @@ test('WR replies show only achieved date and omit source link and checked timest
  store.put('metadata',id,record);const answer=store.answer('!wr DE');
  assert.match(answer,/SOLO WR:/);
  assert.doesNotMatch(answer,/ZWR/);
- assert.match(answer,/Achieved: 2025-09-23\./);
+ assert.match(answer,/Achieved: September 23, 2025/);
  assert.doesNotMatch(answer,/Checked|https?:|ZWR added|zwr-added|stale cache/);
  store.put('metadata',id,{...record,achievedDate:null});assert.match(store.answer('!wr DE'),/Achieved: unavailable/);
 });

@@ -21,10 +21,10 @@ test('session groups map/categories, counts observed resets, and excludes missin
   assert.equal(s.attempts,5);assert.equal(s.resets,1);assert.equal(s.durationMs,2000);assert.equal(s.groups.length,3);
   assert.equal(g.fastestMs,null);assert.equal(g.splits.length,0);assert.equal(g.isCurrentProfile,false);
   assert.equal(s.current.map,'moon');assert.equal(s.unconfirmedEnds,2);
-  assert.match(store.answer('!session @Runner'),/previously played/);
+  assert.match(store.answer('!session @Runner'),/Previously:/);
   assert.doesNotMatch(store.answer('!session @Runner'),/average 4:00/);
   const reply=new ChatResponder(store,190,()=>now).respond('chat','viewer','1','!session @Runner');
-  assert.match(reply,/1 resets/);assert.match(reply,/https:\/\/doctormonty.beer/);assert.ok(reply.length<=190);
+  assert.match(reply,/1 resets/);assert.doesNotMatch(reply,/https?:/);assert.ok(reply.length<=190);
   now+=31000;store.session(store.get('players',player.id),'end');const ended=store.sessionStats(store.get('players',player.id));now+=60000;
   assert.equal(store.sessionStats(store.get('players',player.id)).durationMs,ended.durationMs);
 });

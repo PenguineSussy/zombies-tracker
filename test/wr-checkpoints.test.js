@@ -27,8 +27,8 @@ test('pace uses confirmed WR checkpoints without requiring manual benchmarks',t=
  const s=new Store(':memory:',()=>1700000000000);t.after(()=>s.close());s.register('Runner');
  const r=WR_CHECKPOINTS.find(r=>r.profile.map==='der-eisendrache');seed(s,r);
  s.ingest('runner',{attemptId:'attempt-one',sequence:1,profile:r.profile,phase:'Running',index:1,splits:[{index:0,name:'R7',ms:420670}],elapsedMs:420670,current:'TP',complete:true,observedAt:s.clock()});
- assert.match(s.answer('!pace @Runner'),/WR checkpoint: ~0:05 behind WR/);
+ assert.match(s.answer('!pace @Runner'),/Approximately 5 seconds behind WR checkpoint/);
  const m=WR_CHECKPOINTS.find(r=>r.profile.map==='moon');seed(s,m);
  s.ingest('runner',{attemptId:'attempt-two',sequence:2,profile:m.profile,phase:'Running',index:1,splits:[{index:0,name:'Power',ms:45670}],elapsedMs:45670,current:'Samantha Says',complete:true,observedAt:s.clock()});
- assert.match(s.answer('!pace @Runner'),/WR checkpoint: 0:01.15 behind WR/);
+ assert.match(s.answer('!pace @Runner'),/1.15 seconds behind WR checkpoint/);
 });

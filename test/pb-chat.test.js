@@ -38,7 +38,7 @@ test('PB lookup does not expose private runners or guess ambiguous chat ownershi
 });
 test('PB map queries also include completed tracked runs and exclude practice',t=>{
  const s=fixture(t);for(const [id,ms,practice]of [['normal',1500000,false],['practice',100,true]])s.saveAttempt({id,player:'penguine',profile:de,phase:'Ended',complete:true,practice,elapsedMs:ms});
- assert.match(s.answer('!pb @Penguine DE'),/25:00 \(tracker completed run\)/);
+ assert.match(s.answer('!pb @Penguine DE'),/PB: 25:00 RTA/);
 });
 test('all runner commands select the current platform/channel owner unless explicitly mentioned',t=>{
  const s=fixture(t);link(s,'twitch');link(s,'youtube','other');
