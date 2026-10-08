@@ -4,7 +4,9 @@ import {check} from './domain.js';
 import {OAuthToken} from './chat.js';
 
 const digest=value=>createHash('sha256').update(value??'').digest('hex');
-const id=(provider,player)=>`chat-connection:${provider}:${player}`;
+export function accountSlot(value=0){check([0,1,2,'0','1','2'].includes(value),'Choose Main, Alternate 1 or Alternate 2.');return Number(value);}
+export const connectionKey=(provider,player,slot=0)=>`chat-connection:${provider}:${player}${accountSlot(slot)?':'+slot:''}`;
+const id=connectionKey;
 export const connections=store=>store.list('metadata').filter(v=>v.kind==='chat-connection');
 export function chatTargets(store,env,provider) {
   const managed=connections(store).filter(c=>c.provider===provider);
@@ -12,7 +14,7 @@ export function chatTargets(store,env,provider) {
   return [...new Set([...legacy.filter(channel=>!managed.some(c=>c.target===channel)),...managed.filter(c=>c.enabled&&c.connected&&c.target&&store.get('players',c.player)).map(c=>c.target)])];
 }
 export function channelCooldown(store,provider,channel) {
-  return connections(store).find(c=>c.provider===provider&&c.target===channel)?.cooldownSeconds??15;
+  return connections(store).find(c=>c.provider===provider&&c.target===channel&&c.connected)?.cooldownSeconds??15;
 }
 export class ChatConnections {
   constructor(store,env,fetcher=fetch) {Object.assign(this,{store,env,fetcher});this.pending=new Map();}
@@ -27,11 +29,15 @@ export class ChatConnections {
   }
   view(player) {
     return Object.fromEntries(['twitch','youtube'].map(provider=>{
-      const c=this.store.get('metadata',id(provider,player.id));
-      return [provider,{available:this.available(provider),connected:!!c?.connected,name:c?.name??null,enabled:!!c?.enabled,cooldownSeconds:c?.cooldownSeconds??15,announcements:{...announcementDefaults(),...c?.announcements},broadcastId:c?.broadcastId??null,target:!!c?.target,status:c?.status??'Not connected'}];
+      const accounts=[0,1,2].map(slot=>{
+        const c=this.store.get('metadata',id(provider,player.id,slot));
+        return {slot,connected:!!c?.connected,name:c?.name??null,enabled:!!c?.enabled,cooldownSeconds:c?.cooldownSeconds??15,announcements:{...announcementDefaults(),...c?.announcements},broadcastId:c?.broadcastId??null,target:!!c?.target,status:c?.status??'Not connected'};
+      });
+      return [provider,{...accounts[0],accounts,available:this.available(provider)}];
     }));
   }
-  start(provider,player,runnerKey) {
+  start(provider,player,runnerKey,slot=0) {
+    slot=accountSlot(slot);
     const config=this.config(provider);check(this.available(provider),'Channel connections are awaiting server configuration.',503);
     const origin=new URL(this.env.PUBLIC_ORIGIN);
     check(origin.origin===this.env.PUBLIC_ORIGIN&&(origin.protocol==='https:'||['localhost','127.0.0.1'].includes(origin.hostname)),'Invalid public origin.',503);
@@ -39,7 +45,7 @@ export class ChatConnections {
     check(this.pending.size<1000,'Please try connecting again later.',429);
     const state=randomBytes(32).toString('base64url'),cookie=randomBytes(32).toString('base64url');
     const callback=`${origin.origin}/api/chatbot/callback/${provider}`;
-    this.pending.set(state,{provider,player:player.id,keyHash:this.store.db.prepare('SELECT token FROM players WHERE id=?').get(player.id).token,cookieHash:digest(cookie),callback,expires:Date.now()+600000});
+    this.pending.set(state,{provider,slot,previousChannel:this.store.get('metadata',id(provider,player.id,slot))?.channelId??null,player:player.id,keyHash:this.store.db.prepare('SELECT token FROM players WHERE id=?').get(player.id).token,cookieHash:digest(cookie),callback,expires:Date.now()+600000});
     const query=new URLSearchParams({client_id:config.clientId,redirect_uri:callback,response_type:'code',state,scope:provider==='twitch'?'channel:bot':'https://www.googleapis.com/auth/youtube.readonly'});
     if(provider==='youtube'){query.set('access_type','offline');query.set('prompt','select_account consent');}else query.set('force_verify','true');
     return {url:(provider==='twitch'?'https://id.twitch.tv/oauth2/authorize?':'https://accounts.google.com/o/oauth2/v2/auth?')+query,cookie:`chat_oauth_${provider}=${cookie}; HttpOnly; SameSite=Lax; Path=/api/chatbot/callback/${provider}; Max-Age=600${origin.protocol==='https:'?'; Secure':''}`};
@@ -63,29 +69,33 @@ export class ChatConnections {
     check(!connections(this.store).some(c=>c.provider===provider&&c.channelId===channel.id&&c.player!==pending.player&&c.connected),'This channel is already linked to another runner.',409);
     // Recheck after external calls: deletion/key rotation must invalidate pending links.
     check(this.store.db.prepare('SELECT id FROM players WHERE id=? AND token=?').get(pending.player,pending.keyHash),'Runner sign-in changed. Reconnect.',401);
-    const old=this.store.get('metadata',id(provider,pending.player));
-    this.store.put('metadata',id(provider,pending.player),{kind:'chat-connection',player:pending.player,provider,connected:true,channelId:channel.id,name:provider==='twitch'?channel.display_name:channel.snippet.title,
+    const key=id(provider,pending.player,pending.slot);
+    const old=this.store.get('metadata',key);
+    check((old?.channelId??null)===pending.previousChannel,'Connection changed. Please reconnect.',409);
+    check(!connections(this.store).some(c=>c.provider===provider&&c.connected&&c.player===pending.player&&c.channelId===channel.id&&(c.slot??0)!==pending.slot),'This account is already linked in another slot.',409);
+    this.store.put('metadata',key,{slot:pending.slot,login:provider==='twitch'?channel.login:null,kind:'chat-connection',player:pending.player,provider,connected:true,channelId:channel.id,name:provider==='twitch'?channel.display_name:channel.snippet.title,
       target:provider==='twitch'?channel.id:null,enabled:false,cooldownSeconds:old?.cooldownSeconds??15,announcements:old?.announcements??announcementDefaults(),status:'Connected; enable chat replies when ready',
       ...(provider==='youtube'?{accessToken:tokens.access_token,refreshToken:tokens.refresh_token}: {})});
   }
-  async broadcasts(player) {
-    const c=this.store.get('metadata',id('youtube',player.id));check(c?.connected,'Connect YouTube first.');
+  async broadcasts(player,slot=0,{publicOnly=false,requireChat=true}={}) {
+    slot=accountSlot(slot);
+    const c=this.store.get('metadata',id('youtube',player.id,slot));check(c?.connected,'Connect YouTube first.');
     const config=this.config('youtube');
     const token=new OAuthToken({...config,accessToken:c.accessToken,refreshToken:c.refreshToken},this.fetcher);
-    token.onRefresh=value=>{const latest=this.store.get('metadata',id('youtube',player.id));if(latest?.connected&&latest.channelId===c.channelId)this.store.put('metadata',id('youtube',player.id),{...latest,...value});};
+    token.onRefresh=value=>{const latest=this.store.get('metadata',id('youtube',player.id,slot));if(latest?.connected&&latest.channelId===c.channelId)this.store.put('metadata',id('youtube',player.id,slot),{...latest,...value});};
     const r=await token.request('https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet,status&broadcastStatus=active&broadcastType=all&maxResults=50');
     check(r.ok,'Could not load active broadcasts. Reconnect YouTube if authorization expired.',400);
     const data=await r.json();
-    return (data.items??[]).filter(b=>b.snippet.channelId===c.channelId&&b.snippet.liveChatId).map(b=>({id:b.id,title:b.snippet.title,chatId:b.snippet.liveChatId}));
+    return (data.items??[]).filter(b=>b.snippet.channelId===c.channelId&&(!requireChat||b.snippet.liveChatId)&&(!publicOnly||b.status?.privacyStatus==='public')).map(b=>({id:b.id,title:b.snippet.title,chatId:b.snippet.liveChatId}));
   }
   async settings(provider,player,input) {
-    this.config(provider);const key=id(provider,player.id),c=this.store.get('metadata',key);
+    this.config(provider);const key=id(provider,player.id,accountSlot(input.slot)),c=this.store.get('metadata',key);
     check(c?.connected,'Connect your channel first.');
     check(typeof input.enabled==='boolean'&&Number.isInteger(input.cooldownSeconds)&&input.cooldownSeconds>=5&&input.cooldownSeconds<=300,'Cooldown must be a whole number from 5 to 300 seconds.');
     const announcements={...announcementDefaults(),...(input.announcements??c.announcements??{})};
     check(announcements&&typeof announcements==='object'&&['gold','pb','wr','communityWr'].every(k=>typeof announcements[k]==='boolean')&&Object.keys(announcements).length===4,'Choose valid announcement settings.');
     if(provider==='youtube'&&input.enabled) {
-      const selected=(await this.broadcasts(player)).find(b=>b.id===input.broadcastId);
+      const selected=(await this.broadcasts(player,input.slot)).find(b=>b.id===input.broadcastId);
       check(selected,'Select an active broadcast belonging to your connected channel.');
       c.target=selected.chatId;c.broadcastId=selected.id;
     }
@@ -94,9 +104,10 @@ export class ChatConnections {
     this.store.put('metadata',key,{...latest,target:c.target,broadcastId:c.broadcastId,enabled:input.enabled,cooldownSeconds:input.cooldownSeconds,announcements,status:input.enabled?'Waiting for bot connection':'Replies disabled'});
     return this.view(player);
   }
-  disconnect(provider,player) {
-    this.config(provider);const key=id(provider,player.id),old=this.store.get('metadata',key);
-    if(old)this.store.put('metadata',key,{kind:'chat-connection',provider,player:player.id,target:old.target,connected:false,enabled:false,cooldownSeconds:old.cooldownSeconds,status:'Disconnected'});
+  disconnect(provider,player,slot=0) {
+    slot=accountSlot(slot);
+    this.config(provider);const key=id(provider,player.id,slot),old=this.store.get('metadata',key);
+    if(old)this.store.put('metadata',key,{kind:'chat-connection',slot,provider,player:player.id,target:old.target,connected:false,enabled:false,cooldownSeconds:old.cooldownSeconds,status:'Disconnected'});
     return this.view(player);
   }
 }

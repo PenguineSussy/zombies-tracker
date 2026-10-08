@@ -57,10 +57,17 @@ export class Store {
   privacy(p, isPublic) { check(typeof isPublic === 'boolean', 'public must be true or false.'); p.public = isPublic; this.savePlayer(p); return p; }
   streams(p, input) {
     check(typeof input.live === 'boolean', 'Choose whether your stream is live.');
-    for (const value of [input.twitch,input.youtube]) check(value == null || (typeof value === 'string' && value.length <= 500), 'Invalid stream URL.');
-    const twitch=streamLink(input.twitch,'twitch'), youtube=streamLink(input.youtube,'youtube');
-    check(!input.live || youtube, 'Add a YouTube broadcast link before marking it live. Twitch is verified automatically.');
-    p.streams={twitch,youtube,liveUntil:input.live?this.clock()+12*3600000:null};
+    const accounts={};
+    for(const provider of ['twitch','youtube']) {
+      const values=input[provider+'Accounts']??[input[provider]??'',null,null];
+      check(Array.isArray(values)&&values.length<=3,'You can add one main account and two alternates per platform.');
+      accounts[provider]=[0,1,2].map(i=>{const value=values[i];check(value==null||(typeof value==='string'&&value.length<=500),'Invalid stream URL.');return streamLink(value,provider);});
+      const urls=accounts[provider].filter(Boolean).map(s=>s.url);
+      check(new Set(urls).size===urls.length,'Each account must use a different stream link.');
+    }
+    const [twitch]=accounts.twitch,[youtube]=accounts.youtube;
+    check(!input.live||accounts.youtube.some(Boolean),'Add a YouTube broadcast link before marking it live. Twitch is verified automatically.');
+    p.streams={twitch,youtube,twitchAccounts:accounts.twitch,youtubeAccounts:accounts.youtube,liveUntil:input.live?this.clock()+12*3600000:null};
     this.savePlayer(p); return p;
   }
   sessionWindow(p) {

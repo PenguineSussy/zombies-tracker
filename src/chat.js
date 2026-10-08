@@ -1,6 +1,6 @@
 import {startAnnouncements} from './announcements.js';
 import { parseCommand } from './domain.js';
-import {chatTargets,channelCooldown,connections} from './chat-connections.js';
+import {chatTargets,channelCooldown,connections,connectionKey} from './chat-connections.js';
 
 export class ChatResponder {
   constructor(store, limit = 450, clock = Date.now, cooldown = ()=>15, provider = null) { this.provider=provider; this.store=store; this.limit=limit; this.clock=clock; this.cooldown=cooldown; this.cooldowns=new Map(); this.ids=new Map(); }
@@ -158,6 +158,6 @@ export function startYouTube(store,env,log=console.log) {
 
 function connectionStatus(store,provider,target,status) {
   for(const c of connections(store).filter(c=>c.provider===provider&&c.target===target&&c.enabled&&c.connected)) {
-    store.put('metadata',`chat-connection:${provider}:${c.player}`,{...c,status});
+    store.put('metadata',connectionKey(provider,c.player,c.slot??0),{...c,status});
   }
 }

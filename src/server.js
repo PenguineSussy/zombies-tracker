@@ -62,12 +62,12 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
       if(req.method==='GET' && path==='/api/catalog')return send({maps:ENABLED_MAPS,allMaps:MAPS,categories:CATEGORIES,categoriesByMap:Object.fromEntries(ENABLED_MAPS.map(m=>[m.id,categoriesForMap(m.id)])),integrations:{discord:!!env.DISCORD_PUBLIC_KEY,twitch:!!env.TWITCH_CHANNEL_IDS,youtube:!!env.YOUTUBE_LIVE_CHAT_IDS,therun:true}});
       if(req.method==='GET' && path==='/api/addon-release')return send(addonRelease);
       if(req.method==='GET' && path==='/api/activity')return send(publicActivity(store));
-      if(req.method==='GET' && path==='/api/players')return send(store.list('players').filter(p=>p.public).slice(0,200).map(p=>runnerArchived(p,store.clock())?{id:p.id,name:p.name,status:'offline',lastSeen:p.lastSeen,archived:true}:({id:p.id,name:p.name,status:store.view(p.id).status,lastSeen:p.lastSeen,archived:false,profile:p.profile,source:p.source?.type??'direct',streams:publicStreams(p,store.clock())})));
+      if(req.method==='GET' && path==='/api/players')return send(store.list('players').filter(p=>p.public).slice(0,200).map(p=>runnerArchived(p,store.clock())?{id:p.id,name:p.name,status:'offline',lastSeen:p.lastSeen,archived:true}:({id:p.id,name:p.name,status:store.view(p.id).status,lastSeen:p.lastSeen,archived:false,profile:p.profile,source:p.source?.type??'direct',streams:publicStreams(p,store.clock(),store)})));
       if(req.method==='GET' && path.startsWith('/api/players/')) {
         const v=store.view(decodeURIComponent(path.slice('/api/players/'.length)));
         if(!v.private&&runnerArchived(v,store.clock()))return send({id:v.id,name:v.name,status:'offline',lastSeen:v.lastSeen,archived:true});
         // Do not expose private source configuration, benchmark internals, or alert metadata.
-        return send({id:v.id,name:v.name,private:v.private,status:v.status,lastSeen:v.lastSeen,profile:v.profile,session:v.private?null:store.sessionStats(v),streams:publicStreams(v,store.clock()),
+        return send({id:v.id,name:v.name,private:v.private,status:v.status,lastSeen:v.lastSeen,profile:v.profile,session:v.private?null:store.sessionStats(v),streams:publicStreams(v,store.clock(),store),
           attempt:v.attempt?{attemptCount:v.attempt.attemptCount??null,phase:v.attempt.phase,current:v.attempt.current,stageMap:v.attempt.stageMap,elapsedMs:v.attempt.elapsedMs,splits:v.attempt.splits,complete:v.attempt.complete,practice:v.attempt.practice}:null});
       }
       const raw=await body(req);let data={};
@@ -91,13 +91,13 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
       let loginExpiresAt=null;
       const p=token?store.authenticate(token):(()=>{const session=browserSession(store,req);checkBrowserOrigin(req,env);loginExpiresAt=session.expiresAt;return session.player;})();
       if(req.method==='GET'&&path==='/api/me/chatbot')return send(chatbot.view(p));
-      if(req.method==='GET'&&path==='/api/me/chatbot/youtube/broadcasts'){limit(req,'broadcasts',10);return send(await chatbot.broadcasts(p));}
+      if(req.method==='GET'&&path==='/api/me/chatbot/youtube/broadcasts'){limit(req,'broadcasts',10);return send(await chatbot.broadcasts(p,url.searchParams.get('slot')??0));}
       if(path.startsWith('/api/me/chatbot/')) {
         const [, , , ,provider,operation]=path.split('/');
         limit(req,'chatbot',20);
-        if(req.method==='POST'&&operation==='connect'){const result=chatbot.start(provider,p,token);res.setHeader('Set-Cookie',result.cookie);return send({url:result.url});}
+        if(req.method==='POST'&&operation==='connect'){const result=chatbot.start(provider,p,token,data.slot);res.setHeader('Set-Cookie',result.cookie);return send({url:result.url});}
         if(req.method==='POST'&&operation==='settings'){const result=await chatbot.settings(provider,p,data);restartChat();return send(result);}
-        if(req.method==='DELETE'&&!operation){const result=chatbot.disconnect(provider,p);restartChat();return send(result);}
+        if(req.method==='DELETE'&&!operation){const result=chatbot.disconnect(provider,p,url.searchParams.get('slot')??0);restartChat();return send(result);}
       }
       if(req.method==='GET'&&path==='/api/me')return send({...p,loginExpiresAt,addonUpdate:addonStatus(p)});
       if(req.method==='POST'&&path==='/api/me/streams')return send(store.streams(p,data));
@@ -105,7 +105,7 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
       if(req.method==='POST'&&path==='/api/me/privacy')return send(store.privacy(p,data.public));
       if(req.method==='POST'&&path==='/api/me/session')return send(store.session(p,data.action));
       if(req.method==='POST'&&path==='/api/me/rotate')return send({token:store.rotate(p)});
-      if(req.method==='DELETE'&&path==='/api/me'){chatbot.disconnect('twitch',p);chatbot.disconnect('youtube',p);store.removePlayer(p);restartChat();return send({deleted:true});}
+      if(req.method==='DELETE'&&path==='/api/me'){for(const slot of [0,1,2]){chatbot.disconnect('twitch',p,slot);chatbot.disconnect('youtube',p,slot);}store.removePlayer(p);restartChat();return send({deleted:true});}
       if(req.method==='GET'&&path==='/api/me/history')return send(store.attempts(p.id));
       if(req.method==='POST'&&path==='/api/me/source') {
         const source=sourceConfig(data);

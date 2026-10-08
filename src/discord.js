@@ -1,3 +1,4 @@
+import {verifiedLiveStreams} from './streams.js';
 import { createPublicKey, verify, createHash } from 'node:crypto';
 import { check, milliseconds, ENABLED_MAPS, CATEGORIES, categoriesForMap, profile, profileLabel } from './domain.js';
 import { SPLIT_RULES, splitName } from './split-rules.js';
@@ -62,10 +63,12 @@ export async function deliverAlerts(store, token, fetcher = fetch) {
   for (const job of store.list('outbox').filter(j => j.status === 'pending' && j.nextTry <= now).slice(0,10)) {
     const p = store.get('players',job.player), sub = store.get('subscriptions',job.subscription);
     if (!p?.public || !sub?.enabled || p.activeAttempt !== job.attempt || now - job.createdAt > 120000) { job.status='cancelled'; store.put('outbox',job.id,job); continue; }
+    const live=verifiedLiveStreams(store,p,now)[0];
+    const streamLine=live?'\nWatch live: '+live.url:'\nCurrently Offline';
     const nonce = BigInt('0x' + createHash('sha256').update(job.id).digest('hex').slice(0,15)).toString();
     try {
       const response = await fetcher(`https://discord.com/api/v10/channels/${job.channel}/messages`, { method:'POST', headers:{Authorization:`Bot ${token}`,'Content-Type':'application/json'},
-        body:JSON.stringify({content:`${job.role ? '<@&'+job.role+'>\n' : ''}${job.content}`.slice(0,1900), allowed_mentions:{parse:[],roles:job.role?[job.role]:[]}, nonce, enforce_nonce:true}), signal:AbortSignal.timeout(8000) });
+        body:JSON.stringify({content:`${job.role ? '<@&'+job.role+'>\n' : ''}${job.content}`.slice(0,1900-streamLine.length)+streamLine, allowed_mentions:{parse:[],roles:job.role?[job.role]:[]}, nonce, enforce_nonce:true}), signal:AbortSignal.timeout(8000) });
       if (response.ok) job.status='sent';
       else if (response.status === 429) {
         const data = await response.json(); job.nextTry = now + Math.max(1000, Number(data.retry_after ?? 5)*1000);

@@ -59,7 +59,7 @@ export async function deliverAnnouncements(store,provider,send) {
   // One message per pass/provider. Persistent claim avoids duplicate posts after
   // restart or an ambiguous network response; failed sends require no blind retry.
   for(const j of jobs(store).filter(j=>j.provider===provider&&j.status==='pending'&&j.dueAt<=now).sort((a,b)=>a.dueAt-b.dueAt)) {
-    const p=store.get('players',j.player),a=store.get('attempts',j.attempt),c=store.get('metadata',`chat-connection:${provider}:${j.recipient}`);
+    const p=store.get('players',j.player),a=store.get('attempts',j.attempt),c=store.list('metadata').find(c=>c.kind==='chat-connection'&&c.provider===provider&&c.player===j.recipient&&c.target===j.target&&c.channelId===j.channelId&&c.connected);
     const valid=p?.public&&p.activeAttempt===j.attempt&&now-p.lastSeen<=30000&&a&&!a.closed&&!a.practice&&!a.suppressAlerts&&a.splits.some(s=>matching(s,j.split))&&(j.type!=='gold'||segment(a,j.split)===j.ms)&&c?.connected&&c.enabled&&c.target===j.target&&c.channelId===j.channelId&&(j.recipient===j.player?c.announcements?.[j.type]===true:j.type==='wr'&&c.announcements?.communityWr===true)&&now-j.createdAt<=120000&&(j.type==='gold'||(a.phase==='Ended'&&a.complete&&a.elapsedMs===j.ms));
     if(!valid){store.put('metadata',j.id,{...j,status:'cancelled'});continue;}
     if(j.type==='wr'){const wr=store.get('metadata',`zwr:${profileKey(j.profile)}`);if(!wr||wr.ms<=j.ms){store.put('metadata',j.id,{...j,status:'cancelled'});continue;}j.before=wr.ms;}
