@@ -14,7 +14,7 @@ using LiveSplit.Model;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;
 
-[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyVersion("1.0.1.0")]
 [assembly: ComponentFactory(typeof(LiveSplit.ZombiesTracker.Factory))]
 
 namespace LiveSplit.ZombiesTracker
@@ -26,9 +26,9 @@ namespace LiveSplit.ZombiesTracker
         public ComponentCategory Category { get { return ComponentCategory.Other; } }
         public IComponent Create(LiveSplitState state) { return new TrackerComponent(state); }
         public string UpdateName { get { return ComponentName; } }
-        public string XMLURL { get { return ""; } }
-        public string UpdateURL { get { return ""; } }
-        public Version Version { get { return new Version(1, 0, 0); } }
+        public string XMLURL { get { return UpdateURL + "update.LiveSplit.ZombiesTracker.xml"; } }
+        public string UpdateURL { get { return "https://raw.githubusercontent.com/PenguineSussy/zombies-tracker/main/livesplit-addon/update/"; } }
+        public Version Version { get { return new Version(AddonUpdates.InstalledVersion); } }
     }
     public sealed class AddonOptions
     {
@@ -200,7 +200,7 @@ namespace LiveSplit.ZombiesTracker
                 }
             }
             catch (Exception ex) { canSave = false; panel.StatusText = "Cannot save key: " + ex.Message; }
-            put("Version", "1.0.0"); put("Enabled", (options.Enabled && canSave).ToString()); put("Server", options.Server);
+            put("Version", AddonUpdates.InstalledVersion); put("Enabled", (options.Enabled && canSave).ToString()); put("Server", options.Server);
             put("ProtectedToken", protectedToken);
             put("SplitAliases", json.Serialize(options.Aliases));
             put("Map", options.Map); put("Category", options.Category); put("Practice", options.Practice.ToString());

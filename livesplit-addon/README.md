@@ -1,4 +1,4 @@
-# Dr Monty Bot — LiveSplit addon 1.0.0
+# Dr Monty Bot — LiveSplit addon 1.0.1
 
 Tracks Black Ops III Solo Easter Egg runs in RTA. No separate companion or terminal is needed.
 
@@ -11,13 +11,17 @@ Tracks Black Ops III Solo Easter Egg runs in RTA. No separate companion or termi
 5. Open the component's settings. Enter the server URL and your private runner key, enable upload, and save your layout.
 6. Check the detected map/category before starting. Use Practice for test runs.
 
-Your key is encrypted for your Windows account. Do not share configured layouts or keys. Updates are installed manually while LiveSplit is closed.
+Your key is encrypted for your Windows account. Do not share configured layouts or keys. Install 1.0.1 manually once while LiveSplit is closed to enable future updates.
 
-## Update notices
+## Updates
 
-The addon checks the configured tracker server for release information at startup and every six hours. Open its layout settings to see the installed version, update status and download link. No pop-up interrupts your timer; failed checks do not stop tracking. Downloads are always opened from the official Dr Monty site.
+Install 1.0.1 manually once: save your layout and splits, close LiveSplit, and replace only `Components/LiveSplit.ZombiesTracker.dll`. Keep your existing layout and component settings.
 
-Uploads include the addon version. Your signed-in website shows the last reported version and highlights important compatibility updates. Older addons show an unknown version until you install a version that reports it. Updates are manual: finish your run, save your layout and splits, close LiveSplit and replace the DLL.
+From 1.0.1 onward, LiveSplit can show its standard **New updates are available** prompt when it checks for component updates. Choose Yes to let LiveSplit install the new DLL and restart. Choose No to keep the current version. Save your layout and splits before accepting an update. The update replaces only the tracker DLL; saved aliases, runner settings and layouts stay in place.
+
+The tracker also checks the configured server at startup and every six hours, showing release information in its settings. That background check does not install anything or open its own popup. Failed checks do not stop tracking. If LiveSplit cannot update automatically, use the website ZIP while LiveSplit is closed.
+
+Uploads include the addon version, so the signed-in website can highlight available or important updates.
 
 ## Map and category detection
 
@@ -83,3 +87,4 @@ In Edit Layout → Zombies Tracker, select a map under Split aliases. Enter your
 For Super Easter Egg, select that entry and choose map-prefixed checkpoints. Each of the six map blocks must end with its Map - Complete checkpoint; Revelations must be last. All times stay cumulative.
 
 Saved aliases take priority, then compatible autosplitter hints, then rules-based matching. Unrecognized checkpoints receive alias-setup guidance only after those methods fail.
+

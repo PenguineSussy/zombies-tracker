@@ -22,6 +22,14 @@ class Tests
     {
         try
         {
+            var factory = new Factory();
+            Check(factory.Version == new Version(AddonUpdates.InstalledVersion), "factory and upload versions agree");
+            Check(factory.XMLURL == factory.UpdateURL + "update.LiveSplit.ZombiesTracker.xml", "updater manifest URL");
+            var manifest = new XmlDocument();
+            manifest.Load(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "../update/update.LiveSplit.ZombiesTracker.xml"));
+            var release = UpdateManager.Update.Parse(manifest.DocumentElement.FirstChild);
+            Check(release.Version == factory.Version, "LiveSplit parses release manifest version");
+            Check(release.FileChanges.Count == 1 && release.FileChanges[0].Path == "Components/LiveSplit.ZombiesTracker.dll" && release.FileChanges[0].Status == UpdateManager.ChangeStatus.Changed, "updater replaces only tracker DLL");
             var aliasRows=new[]{new SplitLink{Map="der-eisendrache",Source="My split",Target="Rocket"},new SplitLink{Map="revelations",Source="My split",Target="Exit"}};
             Check(ManualAliases.Resolve(aliasRows,"der-eisendrache",new[]{"My split","R7"},new[]{"Bow","Crackle"})[0]=="Rocket","manual alias overrides autosplitter");
             Check(ManualAliases.Resolve(aliasRows,"der-eisendrache",new[]{"My split","R7"},new[]{"Bow","Crackle"})[1]=="Crackle","unmapped split retains automatic hint");
@@ -198,6 +206,9 @@ class Tests
         catch (Exception ex) { Console.Error.WriteLine(ex); return 1; }
     }
 }
+
+
+
 
 
 
