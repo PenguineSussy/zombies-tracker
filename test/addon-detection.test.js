@@ -37,3 +37,29 @@ test('uncertain saved timings do not invent a canonical split',()=>{
  assert.equal(resolveRecords(profile,rows)[0].name,'Joke');
  assert.equal(resolveRecords({...profile,map:'moon'},[{index:0,name:'Joke',pbSplitMs:334000}])[0].name,'Joke');
 });
+
+test('manual aliases win over autosplitter and timing while unmapped checkpoints use fallback',t=>{
+ const s=new Store();t.after(()=>s.close());const {player}=s.register('Aliases');
+ const data={attemptId:'manual-alias-001',sequence:1,profile,phase:'Running',index:1,elapsedMs:350000,current:'R7',splits:[{index:0,name:'My Custom Name',ms:280000}],manualNames:['Rocket',null],autosplitNames:['Bow','R7'],records:{pbMs:450000,splits:[{index:0,name:'My Custom Name',pbSplitMs:290000,bestSplitMs:275000,bestSegmentMs:275000},{index:1,name:'R7',pbSplitMs:450000,bestSplitMs:440000,bestSegmentMs:150000}]}};
+ s.ingest(player.id,data);
+ assert.match(s.answer('!current Aliases'),/Last split: Rocket.*Next: Crackle/);
+ assert.match(s.answer('!best Aliases Rocket alltime'),/Rocket: 4:35/);
+ assert.match(s.answer('!best Aliases "My Custom Name" alltime'),/Rocket: 4:35/);
+ assert.match(s.answer('!pace Aliases'),/ahead of.*PB/);
+ assert.equal(s.savedRecords(s.get('players',player.id)).splits[1].displayName,'Crackle');
+});
+test('Super EE manual map completion aliases retain cumulative timing and completion',t=>{
+ const s=new Store();t.after(()=>s.close());const {player}=s.register('SuperRunner');
+ const maps=['Shadows of Evil','The Giant','Der Eisendrache','Zetsubou No Shima','Gorod Krovi','Revelations'];
+ const names=maps.map(m=>m+' - Complete');
+ s.ingest(player.id,{attemptId:'manual-super-001',sequence:1,profile:{map:'super-easter-egg',category:'Mega Gums'},phase:'Ended',index:6,elapsedMs:6000000,complete:true,manualNames:names,splits:maps.map((m,index)=>({index,name:'Custom '+index,ms:(index+1)*1000000}))});
+ const p=s.view(player.id);assert.equal(p.attempt.complete,true);assert.equal(p.attempt.splits[2].displayName,'Der Eisendrache - Complete');assert.equal(p.attempt.splits[5].ms,6000000);
+ assert.match(s.answer('!pb SuperRunner'),/1:40:00/);
+});
+
+test('alias setup guidance is only a last resort',t=>{
+ const s=new Store();t.after(()=>s.close());const {player}=s.register('UnknownRunner');
+ const base={attemptId:'unknown-alias-001',sequence:1,profile,phase:'Running',index:1,elapsedMs:1000,splits:[{index:0,name:'Joke checkpoint',ms:1000}]};
+ s.ingest(player.id,base);assert.match(s.answer('!best UnknownRunner "Joke checkpoint" session'),/Set its alias/);
+ s.ingest(player.id,{...base,sequence:2,manualNames:['Rocket']});assert.doesNotMatch(s.answer('!best UnknownRunner Rocket session'),/Set its alias/);
+});
