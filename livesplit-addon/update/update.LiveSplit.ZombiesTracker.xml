@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<updates>
+  <update version="1.0.1">
+    <changelog>
+      <change>Enable LiveSplit's standard update prompt for future tracker releases.</change>
+      <change>Keep saved layouts, runner settings, and per-map split aliases.</change>
+    </changelog>
+    <files>
+      <file path="Components/LiveSplit.ZombiesTracker.dll" status="changed" />
+    </files>
+  </update>
+</updates>
