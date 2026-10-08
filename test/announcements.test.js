@@ -61,7 +61,7 @@ test('announcement settings default off, validate input and stay channel specifi
  await assert.rejects(chat.settings('twitch',f.player,{enabled:true,cooldownSeconds:15,announcements:{gold:'yes',pb:false,wr:false}}),/announcement settings/);
  await chat.settings('twitch',f.player,{enabled:true,cooldownSeconds:15,announcements:{gold:true,pb:false,wr:false}});
  assert.equal(chat.view(f.player).twitch.announcements.gold,true);assert.equal(chat.view(f.player).youtube.announcements.gold,false);
- const text=announcementText({type:'wr',runner:'Runner',profile:f.p,ms:100000,before:120000},200);assert.match(text,/pending verification/);assert.ok(text.length<=200);
+ const text=announcementText({type:'wr',runner:'Runner',profile:f.p,ms:100000,before:120000},200);assert.doesNotMatch(text,/pending verification/);assert.ok(text.length<=200);
 });
 test('other chats receive WR only with explicit community opt-in; never foreign golds or PBs',async t=>{
  const f=setup(t);f.store.register('Other');f.store.register('Quiet');
