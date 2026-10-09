@@ -200,10 +200,12 @@ class Tests
             using(var reopenedQueue=new UploadQueue("http://localhost:1",lifecycleKey,lifecycleDir))Check(reopenedQueue.Count==1,"late old response cannot overwrite persisted queue");
             using(var firstLayout=new TrackerComponent(state))using(var secondLayout=new TrackerComponent(state)) {
                 var activeField=typeof(TrackerComponent).GetField("activated",BindingFlags.NonPublic|BindingFlags.Instance);
-                UseLayout(state,firstLayout);firstLayout.Update(null,state,0,0,LiveSplit.UI.LayoutMode.Vertical);
-                Check((bool)activeField.GetValue(firstLayout),"first layout activates");
+                UseLayout(state,firstLayout);Pump(1200);
+                Check((bool)activeField.GetValue(firstLayout),"timer activates current layout without rendering callback");
+                Check(!(bool)activeField.GetValue(secondLayout),"timer leaves editor clone inactive");
                 state.Layout.LayoutComponents.Add(new LiveSplit.UI.Components.LayoutComponent("LiveSplit.ZombiesTracker.dll",secondLayout));
                 secondLayout.Update(null,state,0,0,LiveSplit.UI.LayoutMode.Vertical);
+                Pump(1200);
                 Check(!(bool)activeField.GetValue(secondLayout) && (bool)activeField.GetValue(firstLayout),"duplicate in same layout cannot steal ownership");
                 UseLayout(state,secondLayout);secondLayout.Update(null,state,0,0,LiveSplit.UI.LayoutMode.Vertical);
                 Check(!(bool)activeField.GetValue(firstLayout),"switching layouts deactivates previous component");

@@ -1,4 +1,4 @@
-# Dr Monty Bot — LiveSplit addon 1.0.2
+# Dr Monty Bot — LiveSplit addon 1.0.3
 
 Tracks Black Ops III Solo Easter Egg runs in RTA. No separate companion or terminal is needed.
 
@@ -97,3 +97,7 @@ Saved aliases take priority, then compatible autosplitter hints, then rules-base
 - Remembers the alias editor map separately in each saved layout. Select the map, then save your layout.
 
 Validated with 126 native assertions and 136 integration assertions, including delayed uploads and layout handoff. Saved aliases and runner settings are preserved.
+
+## Version 1.0.3
+
+Tracking starts even without rendering callbacks. Inactive layout copies remain idle. A waiting status appears before activation. Saved keys and aliases are preserved.

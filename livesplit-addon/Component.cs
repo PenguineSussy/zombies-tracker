@@ -14,7 +14,7 @@ using LiveSplit.Model;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;
 
-[assembly: AssemblyVersion("1.0.2.0")]
+[assembly: AssemblyVersion("1.0.3.0")]
 [assembly: ComponentFactory(typeof(LiveSplit.ZombiesTracker.Factory))]
 
 namespace LiveSplit.ZombiesTracker
@@ -89,7 +89,11 @@ namespace LiveSplit.ZombiesTracker
         void Changed(object sender, EventArgs e) { Capture(true); }
         void Tick(object sender, EventArgs e)
         {
+            if (disposed) return;
             if (activated && !InCurrentLayout()) { Deactivate(); return; }
+            // Rendering can be suspended or omit a logic-only component. The UI
+            // timer may activate it too, but only in the currently installed layout.
+            if (!activated) Activate();
             if (!activated || disposed || runtime.Owner != this) return;
             updates.Tick(options.Server); panel.UpdateText = updates.Status;
             try { EnsureUploader(); } catch (Exception ex) { panel.StatusText = "Connection waiting: " + ex.Message; return; }
@@ -152,7 +156,9 @@ namespace LiveSplit.ZombiesTracker
                 runtime.Sequence=sequence; runtime.First=first; runtime.ForceNew=forceNew; runtime.SuppressNext=suppressNext;
                 panel.StatusText = uploader.Status + " / " + uploader.Count + " pending / " + phase + " / " + bridgeStatus;
             }
-            catch (Exception ex) { panel.StatusText = "Not uploading: " + ex.Message; }
+            catch (Exception ex) {
+                panel.StatusText = "Not uploading: " + ex.Message;
+            }
         }
         void Apply(AddonOptions value)
         {
@@ -235,6 +241,10 @@ namespace LiveSplit.ZombiesTracker
         }
         public override void Update(IInvalidator invalidator, LiveSplitState state, float width, float height, LayoutMode mode)
         {
+            Activate();
+        }
+        void Activate()
+        {
             if (disposed || !InCurrentLayout()) return;
             // Only components used by the real layout get Update. Editor clones stay inert.
             if (activated && runtime.Owner == this) return;
@@ -284,7 +294,7 @@ namespace LiveSplit.ZombiesTracker
         public void RestoreAliasMap(string map) { aliasEditor.RestoreMap(map); }
         readonly CheckBox practice = new CheckBox { Text = "Practice (excluded from records and alerts)", AutoSize = true };
         readonly Label detection = new Label { AutoSize = true, MaximumSize = new Size(450, 0) };
-        readonly Label status = new Label { AutoSize = true, MaximumSize = new Size(450, 0) };
+        readonly Label status = new Label { Text = "Waiting for this component to become active. Close settings with OK to use this layout.", AutoSize = true, MaximumSize = new Size(450, 0) };
         readonly Label updateStatus = new Label { AutoSize = true, MaximumSize = new Size(450, 0) };
         public string UpdateText { set { updateStatus.Text = value; } }
         public string DetectionText { set { detection.Text = value; } }
@@ -320,7 +330,9 @@ namespace LiveSplit.ZombiesTracker
                     });
             }; add(import);
             var button = new Button { Text = "Apply settings", AutoSize = true };
-            button.Click += delegate { Try(delegate { apply(ReadOptions()); }); }; add(button);
+            button.Click += delegate { Try(delegate {
+                apply(ReadOptions());
+            }); }; add(button);
             add(detection); add(status);
             var clearButton = new Button { Text = "Discard pending uploads...", AutoSize = true };
             clearButton.Click += delegate {

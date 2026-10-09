@@ -8,7 +8,7 @@ namespace LiveSplit.ZombiesTracker
 {
     public sealed class AddonUpdates : IDisposable
     {
-        public const string InstalledVersion = "1.0.2";
+        public const string InstalledVersion = "1.0.3";
         public const string DownloadUrl = "https://doctormonty.beer/downloads/Zombies-Tracker-LiveSplit.zip";
         sealed class Release { public string latestVersion { get; set; } public string minimumVersion { get; set; } }
         readonly HttpClient http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(8), MaxResponseContentBufferSize = 8192 };
