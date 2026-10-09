@@ -10,9 +10,9 @@ function fixture(t){
  const state={manage:true,installed:true,visible:true,send:true,mentionable:true,calls:[]};
  const fetcher=async(url,options={})=>{
   const path=new URL(url).pathname;state.calls.push(path);let data;
-  if(path.endsWith('/oauth2/token'))data={access_token:'private-user',expires_in:3600,scope:'identify guilds'};
+  if(path.endsWith('/oauth2/token'))data={access_token:'private-user',refresh_token:'private-refresh',expires_in:3600,scope:'identify guilds'};
   else if(path.endsWith('/users/@me/guilds'))data=options.headers.Authorization.startsWith('Bot ')?(state.installed?[{id:guild}]:[]):[{id:guild,name:'My server',permissions:state.manage?'32':'0'},{id:'77777',name:'No management',permissions:'0'}];
-  else if(path.endsWith('/users/@me'))data=options.headers.Authorization.startsWith('Bot ')?{id:bid}:{id:uid,username:'DiscordRunner'};
+  else if(path.endsWith('/users/@me'))data=options.headers.Authorization.startsWith('Bot ')?{id:bid}:{id:state.identity??uid,username:'DiscordRunner'};
   else if(!state.installed)return new Response('{}',{status:404});
   else if(path.endsWith('/roles'))data=[{id:guild,name:'@everyone',permissions:'3072'},{id:role,name:'Speedruns',permissions:'0',mentionable:state.mentionable}];
   else if(path.endsWith('/channels'))data=[{id:channel,name:'runs',type:0,permission_overwrites:[{id:uid,type:1,deny:state.visible?'0':'1024',allow:'0'},{id:bid,type:1,deny:state.send?'0':'2048',allow:'0'}]},{id:'66666',name:'voice',type:2}];
@@ -35,7 +35,7 @@ test('Discord authorization binds browser and runner, expires, and never exposes
  assert.doesNotMatch(JSON.stringify(f.site.status(f.player,cookies)),/private-user|private-bot|private-secret/);
  assert.doesNotMatch(JSON.stringify(f.store.list('metadata')),/private-user/);
  const other=f.store.register('Other');assert.throws(()=>f.site.session(other.player,cookies),/Connect Discord/);
- f.advance(3600001);assert.throws(()=>f.site.session(f.player,cookies),/Connect Discord/);
+ f.advance(30*24*60*60*1000+1);assert.throws(()=>f.site.session(f.player,cookies),/Connect Discord/);
  const fresh=await f.connect();f.store.rotate(f.player);assert.throws(()=>f.site.session(f.player,fresh),/Connect Discord/);
  const next=await f.connect();f.site.disconnect(next);assert.equal(f.site.status(f.player,next).connected,false);
 });
@@ -93,4 +93,50 @@ test('Website alerts default to all runners and save name lists atomically',asyn
  assert.ok(!discordCheckpoints('origins').includes('Fire Dupe'));
  assert.ok(discordCheckpoints('super-easter-egg').includes('Shadows of Evil - Sword'));
  assert.deepEqual(discordCheckpoints('the-giant'),['End']);
+});
+
+async function recover(f,name='Runner'){
+ const start=f.site.startRecovery(name),q=new URLSearchParams({state:new URL(start.url).searchParams.get('state'),code:'recovery'});
+ assert.equal(new URL(start.url).searchParams.get('scope'),'identify');
+ return (await f.site.finish(q,start.cookie)).recoveryCookie;
+}
+test('Discord recovery requires a previously linked identity and explicit one-time reset',async t=>{
+ const f=fixture(t);await assert.rejects(recover(f),/Unable to recover/);await f.connect();
+ f.state.identity='99998';await assert.rejects(recover(f),/Unable to recover/);f.state.identity=uid;
+ const cookie=await recover(f);assert.equal(f.store.authenticate(f.token).id,'runner');assert.equal(f.site.recoveryReady(cookie).name,'Runner');
+ assert.throws(()=>f.site.resetRecovered(cookie,'Other'),/Confirm/);
+ const result=f.site.resetRecovered(cookie,'runner');assert.equal(f.store.authenticate(result.token).id,'runner');assert.throws(()=>f.store.authenticate(f.token),/Invalid runner key/);
+ assert.throws(()=>f.site.resetRecovered(cookie,'runner'),/expired/);assert.doesNotMatch(JSON.stringify(f.store.list('metadata')),new RegExp(result.token+'|private-user'));
+});
+test('Recovery expires and rejects key rotation, unlinking and account deletion',async t=>{
+ const f=fixture(t);await f.connect();let cookie=await recover(f);f.advance(600001);assert.throws(()=>f.site.recoveryReady(cookie),/expired/);
+ cookie=await recover(f);f.store.rotate(f.player);assert.throws(()=>f.site.resetRecovered(cookie,'runner'),/expired/);
+ cookie=await recover(f);f.site.unlinkRecovery(f.player);assert.throws(()=>f.site.resetRecovered(cookie,'runner'),/expired/);
+ await f.connect();cookie=await recover(f);f.store.removePlayer(f.player);f.store.register('Runner');assert.throws(()=>f.site.resetRecovered(cookie,'runner'),/expired/);assert.equal(f.site.recoveryStatus(f.player).enabled,false);
+});
+test('Recovery HTTP reset rejects CSRF and creates a new signed-in session only after verification',async t=>{
+ const f=fixture(t);await f.connect();const app=createApp({store:f.store,env,fetcher:f.fetcher});await new Promise(r=>app.server.listen(0,'127.0.0.1',r));t.after(()=>app.stop());const origin='http://127.0.0.1:'+app.server.address().port;
+ const headers={Origin:env.PUBLIC_ORIGIN,'Content-Type':'application/json'};
+ assert.equal((await fetch(origin+'/api/recovery/discord/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:'Runner'})})).status,403);
+ const start=await fetch(origin+'/api/recovery/discord/start',{method:'POST',headers,body:JSON.stringify({username:'Runner'})}),data=await start.json();
+ const callback='/api/discord/callback?state='+new URL(data.url).searchParams.get('state')+'&code=code';
+ const verified=await fetch(origin+callback,{headers:{Cookie:start.headers.get('set-cookie')},redirect:'manual'});assert.equal(verified.headers.get('location'),'/?recovery=ready#setup');
+ const cookies=verified.headers.get('set-cookie');assert.equal(f.store.authenticate(f.token).id,'runner');
+ assert.equal((await fetch(origin+'/api/recovery/discord/reset',{method:'POST',headers:{Cookie:cookies,'Content-Type':'application/json'},body:JSON.stringify({username:'runner'})})).status,403);
+ const reset=await fetch(origin+'/api/recovery/discord/reset',{method:'POST',headers:{...headers,Cookie:cookies},body:JSON.stringify({username:'runner'})});assert.equal(reset.status,200);
+ const key=(await reset.json()).token;assert.equal(f.store.authenticate(key).id,'runner');assert.throws(()=>f.store.authenticate(f.token));
+ const session=reset.headers.getSetCookie().find(v=>v.startsWith('monty_session='));assert.equal((await fetch(origin+'/api/me',{headers:{Cookie:session}})).status,200);
+ assert.equal((await fetch(origin+'/api/recovery/discord/reset',{method:'POST',headers:{...headers,Cookie:cookies},body:JSON.stringify({username:'runner'})})).status,403);
+});
+
+test('Discord sessions survive restart encrypted, refresh automatically, and respect disconnect',async t=>{
+ const f=fixture(t),cookie=await f.connect();assert.match(cookie,/Max-Age=2592000/);
+ const rows=JSON.stringify(f.store.list('metadata'));assert.doesNotMatch(rows,/private-user|private-refresh/);
+ const restarted=new DiscordSite(f.store,env,f.fetcher);assert.equal(restarted.status(f.player,cookie).connected,true);
+ f.advance(3600001);const before=f.state.calls.filter(p=>p.endsWith('/oauth2/token')).length;
+ await Promise.all([restarted.guilds(f.player,cookie),restarted.guilds(f.player,cookie)]);
+ assert.equal(f.state.calls.filter(p=>p.endsWith('/oauth2/token')).length,before+1);
+ const again=new DiscordSite(f.store,env,f.fetcher);assert.equal(again.status(f.player,cookie).connected,true);
+ const rotatedSecret=new DiscordSite(f.store,{...env,DISCORD_CLIENT_SECRET:'changed'},f.fetcher);assert.equal(rotatedSecret.status(f.player,cookie).connected,false);
+ restarted.disconnect(cookie);assert.equal(again.status(f.player,cookie).connected,false);assert.equal(restarted.recoveryStatus(f.player).enabled,true);
 });
