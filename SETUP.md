@@ -58,3 +58,18 @@ Members with Manage Server then run these in the channel that should receive the
 ## Updating
 
 Stop the server, replace application files, preserve your local `.env` and `data/`, then restart. Run `npm test` to check the source. See [HOSTING.md](HOSTING.md) for a public HTTPS deployment.
+
+## Discord website setup
+
+Use the existing Discord application. In its Developer Portal, enable server installation and public bot installation if other server owners should be able to invite it. Keep the existing interactions endpoint.
+
+1. In OAuth2, add this exact redirect: `https://doctormonty.beer/api/discord/callback` (use your PUBLIC_ORIGIN for self-hosting).
+2. Set `DISCORD_CLIENT_SECRET` on the tracker server. Keep `DISCORD_APP_ID`, `DISCORD_PUBLIC_KEY`, `DISCORD_BOT_TOKEN`, and `PUBLIC_ORIGIN` configured. Never put secrets in browser files or source control.
+3. Restart/deploy the tracker. Existing slash command registrations do not change for this feature.
+4. On Chatbot, use **Add bot to a server** and approve Discord's installation screen. The invite requests View Channel and Send Messages, not Administrator.
+5. Sign in with a runner key, choose **Connect Discord**, and approve `identify` and `guilds`. Select a server you manage, an accessible text/announcement channel, and an optional role the bot can mention.
+6. Choose a runner (or `*` for every public runner), map, category, checkpoint and alert condition, then save. Remove alerts from the same panel or with `/track-unalert`.
+
+The server verifies Manage Server/Administrator ownership and current channel/role permissions. Discord management sessions last at most one hour, are held in server memory, and require reconnecting after expiry or server restart. No Discord user refresh token is stored. Disconnecting website management does not remove the bot or stop existing server alerts.
+
+If website OAuth is not configured yet, the invite and existing `/track-alert`, `/track-alerts`, and `/track-unalert` commands still work. After adding the bot, refresh servers in the website panel. For missing channels, check bot and user channel permission overrides; for missing roles, make the desired role mentionable.
