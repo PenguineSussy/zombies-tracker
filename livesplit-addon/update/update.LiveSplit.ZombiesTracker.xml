@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <updates>
-  <update version="1.0.1">
+  <update version="1.0.2">
     <changelog>
-      <change>Enable LiveSplit's standard update prompt for future tracker releases.</change>
-      <change>Keep saved layouts, runner settings, and per-map split aliases.</change>
+      <change>Avoid upload waits during shutdown and release previous layout ownership safely.</change>
+      <change>Remember the selected alias map per layout; preserve saved aliases and runner settings.</change>
     </changelog>
     <files>
       <file path="Components/LiveSplit.ZombiesTracker.dll" status="changed" />
