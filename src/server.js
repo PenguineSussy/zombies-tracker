@@ -16,6 +16,7 @@ import { publicStreams } from './streams.js';
 import { startStreamMonitor } from './stream-monitor.js';
 import {startZwr} from './zwr.js';
 import {ChatConnections} from './chat-connections.js';
+import {DiscordSite} from './discord-site.js';
 
 const root=fileURLToPath(new URL('../public/',import.meta.url));
 function equal(a,b) { return typeof a==='string' && typeof b==='string' && Buffer.byteLength(a)===Buffer.byteLength(b) && timingSafeEqual(Buffer.from(a),Buffer.from(b)); }
@@ -26,6 +27,7 @@ async function body(req) {
 }
 export function createApp({store=new Store(),env={},connectors=false,fetcher=fetch}={}) {
   const chatbot=new ChatConnections(store,env,fetcher);
+  const discordSite=new DiscordSite(store,env,fetcher);
   let stopChat=()=>{};
   const restartChat=()=>{stopChat();if(connectors){const stops=[startTwitch(store,env),startYouTube(store,env)];stopChat=()=>stops.forEach(stop=>stop());}};
   const limits=new Map();
@@ -42,6 +44,12 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
     const send=(data,status=200)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));};
     try {
       const url=new URL(req.url,'http://localhost');const path=url.pathname;
+      if(req.method==='GET'&&path==='/api/discord/callback') {
+        limit(req,'discord-oauth',30);
+        try {res.setHeader('Set-Cookie',await discordSite.finish(url.searchParams,req.headers.cookie));res.writeHead(303,{Location:'/?discord=connected#integrations'});}
+        catch(error){res.writeHead(303,{Location:'/?discord=error&reason='+encodeURIComponent(error.status?error.message:'Discord connection failed. Try again.')+'#integrations'});}
+        res.end();return;
+      }
       if(req.method==='GET'&&path.startsWith('/api/chatbot/callback/')) {
         limit(req,'oauth-callback',30);
         const provider=path.split('/').at(-1);
@@ -53,7 +61,7 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
         const content=await readFile(resolve(root,'downloads/Zombies-Tracker-LiveSplit.zip'));
         res.writeHead(200,{'Content-Type':'application/zip','Content-Disposition':'attachment; filename="Zombies-Tracker-LiveSplit.zip"'});res.end(content);return;
       }
-      if(req.method==='GET' && ['/','/app.js','/watch.js','/activity.js','/style.css','/monty-logo.png'].includes(path)) {
+      if(req.method==='GET' && ['/','/app.js','/discord-panel.js','/watch.js','/activity.js','/style.css','/monty-logo.png'].includes(path)) {
         const file=path==='/'?'index.html':path.slice(1);const content=await readFile(resolve(root,file));
         res.writeHead(200,{'Content-Type':file.endsWith('.png')?'image/png':file.endsWith('.js')?'text/javascript; charset=utf-8':file.endsWith('.css')?'text/css; charset=utf-8':'text/html; charset=utf-8'});res.end(content);return;
       }
@@ -61,6 +69,7 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
       limit(req,'all',600);
       if(req.method==='GET' && path==='/api/catalog')return send({maps:ENABLED_MAPS,allMaps:MAPS,categories:CATEGORIES,categoriesByMap:Object.fromEntries(ENABLED_MAPS.map(m=>[m.id,categoriesForMap(m.id)])),integrations:{discord:!!env.DISCORD_PUBLIC_KEY,twitch:!!env.TWITCH_CHANNEL_IDS,youtube:!!env.YOUTUBE_LIVE_CHAT_IDS,therun:true}});
       if(req.method==='GET' && path==='/api/addon-release')return send(addonRelease);
+      if(req.method==='GET'&&path==='/api/discord/config')return send(discordSite.config());
       if(req.method==='GET' && path==='/api/activity')return send(publicActivity(store));
       if(req.method==='GET' && path==='/api/players')return send(store.list('players').filter(p=>p.public).slice(0,200).map(p=>runnerArchived(p,store.clock())?{id:p.id,name:p.name,status:'offline',lastSeen:p.lastSeen,archived:true}:({id:p.id,name:p.name,status:store.view(p.id).status,lastSeen:p.lastSeen,archived:false,profile:p.profile,source:p.source?.type??'direct',streams:publicStreams(p,store.clock(),store)})));
       if(req.method==='GET' && path.startsWith('/api/players/')) {
@@ -90,6 +99,20 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
       if(req.method==='POST'&&path==='/api/logout') {checkBrowserOrigin(req,env);clearBrowserSession(store,req);res.setHeader('Set-Cookie',browserCookie('',env,true));return send({signedOut:true});}
       let loginExpiresAt=null;
       const p=token?store.authenticate(token):(()=>{const session=browserSession(store,req);checkBrowserOrigin(req,env);loginExpiresAt=session.expiresAt;return session.player;})();
+      if(path.startsWith('/api/me/discord')) {
+        checkBrowserOrigin(req,env);limit(req,'discord-management',30);
+        if(req.method==='GET'&&path==='/api/me/discord')return send(discordSite.status(p,req.headers.cookie));
+        if(req.method==='POST'&&path==='/api/me/discord/connect'){const result=discordSite.start(p);res.setHeader('Set-Cookie',result.cookie);return send({url:result.url});}
+        if(req.method==='DELETE'&&path==='/api/me/discord'){res.setHeader('Set-Cookie',discordSite.disconnect(req.headers.cookie));return send({disconnected:true});}
+        if(req.method==='GET'&&path==='/api/me/discord/guilds')return send(await discordSite.guilds(p,req.headers.cookie));
+        const match=path.match(/^\/api\/me\/discord\/guilds\/(\d{5,25})(?:\/alerts(?:\/([\w-]+))?)?$/);
+        if(match){
+          if(req.method==='GET'&&!path.includes('/alerts'))return send(await discordSite.details(p,req.headers.cookie,match[1]));
+          if(req.method==='POST'&&path.endsWith('/alerts'))return send(await discordSite.save(p,req.headers.cookie,match[1],data),201);
+          if(req.method==='DELETE'&&match[2])return send(await discordSite.remove(p,req.headers.cookie,match[1],match[2]));
+        }
+        check(false,'Not found.',404);
+      }
       if(req.method==='GET'&&path==='/api/me/chatbot')return send(chatbot.view(p));
       if(req.method==='GET'&&path==='/api/me/chatbot/youtube/broadcasts'){limit(req,'broadcasts',10);return send(await chatbot.broadcasts(p,url.searchParams.get('slot')??0));}
       if(path.startsWith('/api/me/chatbot/')) {
