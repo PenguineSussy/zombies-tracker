@@ -46,8 +46,9 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
       const url=new URL(req.url,'http://localhost');const path=url.pathname;
       if(req.method==='GET'&&path==='/api/discord/callback') {
         limit(req,'discord-oauth',30);
-        try {res.setHeader('Set-Cookie',await discordSite.finish(url.searchParams,req.headers.cookie));res.writeHead(303,{Location:'/?discord=connected#integrations'});}
-        catch(error){res.writeHead(303,{Location:'/?discord=error&reason='+encodeURIComponent(error.status?error.message:'Discord connection failed. Try again.')+'#integrations'});}
+        const recovering=!!discordSite.pending.get(url.searchParams.get('state'))?.recovery;
+        try {const result=await discordSite.finish(url.searchParams,req.headers.cookie);res.setHeader('Set-Cookie',result.recoveryCookie??result);res.writeHead(303,{Location:result.recoveryCookie?'/?recovery=ready#setup':'/?discord=connected#integrations'});}
+        catch(error){res.writeHead(303,{Location:'/?'+(recovering?'recovery':'discord')+'=error&reason='+encodeURIComponent(error.status?error.message:'Discord connection failed. Try again.')+(recovering?'#setup':'#integrations')});}
         res.end();return;
       }
       if(req.method==='GET'&&path.startsWith('/api/chatbot/callback/')) {
@@ -87,6 +88,17 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
       }
       if(req.method==='POST' && path==='/api/register') {limit(req,'register',5,3600000);return send(store.register(data.username),201);}
       if(req.method==='POST' && path==='/api/query') {limit(req,'query',60);check(typeof data.command==='string'&&data.command.length<=500,'Command required.');return send({reply:store.answer(data.command)??'Use !help to see commands.'});}
+      if(path.startsWith('/api/recovery/discord')) {
+        checkBrowserOrigin(req,env);limit(req,'recovery',10);
+        if(req.method==='POST'&&path==='/api/recovery/discord/start'){const result=discordSite.startRecovery(data.username);res.setHeader('Set-Cookie',result.cookie);return send({url:result.url});}
+        if(req.method==='GET'&&path==='/api/recovery/discord/status')return send(discordSite.recoveryReady(req.headers.cookie));
+        if(req.method==='POST'&&path==='/api/recovery/discord/reset'){
+          const result=discordSite.resetRecovered(req.headers.cookie,data.username),session=createBrowserSession(store,req,result.player);
+          res.setHeader('Set-Cookie',[browserCookie(session.value,env),discordSite.cookie('monty_recovery','','/api/recovery/discord',0)]);
+          return send({token:result.token,expiresAt:session.expiresAt});
+        }
+        check(false,'Not found.',404);
+      }
       const token=req.headers.authorization?.replace(/^Bearer /,'');
       if(path.startsWith('/api/admin/')) {
         check(env.ADMIN_KEY && equal(token,env.ADMIN_KEY),'Admin key required.',401);
@@ -101,6 +113,7 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
       const p=token?store.authenticate(token):(()=>{const session=browserSession(store,req);checkBrowserOrigin(req,env);loginExpiresAt=session.expiresAt;return session.player;})();
       if(path.startsWith('/api/me/discord')) {
         checkBrowserOrigin(req,env);limit(req,'discord-management',30);
+        if(req.method==='DELETE'&&path==='/api/me/discord/recovery')return send(discordSite.unlinkRecovery(p));
         if(req.method==='GET'&&path==='/api/me/discord')return send(discordSite.status(p,req.headers.cookie));
         if(req.method==='POST'&&path==='/api/me/discord/connect'){const result=discordSite.start(p);res.setHeader('Set-Cookie',result.cookie);return send({url:result.url});}
         if(req.method==='DELETE'&&path==='/api/me/discord'){res.setHeader('Set-Cookie',discordSite.disconnect(req.headers.cookie));return send({disconnected:true});}
