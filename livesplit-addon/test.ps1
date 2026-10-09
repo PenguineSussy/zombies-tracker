@@ -10,7 +10,7 @@ Get-ChildItem -LiteralPath $LiveSplitDir -Filter '*.dll' | Copy-Item -Destinatio
 $refs = @('LiveSplit.Core.dll','UpdateManager.dll','SpeedrunComSharp.dll') | ForEach-Object { '/r:' + (Join-Path $LiveSplitDir $_) }
 & $compiler /nologo /target:library /define:TESTING /platform:anycpu "/out:$testDir\LiveSplit.ZombiesTracker.dll" /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Web.Extensions.dll /r:System.Net.Http.dll /r:System.Security.dll $refs "$PSScriptRoot\AddonUpdates.cs" "$PSScriptRoot\Detection.cs" "$PSScriptRoot\AutosplitBridge.cs" "$PSScriptRoot\SplitAliases.cs" "$PSScriptRoot\ManualAliases.cs" "$PSScriptRoot\Protocol.cs" "$PSScriptRoot\UploadQueue.cs" "$PSScriptRoot\Component.cs" "$PSScriptRoot\Protection.cs"
 if ($LASTEXITCODE -ne 0) { throw 'Test component compilation failed.' }
-& $compiler /nologo /target:exe /platform:anycpu /r:System.Web.Extensions.dll "/out:$testDir\Tests.exe" /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Security.dll "/r:$testDir\LiveSplit.ZombiesTracker.dll" $refs "$PSScriptRoot\Tests.cs"
+& $compiler /nologo /target:exe /platform:anycpu /r:System.Net.Http.dll /r:System.Web.Extensions.dll "/out:$testDir\Tests.exe" /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Security.dll "/r:$testDir\LiveSplit.ZombiesTracker.dll" $refs "$PSScriptRoot\Tests.cs"
 if ($LASTEXITCODE -ne 0) { throw 'Test compilation failed.' }
 & "$testDir\Tests.exe"
 if ($LASTEXITCODE -ne 0) { throw 'Addon tests failed.' }

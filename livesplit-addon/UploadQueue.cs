@@ -21,7 +21,8 @@ namespace LiveSplit.ZombiesTracker
         readonly HttpClient http;
         readonly Uri endpoint;
         readonly CancellationTokenSource cancel = new CancellationTokenSource();
-        readonly Mutex owner;
+        readonly FileStream owner;
+        Task worker;
         readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 16000000 };
         volatile bool sending, disposed, blocked;
         static readonly HashSet<string> owners = new HashSet<string>();
@@ -36,7 +37,13 @@ namespace LiveSplit.ZombiesTracker
                 throw new InvalidOperationException("Use an HTTPS server origin such as https://doctormonty.beer (HTTP allowed only on localhost).");
             return uri;
         }
-        public UploadQueue(string server, string token, string directory)
+        public UploadQueue(string server, string token, string directory) : this(server, token, directory, null) { }
+#if TESTING
+        public
+#else
+        private
+#endif
+        UploadQueue(string server, string token, string directory, HttpMessageHandler handler)
         {
             var origin = ValidateServer(server);
             if (string.IsNullOrWhiteSpace(token)) throw new InvalidOperationException("Enter your private runner key.");
@@ -44,22 +51,23 @@ namespace LiveSplit.ZombiesTracker
             using (var sha = SHA256.Create()) hash = BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(origin.AbsoluteUri + "|" + token))).Replace("-", "");
             ownerKey = hash;
             lock (owners) { if (!owners.Add(hash)) throw new InvalidOperationException("This runner already has a Zombies Tracker component in this LiveSplit process."); }
-            owner = new Mutex(false, "Local\\ZombiesTracker-" + hash);
-            bool owned;
-            try { owned = owner.WaitOne(0); } catch (AbandonedMutexException) { owned = true; }
-            if (!owned) { owner.Dispose(); lock (owners) owners.Remove(hash); throw new InvalidOperationException("Another addon instance is using this runner. Keep one upload source active."); }
             try
             {
+                // File ownership is released safely even when LiveSplit disposes on
+                // a different thread. A named Mutex is owned by its creating thread.
+                string locks = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ZombiesTracker", "Locks");
+                Directory.CreateDirectory(locks);
+                owner = new FileStream(Path.Combine(locks, hash + ".lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
                 Directory.CreateDirectory(directory);
                 file = Path.Combine(directory, hash + ".queue");
                 queue = File.Exists(file) ? json.Deserialize<List<Snapshot>>(Encoding.UTF8.GetString(Protection.Unprotect(File.ReadAllBytes(file)))) : new List<Snapshot>();
                 foreach (var item in queue) item.suppressAlerts = true;
                 endpoint = new Uri(origin, "/api/ingest");
                 ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
-                http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(10) };
+                http = new HttpClient(handler ?? new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(10) };
                 http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.Trim());
             }
-            catch { owner.ReleaseMutex(); owner.Dispose(); lock (owners) owners.Remove(hash); throw; }
+            catch { if (owner != null) owner.Dispose(); lock (owners) owners.Remove(hash); throw; }
         }
         void Save()
         {
@@ -82,20 +90,21 @@ namespace LiveSplit.ZombiesTracker
         {
             lock (gate)
             {
+                if (disposed) return;
                 if (sending) throw new InvalidOperationException("Upload is in progress. Wait a moment before clearing.");
                 queue.Clear(); Save(); blocked = false; Status = "Queue cleared. Reset LiveSplit before starting a new attempt.";
             }
         }
         public void Flush()
         {
-            lock (gate) { if (sending || disposed || blocked || queue.Count == 0) return; sending = true; }
-            Task.Run(async delegate {
+            lock (gate) { if (sending || disposed || blocked || queue.Count == 0) return; sending = true;
+            worker = Task.Run(async delegate {
                 try
                 {
                     while (!cancel.IsCancellationRequested)
                     {
                         Snapshot item;
-                        lock (gate) { if (queue.Count == 0) { Status = "Connected"; break; } item = queue[0]; }
+                        lock (gate) { if (disposed) break; if (queue.Count == 0) { Status = "Connected"; break; } item = queue[0]; }
                         string body;
                         lock (gate) body = json.Serialize(item);
                         using (var content = new StringContent(body, Encoding.UTF8, "application/json"))
@@ -115,6 +124,9 @@ namespace LiveSplit.ZombiesTracker
                         }
                         lock (gate)
                         {
+                            // A replacement may already own the persisted queue.
+                            // Never acknowledge or save after releasing ownership.
+                            if (disposed) break;
                             queue.RemoveAt(0);
                             try { Save(); } catch { queue.Insert(0, item); throw; }
                         }
@@ -122,17 +134,25 @@ namespace LiveSplit.ZombiesTracker
                 }
                 catch (Exception) { if (!disposed) Status = "Offline or storage error; queue retained, retrying."; }
                 finally { lock (gate) sending = false; }
-            });
+            }); }
         }
         public void Dispose()
         {
-            lock (gate) { disposed = true; cancel.Cancel(); }
-            // Completion may still save its acknowledged item. Wait briefly before releasing queue ownership.
-            for (int i = 0; i < 120 && sending; i++) Thread.Sleep(100);
-            http.Dispose();
-            if (sending) return; // Keep ownership until process exit rather than allow concurrent writers.
-            owner.ReleaseMutex(); owner.Dispose(); cancel.Dispose();
-            lock (owners) owners.Remove(ownerKey);
+            Task pending;
+            lock (gate) {
+                if (disposed) return;
+                disposed = true;
+                pending = worker;
+                owner.Dispose();
+                lock (owners) owners.Remove(ownerKey);
+            }
+            // Cancellation callbacks and network disposal must not block LiveSplit's
+            // UI. Already-saved items are replayed safely by the next instance.
+            Task.Run(async delegate {
+                try { cancel.Cancel(); http.Dispose(); if (pending != null) await pending.ConfigureAwait(false); }
+                catch { /* Shutdown must not surface network cancellation errors. */ }
+                finally { cancel.Dispose(); }
+            });
         }
     }
 }

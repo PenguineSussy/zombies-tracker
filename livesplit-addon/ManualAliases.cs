@@ -59,6 +59,14 @@ namespace LiveSplit.ZombiesTracker {
   }
   void ShowMap(string id) { selected=id;grid.Rows.Clear();var col=(DataGridViewComboBoxColumn)grid.Columns[1];col.Items.Clear();col.Items.AddRange(ManualAliases.Targets(id));foreach(var r in saved.Where(r=>r.Map==id))grid.Rows.Add(r.Source,r.Target); }
   public List<SplitLink> Read() {SaveRows();return ManualAliases.Validate(saved);}
+  public string SelectedMap { get { return selected ?? ""; } }
+  public void RestoreMap(string id) {
+   var map=Detector.Maps.FirstOrDefault(m=>m.Enabled && m.Id==id);
+   if(map==null)return; // Older layouts have no saved selection.
+   loading=true;
+   try { maps.SelectedItem=map;ShowMap(map.Id); }
+   finally { loading=false; }
+  }
   public void LoadLinks(IEnumerable<SplitLink> links) {saved=ManualAliases.Validate(links);ShowMap(selected??((MapInfo)maps.SelectedItem).Id);}
  }
 }

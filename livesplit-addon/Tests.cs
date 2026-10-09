@@ -6,6 +6,9 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Net;
+using System.Net.Http;
 using System.Windows.Forms;
 using System.Xml;
 using LiveSplit.Model;
@@ -13,6 +16,17 @@ using LiveSplit.ZombiesTracker;
 
 class Tests
 {
+    sealed class DelayedUpload : HttpMessageHandler {
+        public readonly TaskCompletionSource<HttpResponseMessage> Response = new TaskCompletionSource<HttpResponseMessage>();
+        public readonly ManualResetEvent Started = new ManualResetEvent(false);
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
+            Started.Set(); return Response.Task; // Deliberately ignores cancellation.
+        }
+    }
+    static void UseLayout(LiveSplitState state, TrackerComponent component) {
+        state.Layout = new LiveSplit.UI.Layout { Settings=new LiveSplit.Options.SettingsFactories.StandardLayoutSettingsFactory().Create() };
+        if(component!=null)state.Layout.LayoutComponents.Add(new LiveSplit.UI.Components.LayoutComponent("LiveSplit.ZombiesTracker.dll",component));
+    }
     static int assertions;
     static void Check(bool condition, string name) { assertions++; if (!condition) throw new Exception("FAIL: " + name); }
     static Detection Detect(string title, params string[] names)
@@ -103,6 +117,20 @@ class Tests
                 var settingsDoc=new XmlDocument(); settingsDoc.LoadXml("<Settings><Enabled>False</Enabled><ProtectedToken>" + Convert.ToBase64String(Protection.Protect(Encoding.UTF8.GetBytes("synthetic-test-key"))) + "</ProtectedToken></Settings>");
                 var linksNode=settingsDoc.CreateElement("SplitAliases");linksNode.InnerText=new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(aliasRows);settingsDoc.DocumentElement.AppendChild(linksNode);
                 settingsProbe.SetSettings(settingsDoc.DocumentElement);
+                var settingsPanel=(SettingsPanel)settingsProbe.GetSettingsControl(LiveSplit.UI.LayoutMode.Vertical);
+                settingsPanel.RestoreAliasMap("der-eisendrache");
+                var selectionXml=settingsProbe.GetSettings(new XmlDocument());
+                Check(selectionXml["AliasEditorMap"].InnerText=="der-eisendrache","alias editor selection saved in layout");
+                using(var reopened=new TrackerComponent(state)) {
+                    reopened.SetSettings(selectionXml);
+                    var reopenedPanel=(SettingsPanel)reopened.GetSettingsControl(LiveSplit.UI.LayoutMode.Vertical);
+                    Check(reopenedPanel.AliasMap=="der-eisendrache","alias selection restored in replacement layout");
+                    reopenedPanel.RestoreAliasMap("super-easter-egg");
+                    Check(settingsPanel.AliasMap=="der-eisendrache","alias selection stays separate between layouts");
+                    reopened.SetSettings(selectionXml);
+                    Check(reopenedPanel.AliasMap=="der-eisendrache","switching back restores saved map rather than Super EE");
+                    Check(reopened.GetSettings(new XmlDocument())["SplitAliases"].InnerText==selectionXml["SplitAliases"].InnerText,"restoring selection preserves aliases");
+                }
                 Check(settingsProbe.GetSettings(new XmlDocument())["SplitAliases"].InnerText.Contains("Rocket"),"manual aliases survive settings XML");
                 string saved=settingsProbe.GetSettings(new XmlDocument()).OuterXml;
                 Check(saved==settingsProbe.GetSettings(new XmlDocument()).OuterXml, "unchanged settings keep identical encrypted XML across render checks");
@@ -154,6 +182,44 @@ class Tests
             Check(sample.splits.Count == 0, "undo removes checkpoints");
             model.Reset(false); sample = Protocol.Capture(state, profile, "test-reset", 1, false, false);
             Check(sample.phase == "NotRunning" && sample.splits.Count == 0 && sample.index == -1, "reset");
+            string lifecycleDir=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"ZombiesTracker-Lifecycle-"+Guid.NewGuid());
+            var delayed=new DelayedUpload();
+            string lifecycleKey=Guid.NewGuid().ToString();
+            var oldQueue=new UploadQueue("http://localhost:1",lifecycleKey,lifecycleDir,delayed);
+            oldQueue.Enqueue(sample);
+            Check(delayed.Started.WaitOne(2000),"stalled upload started");
+            Exception closeError=null;
+            var closer=new Thread(delegate(){try{oldQueue.Dispose();oldQueue.Dispose();}catch(Exception ex){closeError=ex;}}){IsBackground=true};
+            closer.Start();Check(closer.Join(1000),"close never waits for stalled HTTP upload");Check(closeError==null,"dispose is idempotent and safe from another thread");
+            using(var replacementQueue=new UploadQueue("http://localhost:1",lifecycleKey,lifecycleDir)) {
+                Check(replacementQueue.Count==1,"replacement immediately recovers pending upload");
+                delayed.Response.SetResult(new HttpResponseMessage(HttpStatusCode.OK));
+                Pump(150);
+                Check(replacementQueue.Count==1,"late completion cannot acknowledge replacement queue");
+            }
+            using(var reopenedQueue=new UploadQueue("http://localhost:1",lifecycleKey,lifecycleDir))Check(reopenedQueue.Count==1,"late old response cannot overwrite persisted queue");
+            using(var firstLayout=new TrackerComponent(state))using(var secondLayout=new TrackerComponent(state)) {
+                var activeField=typeof(TrackerComponent).GetField("activated",BindingFlags.NonPublic|BindingFlags.Instance);
+                UseLayout(state,firstLayout);firstLayout.Update(null,state,0,0,LiveSplit.UI.LayoutMode.Vertical);
+                Check((bool)activeField.GetValue(firstLayout),"first layout activates");
+                state.Layout.LayoutComponents.Add(new LiveSplit.UI.Components.LayoutComponent("LiveSplit.ZombiesTracker.dll",secondLayout));
+                secondLayout.Update(null,state,0,0,LiveSplit.UI.LayoutMode.Vertical);
+                Check(!(bool)activeField.GetValue(secondLayout) && (bool)activeField.GetValue(firstLayout),"duplicate in same layout cannot steal ownership");
+                UseLayout(state,secondLayout);secondLayout.Update(null,state,0,0,LiveSplit.UI.LayoutMode.Vertical);
+                Check(!(bool)activeField.GetValue(firstLayout),"switching layouts deactivates previous component");
+                UseLayout(state,null);Pump(1100);
+                Check(!(bool)activeField.GetValue(secondLayout),"layout without addon stops old tracker");
+                UseLayout(state,firstLayout);firstLayout.Update(null,state,0,0,LiveSplit.UI.LayoutMode.Vertical);
+                Check((bool)activeField.GetValue(firstLayout),"returning to saved layout reactivates tracker");
+                var newRun=new Run(new LiveSplit.Model.Comparisons.StandardComparisonGeneratorsFactory());
+                newRun.GameName=run.GameName;newRun.CategoryName=run.CategoryName;newRun.Add(new Segment("Rocket"));
+                state.Run=newRun;
+                typeof(TrackerComponent).GetField("frozen",BindingFlags.NonPublic|BindingFlags.Instance).SetValue(firstLayout,"old-file");
+                typeof(TrackerComponent).GetMethod("Capture",BindingFlags.NonPublic|BindingFlags.Instance).Invoke(firstLayout,new object[]{false,false});
+                Check(typeof(TrackerComponent).GetField("frozen",BindingFlags.NonPublic|BindingFlags.Instance).GetValue(firstLayout)==null,"loading another split file clears previous attempt fingerprint");
+                Check(ReferenceEquals(state.Run,newRun),"tracker never replaces the selected split file");
+                state.Run=run;
+            }
             if (args.Length == 2)
             {
                 using (var component = new TrackerComponent(state))
@@ -168,7 +234,7 @@ class Tests
                         editorClone.SetSettings(root);
                         Check(editorClone.GetSettings(new XmlDocument())["Enabled"].InnerText == "True", "editor clone keeps enabled settings without claiming uploader");
                     }
-                    component.Update(null,state,0,0,LiveSplit.UI.LayoutMode.Vertical);
+                    UseLayout(state,component);component.Update(null,state,0,0,LiveSplit.UI.LayoutMode.Vertical);
                     Pump(200); model.Start(); Pump(100);
                     var idField=typeof(TrackerComponent).GetField("id",BindingFlags.NonPublic|BindingFlags.Instance);
                     string beforeSettings=(string)idField.GetValue(component);
@@ -177,7 +243,7 @@ class Tests
                     Check(state.CurrentPhase==TimerPhase.Running && state.CurrentSplitIndex==0, "settings roundtrip never changes timer state");
                     using(var replacement=new TrackerComponent(state)) {
                     replacement.SetSettings(component.GetSettings(new XmlDocument()));
-                    replacement.Update(null,state,0,0,LiveSplit.UI.LayoutMode.Vertical);
+                    UseLayout(state,replacement);replacement.Update(null,state,0,0,LiveSplit.UI.LayoutMode.Vertical);
                     Check((string)idField.GetValue(replacement)==beforeSettings, "layout replacement preserves attempt identity");
                     model.Split(); model.Pause(); Pump(100); model.Pause();
                     model.SkipSplit(); model.UndoSplit(); Pump(100); model.Split(); Pump(100); model.Split(); Pump(300);
@@ -186,7 +252,7 @@ class Tests
                     model.Reset(false); Pump(500);
                     }
                 }
-                string queueDir = Path.Combine(Path.GetTempPath(), "ZombiesTracker-Tests-Replay");
+                string queueDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ZombiesTracker-Tests-Replay");
                 using (var queue = new UploadQueue(args[0], args[1], queueDir))
                 {
                     bool duplicate = false;

@@ -1,4 +1,4 @@
-# Dr Monty Bot — LiveSplit addon 1.0.1
+# Dr Monty Bot — LiveSplit addon 1.0.2
 
 Tracks Black Ops III Solo Easter Egg runs in RTA. No separate companion or terminal is needed.
 
@@ -11,11 +11,11 @@ Tracks Black Ops III Solo Easter Egg runs in RTA. No separate companion or termi
 5. Open the component's settings. Enter the server URL and your private runner key, enable upload, and save your layout.
 6. Check the detected map/category before starting. Use Practice for test runs.
 
-Your key is encrypted for your Windows account. Do not share configured layouts or keys. Install 1.0.1 manually once while LiveSplit is closed to enable future updates.
+Your key is encrypted for your Windows account. Do not share configured layouts or keys. Install the latest addon manually while LiveSplit is closed to enable future updates.
 
 ## Updates
 
-Install 1.0.1 manually once: save your layout and splits, close LiveSplit, and replace only `Components/LiveSplit.ZombiesTracker.dll`. Keep your existing layout and component settings.
+Install the latest addon manually: save your layout and splits, close LiveSplit, and replace only `Components/LiveSplit.ZombiesTracker.dll`. Keep your existing layout and component settings.
 
 From 1.0.1 onward, LiveSplit can show its standard **New updates are available** prompt when it checks for component updates. Choose Yes to let LiveSplit install the new DLL and restart. Choose No to keep the current version. Save your layout and splits before accepting an update. The update replaces only the tracker DLL; saved aliases, runner settings and layouts stay in place.
 
@@ -88,3 +88,12 @@ For Super Easter Egg, select that entry and choose map-prefixed checkpoints. Eac
 
 Saved aliases take priority, then compatible autosplitter hints, then rules-based matching. Unrecognized checkpoints receive alias-setup guidance only after those methods fail.
 
+
+## Version 1.0.2
+
+- Cancels uploads without waiting for HTTP during shutdown or layout changes.
+- Releases inactive layout ownership and supports returning to a saved layout.
+- Starts fresh tracking when another split file is loaded.
+- Remembers the alias editor map separately in each saved layout. Select the map, then save your layout.
+
+Validated with 126 native assertions and 136 integration assertions, including delayed uploads and layout handoff. Saved aliases and runner settings are preserved.

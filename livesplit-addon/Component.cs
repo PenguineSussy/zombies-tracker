@@ -14,7 +14,7 @@ using LiveSplit.Model;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;
 
-[assembly: AssemblyVersion("1.0.1.0")]
+[assembly: AssemblyVersion("1.0.2.0")]
 [assembly: ComponentFactory(typeof(LiveSplit.ZombiesTracker.Factory))]
 
 namespace LiveSplit.ZombiesTracker
@@ -42,6 +42,7 @@ namespace LiveSplit.ZombiesTracker
         sealed class Continuity
         {
             public TrackerComponent Owner;
+            public object Run;
             public string Config, Id, Identity, LastPhase, Frozen;
             public long Sequence;
             public bool First, ForceNew, SuppressNext;
@@ -60,12 +61,14 @@ namespace LiveSplit.ZombiesTracker
         DateTime lastHeartbeat = DateTime.MinValue, lastRecords = DateTime.MinValue;
         bool first = true, forceNew = true, disposed, suppressNext = true;
         bool activated;
+        object observedRun;
         string protectedToken = "";
         string protectedTokenFor = "";
         public override string ComponentName { get { return "Zombies Tracker"; } }
         public TrackerComponent(LiveSplitState state)
         {
             this.state = state;
+            observedRun = state.Run;
             runtime = continuity.GetValue(state, s => new Continuity());
             panel = new SettingsPanel(Apply, ClearQueue);
             panel.LoadOptions(options);
@@ -86,6 +89,7 @@ namespace LiveSplit.ZombiesTracker
         void Changed(object sender, EventArgs e) { Capture(true); }
         void Tick(object sender, EventArgs e)
         {
+            if (activated && !InCurrentLayout()) { Deactivate(); return; }
             if (!activated || disposed || runtime.Owner != this) return;
             updates.Tick(options.Server); panel.UpdateText = updates.Status;
             try { EnsureUploader(); } catch (Exception ex) { panel.StatusText = "Connection waiting: " + ex.Message; return; }
@@ -104,9 +108,13 @@ namespace LiveSplit.ZombiesTracker
         }
         void Capture(bool transition, bool resetEvent = false)
         {
-            if (disposed || !activated || runtime.Owner != this) return;
+            if (disposed || !activated || runtime.Owner != this || !InCurrentLayout()) return;
             try
             {
+                if (!ReferenceEquals(observedRun, state.Run)) {
+                    observedRun = state.Run;
+                    forceNew = true; first = true; suppressNext = true; frozen = null;
+                }
                 var variables = Variables();
                 string title = Path.GetFileNameWithoutExtension(state.Run.FilePath ?? "");
                 var detected = Detector.Detect(state.Run.GameName, state.Run.CategoryName, title, variables, state.Run.Select(s => s.Name), options.Map, options.Aliases);
@@ -140,7 +148,7 @@ namespace LiveSplit.ZombiesTracker
                 snapshot.resetEvent = resetEvent;
                 uploader.Enqueue(snapshot);
                 sequence++; first = false; forceNew = false; suppressNext = false; lastPhase = phase; lastHeartbeat = DateTime.UtcNow;
-                runtime.Config=json.Serialize(options); runtime.Id=id; runtime.Identity=identity; runtime.LastPhase=lastPhase; runtime.Frozen=frozen;
+                runtime.Run=state.Run; runtime.Config=json.Serialize(options); runtime.Id=id; runtime.Identity=identity; runtime.LastPhase=lastPhase; runtime.Frozen=frozen;
                 runtime.Sequence=sequence; runtime.First=first; runtime.ForceNew=forceNew; runtime.SuppressNext=suppressNext;
                 panel.StatusText = uploader.Status + " / " + uploader.Count + " pending / " + phase + " / " + bridgeStatus;
             }
@@ -167,7 +175,7 @@ namespace LiveSplit.ZombiesTracker
             if (!activated || !options.Enabled || uploader != null) return;
             uploader = new UploadQueue(options.Server, options.Token,
 #if TESTING
-                Path.Combine(Path.GetTempPath(), "ZombiesTracker-Tests"));
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ZombiesTracker-Tests"));
 #else
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ZombiesTracker", "LiveSplit"));
 #endif
@@ -181,7 +189,7 @@ namespace LiveSplit.ZombiesTracker
         public override Control GetSettingsControl(LayoutMode mode) { return panel; }
         // LiveSplit polls this during rendering. Do not apply UI edits, encrypt a
         // key, or change runtime state from its layout-change detection path.
-        public int GetSettingsHashCode() { return json.Serialize(options).GetHashCode(); }
+        public int GetSettingsHashCode() { return (json.Serialize(options) + "|" + panel.AliasMap).GetHashCode(); }
         public override XmlNode GetSettings(XmlDocument doc)
         {
             // LiveSplit serializes/clones components while editing layouts. Never start
@@ -203,6 +211,7 @@ namespace LiveSplit.ZombiesTracker
             put("Version", AddonUpdates.InstalledVersion); put("Enabled", (options.Enabled && canSave).ToString()); put("Server", options.Server);
             put("ProtectedToken", protectedToken);
             put("SplitAliases", json.Serialize(options.Aliases));
+            put("AliasEditorMap", panel.AliasMap);
             put("Map", options.Map); put("Category", options.Category); put("Practice", options.Practice.ToString());
             return root;
         }
@@ -222,28 +231,45 @@ namespace LiveSplit.ZombiesTracker
             }
             catch (Exception ex) { value.Enabled = false; options = value; panel.StatusText = "Settings need attention: " + ex.Message; }
             panel.LoadOptions(value);
+            panel.RestoreAliasMap(read("AliasEditorMap", ""));
         }
         public override void Update(IInvalidator invalidator, LiveSplitState state, float width, float height, LayoutMode mode)
         {
-            if (disposed) return;
+            if (disposed || !InCurrentLayout()) return;
             // Only components used by the real layout get Update. Editor clones stay inert.
-            if (activated) return;
+            if (activated && runtime.Owner == this) return;
+            if (runtime.Owner != null && runtime.Owner != this && !runtime.Owner.disposed && runtime.Owner.InCurrentLayout()) {
+                panel.StatusText = "Another Zombies Tracker component is already active in this layout. Keep only one.";
+                return;
+            }
             activated = true;
-            if(runtime.Config == json.Serialize(options))
+            if(ReferenceEquals(runtime.Run,state.Run) && runtime.Config == json.Serialize(options))
             {
                 id=runtime.Id; identity=runtime.Identity; lastPhase=runtime.LastPhase; frozen=runtime.Frozen;
                 sequence=runtime.Sequence; first=runtime.First; forceNew=runtime.ForceNew; suppressNext=runtime.SuppressNext;
                 if(runtime.Owner!=null && !runtime.Owner.disposed) { uploader=runtime.Owner.uploader; runtime.Owner.uploader=null; }
             }
+            if (runtime.Owner != null && runtime.Owner != this) runtime.Owner.Deactivate();
             runtime.Owner=this;
             try { EnsureUploader(); } catch (Exception ex) { panel.StatusText = "Connection waiting: " + ex.Message; }
         }
+        bool InCurrentLayout()
+        {
+            return state.Layout != null && state.Layout.LayoutComponents.Any(c => ReferenceEquals(c.Component, this));
+        }
+        void Deactivate()
+        {
+            activated = false;
+            if (runtime.Owner == this) runtime.Owner = null;
+            if (uploader != null) { var previous = uploader; uploader = null; previous.Dispose(); }
+        }
         public override void Dispose()
         {
+            if (disposed) return;
             disposed = true; timer.Stop(); timer.Dispose();
             state.OnStart -= Started; state.OnSplit -= Changed; state.OnUndoSplit -= Changed; state.OnSkipSplit -= Changed;
             state.OnPause -= Changed; state.OnResume -= Changed; state.OnUndoAllPauses -= Changed; state.OnReset -= Reset;
-            updates.Dispose(); if (uploader != null) uploader.Dispose(); panel.Dispose();
+            Deactivate(); updates.Dispose(); panel.Dispose();
         }
     }
     public sealed class SettingsPanel : UserControl
@@ -254,6 +280,8 @@ namespace LiveSplit.ZombiesTracker
         readonly ComboBox map = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
         readonly ComboBox category = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
         readonly AliasEditor aliasEditor = new AliasEditor();
+        public string AliasMap { get { return aliasEditor.SelectedMap; } }
+        public void RestoreAliasMap(string map) { aliasEditor.RestoreMap(map); }
         readonly CheckBox practice = new CheckBox { Text = "Practice (excluded from records and alerts)", AutoSize = true };
         readonly Label detection = new Label { AutoSize = true, MaximumSize = new Size(450, 0) };
         readonly Label status = new Label { AutoSize = true, MaximumSize = new Size(450, 0) };
