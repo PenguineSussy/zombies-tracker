@@ -78,3 +78,19 @@ test('Discord website routes require runner sign-in, same origin, and bound Disc
  assert.equal((await fetch(origin+'/api/me/discord/guilds/'+guild+'/alerts/'+id,{method:'DELETE',headers:auth})).status,200);
  assert.equal((await fetch(origin+'/discord-panel.js')).status,200);
 });
+
+test('Website alerts default to all runners and save name lists atomically',async t=>{
+ const f=fixture(t),cookie=await f.connect();f.store.register('Second');
+ const all=await f.site.save(f.player,cookie,guild,{...alert,player:undefined});assert.equal(all.player,'*');
+ const result=await f.site.save(f.player,cookie,guild,{...alert,player:' Runner, @Second, RUNNER '});assert.deepEqual(result.alerts.map(a=>a.player),['runner','second']);
+ const count=f.store.list('subscriptions').length;
+ await assert.rejects(f.site.save(f.player,cookie,guild,{...alert,player:'Runner, Missing'}),/public runner/);
+ await assert.rejects(f.site.save(f.player,cookie,guild,{...alert,player:'*, Runner'}),/by itself/);
+ await assert.rejects(f.site.save(f.player,cookie,guild,{...alert,player:'Runner,'}),/runner names/);
+ assert.equal(f.store.list('subscriptions').length,count);
+ const {discordCheckpoints}=await import('../src/discord-site.js');
+ assert.ok(discordCheckpoints('der-eisendrache').includes('Rocket'));
+ assert.ok(!discordCheckpoints('origins').includes('Fire Dupe'));
+ assert.ok(discordCheckpoints('super-easter-egg').includes('Shadows of Evil - Sword'));
+ assert.deepEqual(discordCheckpoints('the-giant'),['End']);
+});
