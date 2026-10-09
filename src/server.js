@@ -16,7 +16,7 @@ import { publicStreams } from './streams.js';
 import { startStreamMonitor } from './stream-monitor.js';
 import {startZwr} from './zwr.js';
 import {ChatConnections} from './chat-connections.js';
-import {DiscordSite} from './discord-site.js';
+import {DiscordSite,discordCheckpoints} from './discord-site.js';
 
 const root=fileURLToPath(new URL('../public/',import.meta.url));
 function equal(a,b) { return typeof a==='string' && typeof b==='string' && Buffer.byteLength(a)===Buffer.byteLength(b) && timingSafeEqual(Buffer.from(a),Buffer.from(b)); }
@@ -67,7 +67,7 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
       }
       if(req.method==='GET' && path==='/health')return send({ok:true,version:'0.9.0'});
       limit(req,'all',600);
-      if(req.method==='GET' && path==='/api/catalog')return send({maps:ENABLED_MAPS,allMaps:MAPS,categories:CATEGORIES,categoriesByMap:Object.fromEntries(ENABLED_MAPS.map(m=>[m.id,categoriesForMap(m.id)])),integrations:{discord:!!env.DISCORD_PUBLIC_KEY,twitch:!!env.TWITCH_CHANNEL_IDS,youtube:!!env.YOUTUBE_LIVE_CHAT_IDS,therun:true}});
+      if(req.method==='GET' && path==='/api/catalog')return send({maps:ENABLED_MAPS,allMaps:MAPS,checkpointsByMap:Object.fromEntries(ENABLED_MAPS.map(m=>[m.id,discordCheckpoints(m.id)])),categories:CATEGORIES,categoriesByMap:Object.fromEntries(ENABLED_MAPS.map(m=>[m.id,categoriesForMap(m.id)])),integrations:{discord:!!env.DISCORD_PUBLIC_KEY,twitch:!!env.TWITCH_CHANNEL_IDS,youtube:!!env.YOUTUBE_LIVE_CHAT_IDS,therun:true}});
       if(req.method==='GET' && path==='/api/addon-release')return send(addonRelease);
       if(req.method==='GET'&&path==='/api/discord/config')return send(discordSite.config());
       if(req.method==='GET' && path==='/api/activity')return send(publicActivity(store));

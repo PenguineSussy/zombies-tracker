@@ -1,5 +1,11 @@
 import {randomBytes,createHash} from 'node:crypto';
 import {check,milliseconds,profile} from './domain.js';
+import {MAPS} from './domain.js';
+import {SPLIT_RULES} from './split-rules.js';
+export function discordCheckpoints(map){
+ if(map==='super-easter-egg')return ['shadows-of-evil','the-giant','der-eisendrache','zetsubou-no-shima','gorod-krovi','revelations'].flatMap(id=>{const name=MAPS.find(m=>m.id===id).name;return [...discordCheckpoints(id).filter(n=>n!=='End').map(n=>name+' - '+n),name+' - Complete'];});
+ return [...new Set([...(SPLIT_RULES[map]??[]).map(r=>r.name),'End',...(map==='zetsubou-no-shima'?['KT4']:[])])];
+}
 const hash=v=>createHash('sha256').update(v??'').digest('hex');
 const api='https://discord.com/api/v10';
 const snowflake=v=>typeof v==='string'&&/^\d{5,25}$/.test(v);
@@ -104,11 +110,14 @@ export class DiscordSite {
   check(channel,'Choose a channel you can view where the bot can send messages.',403);
   const role=input.role?c.roles.find(r=>r.id===input.role):null;
   check(!input.role||(role&&role.id!==guildId&&!role.managed&&(role.mentionable||(channelPermissions(c.guild,c.roles,c.botMember,channel)&131072n)!==0n)),'Choose a mentionable role from this server.',403);
-  const runner=String(input.player??player.id).replace(/^@/,'').toLowerCase();
-  check(runner==='*'||this.store.get('players',runner)?.public,'Choose a public runner or * for every public runner.');
+  const runners=[...new Set(String(input.player??'*').trim().split(',').map(n=>n.trim().replace(/^@/,'').toLowerCase()))];
+  check(runners.length<=20&&!runners.includes(''),'Enter up to 20 runner names separated by commas, or * for all public runners.');
+  check(!runners.includes('*')||runners.length===1,'Use * by itself for all public runners.');
+  for(const runner of runners)check(runner==='*'||this.store.get('players',runner)?.public,'Choose a public runner or * for every public runner. Check: '+runner);
   check(typeof input.split==='string'&&input.split.trim().length>0&&input.split.length<=100,'Enter a checkpoint name.');
-  check(this.store.list('subscriptions').filter(s=>s.guild===guildId).length<200,'This server has reached its 200-alert limit.',409);
-  return this.store.subscribe({guild:guildId,channel:channel.id,role:role?.id,player:runner,profile:profile(input.profile),split:input.split,mode:input.mode,thresholdMs:input.mode==='under'?milliseconds(input.threshold):null});
+  check(this.store.list('subscriptions').filter(s=>s.guild===guildId).length+runners.length<=200,'This server has reached its 200-alert limit.',409);
+  const common={guild:guildId,channel:channel.id,role:role?.id,profile:profile(input.profile),split:input.split,mode:input.mode,thresholdMs:input.mode==='under'?milliseconds(input.threshold):null};
+  return this.store.transaction(()=>{const alerts=runners.map(runner=>this.store.subscribe({...common,player:runner}));return alerts.length===1?alerts[0]:{alerts};});
  }
  async remove(player,cookies,guildId,id){
   const c=await this.context(player,cookies,guildId),sub=this.store.get('subscriptions',id);
