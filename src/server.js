@@ -65,7 +65,7 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
         const file=path==='/'?'index.html':path.slice(1);const content=await readFile(resolve(root,file));
         res.writeHead(200,{'Content-Type':file.endsWith('.png')?'image/png':file.endsWith('.js')?'text/javascript; charset=utf-8':file.endsWith('.css')?'text/css; charset=utf-8':'text/html; charset=utf-8'});res.end(content);return;
       }
-      if(req.method==='GET' && path==='/health')return send({ok:true,version:'0.9.0'});
+      if(req.method==='GET' && path==='/health')return send({ok:true,version:'1.0.0'});
       limit(req,'all',600);
       if(req.method==='GET' && path==='/api/catalog')return send({maps:ENABLED_MAPS,allMaps:MAPS,checkpointsByMap:Object.fromEntries(ENABLED_MAPS.map(m=>[m.id,discordCheckpoints(m.id)])),categories:CATEGORIES,categoriesByMap:Object.fromEntries(ENABLED_MAPS.map(m=>[m.id,categoriesForMap(m.id)])),integrations:{discord:!!env.DISCORD_PUBLIC_KEY,twitch:!!env.TWITCH_CHANNEL_IDS,youtube:!!env.YOUTUBE_LIVE_CHAT_IDS,therun:true}});
       if(req.method==='GET' && path==='/api/addon-release')return send(addonRelease);
