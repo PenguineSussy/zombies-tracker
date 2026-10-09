@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <updates>
-  <update version="1.0.2">
+  <update version="1.0.3">
     <changelog>
-      <change>Avoid upload waits during shutdown and release previous layout ownership safely.</change>
-      <change>Remember the selected alias map per layout; preserve saved aliases and runner settings.</change>
+      <change>Start tracking independently of rendering callbacks, while keeping inactive layout copies idle.</change>
+      <change>Show a waiting status before activation. Saved aliases and settings are preserved.</change>
     </changelog>
     <files>
       <file path="Components/LiveSplit.ZombiesTracker.dll" status="changed" />
