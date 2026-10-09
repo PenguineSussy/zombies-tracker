@@ -1,3 +1,4 @@
+import {setupDiscord} from './discord-panel.js';
 import {streamCandidates,distinctSlots,playerUrl} from './watch.js?v=0.3.0';
 const $=id=>document.getElementById(id);
 let token='', me=null, loginExpiresAt=null, catalog, selected=new URLSearchParams(location.search).get('runner');
@@ -81,8 +82,10 @@ function expiryNote(){syncLoginUI();
 function clearLogin(){token='';me=null;loginExpiresAt=null;rememberExpiry(null);$('new-key').textContent='';$('new-key-box').hidden=true;$('runner-key').value='';$('account-state').textContent='Not signed in';$('source-status').textContent='';expiryNote();void loadChatbot();}
 async function saveKey(value){const result=await api('/api/login',{method:'POST',key:value});token='';loginExpiresAt=result.expiresAt;rememberExpiry(loginExpiresAt);$('runner-key').value='';expiryNote();}
 
+const discordPanel=setupDiscord({api,notice,player:()=>me,catalog:()=>catalog});
 let chatConfig=null;
 async function loadChatbot(){
+  void discordPanel.refresh().catch(e=>notice(e.message,true));
   if(!me){chatConfig=null;$('chatbot-login').textContent='Sign in with your runner key in LiveSplit to manage your channels.';}
   else {chatConfig=await api('/api/me/chatbot');$('chatbot-login').textContent=`Managing channels for ${me.name}`;}
   for(const provider of ['twitch','youtube']){
@@ -188,7 +191,7 @@ action('rotate',async()=>{requireLogin();const r=await api('/api/me/rotate',{met
 action('logout',async()=>{await api('/api/logout',{method:'POST'});clearLogin();notice('Signed out. This browser will ask for your runner key next time.');});
 action('delete',async()=>{requireLogin();if($('delete-name').value.toLowerCase()!==me.id)throw new Error('Type your tracker username to confirm deletion.');await api('/api/me',{method:'DELETE'});$('logout').click();await refresh();notice('Account and recorded history deleted.');});
 async function init(){catalog=await api('/api/catalog');for(const m of catalog.maps){const o=node('option',m.name);o.value=m.id;$('map').append(o);}$('map').value='der-eisendrache';updateCategories();$('server-state').textContent='Tracker online';try{let legacy;try{legacy=sessionStorage.getItem('runnerKey');}catch{}if(legacy)await saveKey(legacy);await loadMe();fillStreams();}catch(error){if(error.status===401){let wasSaved=false;try{wasSaved=!!localStorage.getItem('montyLoginExpires');}catch{}clearLogin();if(wasSaved)notice('Your saved sign-in has expired or is no longer valid. Sign in again with your runner key.',true);}else throw error;}await refresh();}
-void init().then(async()=>{await loadChatbot();if(location.hash==='#integrations')showTab('integrations');const q=new URLSearchParams(location.search);if(q.has('chatbot')){notice(q.get('chatbot')==='connected'?'Channel connected. Enable replies when ready.':q.get('reason')??'Connection failed.',q.get('chatbot')!=='connected');history.replaceState(null,'','/#integrations');}}).catch(e=>notice(e.message,true));
+void init().then(async()=>{await loadChatbot();if(location.hash==='#integrations')showTab('integrations');const q=new URLSearchParams(location.search);if(q.has('discord')){notice(q.get('discord')==='connected'?'Discord connected. Choose your server to set up alerts.':q.get('reason')??'Discord connection failed.',q.get('discord')!=='connected');history.replaceState(null,'','/#integrations');}if(q.has('chatbot')){notice(q.get('chatbot')==='connected'?'Channel connected. Enable replies when ready.':q.get('reason')??'Connection failed.',q.get('chatbot')!=='connected');history.replaceState(null,'','/#integrations');}}).catch(e=>notice(e.message,true));
 setInterval(()=>{if(!document.hidden&&catalog){void refresh().catch(()=>{$('server-state').textContent='Connection unavailable';});if(me)void loadMe().catch(()=>{});}},10000);
 
 
