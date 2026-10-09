@@ -16,6 +16,26 @@ function fixture(t){let now=NOW;const store=new Store(':memory:',()=>now);t.afte
 function event(overrides={}){return {attemptId:'attempt-001',sequence:1,profile:P,phase:'Running',index:1,elapsedMs:285000,current:'Crackle',splits:[{index:0,name:'Bow',ms:283000}],complete:true,observedAt:NOW,...overrides};}
 function raw(overrides={}){return {attemptCount:'1',phase:'Running',index:0,timing:'RealTime',elapsedMs:1000,current:'Bow',previous:'-',previousMs:null,...overrides};}
 
+test('direct presence uses receipt time despite a slow runner clock and expires after disconnect',t=>{
+  const {store,player,tick}=fixture(t);
+  store.ingest(player.id,event({observedAt:NOW-40000}));
+  assert.equal(store.view(player.id).status,'Running');
+  assert.equal(store.view(player.id).lastSeen,NOW);
+  assert.equal(store.view(player.id).attempt.observedAt,NOW-40000);
+  assert.equal(store.view(player.id).attempt.elapsedMs,285000);
+  tick(25000);
+  store.ingest(player.id,event({sequence:2,observedAt:NOW-15000}));
+  tick(25000);assert.equal(store.view(player.id).status,'Running');
+  tick(5001);assert.equal(store.view(player.id).status,'offline');
+});
+
+test('polling therun does not revive stale run data',t=>{
+  const {store,player}=fixture(t);
+  const p=store.get('players',player.id);p.source={type:'therun'};store.savePlayer(p);
+  store.ingest(player.id,event({observedAt:NOW-180000}));
+  assert.equal(store.view(player.id).status,'offline');
+});
+
 test('time parser preserves milliseconds, hours, comma fractions and countdown',()=>{
   assert.equal(milliseconds('7:31.123'),451123);assert.equal(milliseconds('1:02:03,5'),3723500);assert.equal(milliseconds('-0:05'),-5000);assert.equal(milliseconds('-'),null);
   assert.equal(time(451123),'7:31.123');assert.throws(()=>milliseconds('1:99'));
@@ -82,9 +102,9 @@ test('WR comparison is frozen per attempt and wrong categories never match',t=>{
   store.ingest(player.id,event({sequence:2}));assert.match(store.answer('!pace @Player1'),/7 seconds ahead/);
   store.ingest(player.id,event({attemptId:'attempt-002',profile:{...P,category:'Mega Gums'}}));assert.match(store.answer('!pace @Player1'),/unavailable/);
 });
-test('outage replay records history but cannot send old milestone pings or look online',t=>{
+test('receipt confirms connection while outage replay cannot send old milestone pings',t=>{
   const {store,player,tick}=fixture(t);store.subscribe({guild:'123456',channel:'234567',player:player.id,profile:P,split:'bow',mode:'milestone'});tick(200000);
-  store.ingest(player.id,event());assert.equal(store.list('outbox').length,0);assert.equal(store.view(player.id).status,'offline');
+  store.ingest(player.id,event());assert.equal(store.list('outbox').length,0);assert.equal(store.view(player.id).status,'Running');
 });
 test('Discord delivery limits mentions, uses idempotency nonce, respects rate limit',async t=>{
   const {store,player,tick}=fixture(t);store.subscribe({guild:'123456',channel:'234567',role:'345678',player:player.id,profile:P,split:'bow',mode:'milestone'});store.ingest(player.id,event());
