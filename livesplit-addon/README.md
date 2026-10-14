@@ -1,4 +1,4 @@
-# Dr Monty Bot — LiveSplit addon 1.0.4
+# Dr Monty Bot — LiveSplit addon 1.0.5
 
 Tracks Black Ops III Solo Easter Egg runs in RTA, with optional LiveSplit IGT displayed alongside it. No separate companion or terminal is needed.
 

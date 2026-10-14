@@ -10,6 +10,13 @@ const NOW=1791170000000;
 function fixture(t){const store=new Store(':memory:',()=>NOW);t.after(()=>store.close());const {player}=store.register('Player1');return {store,player};}
 function event(overrides={}){return {attemptId:'attempt-001',sequence:1,profile:P,phase:'Running',index:1,elapsedMs:285000,current:'Rocket',splits:[{index:0,name:'Bow',ms:283000}],observedAt:NOW,...overrides};}
 const command=(options,permissions='32')=>({type:2,data:{name:'track-alert',options:Object.entries(options).map(([name,value])=>({name,value}))},guild_id:'123456',channel_id:'234567',member:{permissions}});
+test('existing Exit alert rules still match custom Revelations Beast Exit splits',t=>{
+ const {store,player}=fixture(t),profile={...P,map:'revelations'};
+ const sub=store.subscribe({guild:'123456',channel:'234567',player:player.id,profile,split:'Exit',mode:'milestone'});
+ store.put('subscriptions',sub.id,{...sub,split:'exit'});
+ store.ingest(player.id,event({profile,index:1,elapsedMs:500000,splits:[{index:0,name:'My custom name',ms:500000}],manualNames:['Exit']}));
+ assert.match(store.list('outbox')[0].content,/Beast Exit: 8:20/);
+});
 
 test('alerts match checkpoint aliases in both the alert and the runner splits',t=>{
   const {store,player}=fixture(t);

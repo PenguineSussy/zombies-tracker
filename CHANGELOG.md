@@ -1,5 +1,10 @@
 # Changes
 
+## Website/bot 1.0.3 and LiveSplit addon 1.0.5 — October 13, 2026
+
+- Activity scroller resolves canonical checkpoint names with the same aliases and run context as the runner panel.
+- Revelations uses Beast Enter and Beast Exit everywhere. Old Beast, Exit and Squid Leave names remain accepted, including saved aliases and existing Discord alert rules.
+
 ## Website/bot 1.0.2 and LiveSplit addon 1.0.4 — October 13, 2026
 
 - Optional LiveSplit IGT beside RTA in live runs, checkpoints, activity, commands and alerts. Missing game time stays absent; RTA still drives comparisons.

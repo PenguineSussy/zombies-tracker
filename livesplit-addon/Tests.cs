@@ -47,7 +47,9 @@ class Tests
             var aliasRows=new[]{new SplitLink{Map="der-eisendrache",Source="My split",Target="Rocket"},new SplitLink{Map="revelations",Source="My split",Target="Exit"}};
             Check(ManualAliases.Resolve(aliasRows,"der-eisendrache",new[]{"My split","R7"},new[]{"Bow","Crackle"})[0]=="Rocket","manual alias overrides autosplitter");
             Check(ManualAliases.Resolve(aliasRows,"der-eisendrache",new[]{"My split","R7"},new[]{"Bow","Crackle"})[1]=="Crackle","unmapped split retains automatic hint");
-            Check(ManualAliases.Resolve(aliasRows,"revelations",new[]{"My split"},null)[0]=="Exit","aliases are map scoped");
+            Check(ManualAliases.Resolve(aliasRows,"revelations",new[]{"My split"},null)[0]=="Beast Exit","aliases are map scoped");
+            Check(ManualAliases.Targets("revelations").Contains("Beast Enter") && !ManualAliases.Targets("revelations").Contains("Beast"),"new Revelations dropdown labels");
+            Check(ManualAliases.Validate(new[]{new SplitLink{Map="super-easter-egg",Source="Custom",Target="Revelations - Exit"}})[0].Target=="Revelations - Beast Exit","legacy Super EE alias preserved");
             Check(!ManualAliases.Targets("origins").Contains("Fire Dupe"),"removed milestones stay removed");
             Check(ManualAliases.Targets("super-easter-egg").Contains("Der Eisendrache - Rocket"),"Super EE has map-prefixed checkpoints");
             var superLinks=ManualAliases.Core.Select((id,i)=>new SplitLink{Map="super-easter-egg",Source="Custom "+i,Target=Detector.Maps.First(m=>m.Id==id).Name+" - Complete"}).ToArray();

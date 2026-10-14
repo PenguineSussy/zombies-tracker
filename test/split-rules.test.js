@@ -5,6 +5,12 @@ import {Store} from '../src/store.js';
 import {ChatResponder} from '../src/chat.js';
 const p={map:'der-eisendrache',category:'Mega Gums'};
 const rows=(...pairs)=>pairs.map(([name,ms],index)=>({name,ms,index}));
+test('Revelations accepts historical names and Super EE prefixes',()=>{
+ for(const name of ['Exit','Beast Exit','Squid Leave'])assert.equal(splitName({map:'revelations'},name),'Beast Exit');
+ assert.equal(splitName({map:'revelations'},'Beast'),'Beast Enter');
+ assert.equal(splitName({map:'super-easter-egg'},'Revelations - Exit'),'Revelations - Beast Exit');
+ assert.equal(resolveSplits({map:'super-easter-egg'},[{index:0,name:'custom',manualName:'Revelations - Beast',ms:400000}])[0].displayName,'Revelations - Beast Enter');
+});
 test('map-specific aliases preserve raw names and let explicit names override timing hints',()=>{
  const input=rows(['R7',1000],['Teleport 1',2000],['Boss',3000]);const before=structuredClone(input);
  assert.deepEqual(resolveSplits(p,input).map(s=>s.displayName),['Crackle','TP','Boss Enter']);assert.deepEqual(input,before);

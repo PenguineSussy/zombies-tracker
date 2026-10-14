@@ -48,7 +48,7 @@ export function discordInteraction(store, interaction) {
           + (rules.length && !rules.some(r => r.name === label) ? `\nNote: "${label}" is not a standard checkpoint for this map, so it only matches a LiveSplit split with exactly that name. Standard: ${rules.map(r => r.name).join(', ')}.` : '')
           + (sub.role ? '\nThe bot needs Send Messages here, and the role must be mentionable (or the bot needs Mention All Roles).' : '');
       } else if (name === 'track-alerts') {
-        content = store.list('subscriptions').filter(s => s.guild === interaction.guild_id).map(s => `${s.id}: ${s.player === '*' ? 'any runner' : s.player} / ${s.split} / ${s.mode} / ${profileLabel(s.profile)} / <#${s.channel}>${s.role ? ` / <@&${s.role}>` : ''}`).join('\n') || 'No alerts configured.';
+        content = store.list('subscriptions').filter(s => s.guild === interaction.guild_id).map(s => `${s.id}: ${s.player === '*' ? 'any runner' : s.player} / ${splitName(s.profile,s.split)} / ${s.mode} / ${profileLabel(s.profile)} / <#${s.channel}>${s.role ? ` / <@&${s.role}>` : ''}`).join('\n') || 'No alerts configured.';
       } else {
         const sub = store.get('subscriptions', options.id); check(sub?.guild === interaction.guild_id, 'Alert not found.', 404);
         store.db.prepare('DELETE FROM subscriptions WHERE id=?').run(sub.id); content = 'Alert removed.';

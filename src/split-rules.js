@@ -15,8 +15,8 @@ export const SPLIT_RULES={
  rule('Fly 1',240,390,['Fly','First Fly']),rule('Spit',340,540,['Round End','Round 6','Round 6 End','Spit (R6)','R6'],{'Fly 1':80}),
  rule('Fly 2',440,780,['Fly','Second Fly'],{Spit:80}),rule('Challenges',870,1320,['Chall Start','Challs','Challenge Start','Challenges Start'],{'Fly 2':390}),
  rule('Download',1350,1680,['Download Start'],{Challenges:405}),rule('End',1770,null,['GK Egg End'],{Download:445})],
- revelations:[rule('Keeper',120,330,['Keeper Start']),rule('Beast',350,540,['Beast Enter'],{Keeper:190}),
- rule('Exit',420,629,['Beast Exit','Squid Leave'],{Beast:45}),rule('House',630,960,['TP','Teleport','House Enter'],{Exit:210}),rule('Boss 1',990,1260,[],{House:300}),
+ revelations:[rule('Keeper',120,330,['Keeper Start']),rule('Beast Enter',350,540,['Beast'],{Keeper:190}),
+ rule('Beast Exit',420,629,['Exit','Squid Leave'],{'Beast Enter':45}),rule('House',630,960,['TP','Teleport','House Enter'],{'Beast Exit':210}),rule('Boss 1',990,1260,[],{House:300}),
  rule('Symbols',1040,1310,[],{'Boss 1':50},{optional:true}),rule('Basketball',1140,1470,[],{Symbols:90,'Boss 1':140}),rule('Boss 2',1230,1590,[],{Basketball:90}),rule('End',1350,null,['Rev Egg End'],{'Boss 2':60})],
  'shangri-la':[rule('Tiles',80,179,['Tiles Done']),rule('Crystal',180,319),rule('Napalm',320,450),rule('Radio',451,584),rule('End',585,null)],
  moon:[rule('Power',30,90),rule('Samantha Says',91,300),rule('Terminals',300,480,['Hack Complete']),rule('Vril Sphere',481,640,['Ball']),rule('Canister 1',641,840),rule('Canister 2',841,1079),rule('End',1191,null,['Moon Egg End'])],
@@ -25,6 +25,10 @@ export const SPLIT_RULES={
  rule('Upgrade',1200,1440,['All Upgrade','Wind Exit'],{'Ice Leave':150}),rule('End',1740,null,['Origins Egg End'],{Upgrade:540})]
 };
 export function splitName(profile,name){
+ if(profile?.map==='super-easter-egg'){
+  const rev=String(name??'').match(/^(?:revelations|rev)\s*[-:]\s*(.+)$/i);
+  if(rev)return 'Revelations - '+splitName({map:'revelations'},rev[1]);
+ }
  const matches=(SPLIT_RULES[profile?.map]??[]).filter(r=>r.aliases.includes(n(name)));
  return matches.length===1?matches[0].name:String(name??'');
 }
@@ -32,7 +36,7 @@ export function resolveSplits(profile,rows,{timing=true,finished=false}={}) {
  const rules=SPLIT_RULES[profile?.map]??[];
  const allowTiming=timing&&['Mega Gums','Any%'].includes(profile?.category)&&!['moon','origins'].includes(profile?.map);
  const result=rows.map(s=>({...s,originalName:s.originalName??s.displayName??s.name}));
- const chosen=rows.map(s=>{if(s.manualName)return {name:s.manualName,aliases:[n(s.manualName)]};const hits=rules.filter(r=>r.aliases.includes(n(s.autosplitName??s.originalName??s.displayName??s.name)));return hits.length===1?hits[0]:null;});
+ const chosen=rows.map(s=>{if(s.manualName){const name=splitName(profile,s.manualName);return {name,aliases:[n(name)]};}const raw=s.autosplitName??s.originalName??s.displayName??s.name;const hits=rules.filter(r=>r.aliases.includes(n(raw)));if(hits.length===1)return hits[0];const canonical=splitName(profile,raw);return canonical!==raw?{name:canonical,aliases:[n(canonical)]}:null;});
  for(let i=0;i<rows.length;i++){
   if(chosen[i]||!allowTiming||!Number.isFinite(rows[i].ms))continue;
   if(profile?.map==='zetsubou-no-shima'&&['kt4','kt 4','kt'].includes(n(result[i].originalName)))continue;

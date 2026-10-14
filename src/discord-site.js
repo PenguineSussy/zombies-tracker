@@ -1,3 +1,4 @@
+import {splitName} from './split-rules.js';
 import {randomBytes,createHash,createCipheriv,createDecipheriv} from 'node:crypto';
 import {check,milliseconds,profile} from './domain.js';
 import {MAPS} from './domain.js';
@@ -153,7 +154,7 @@ export class DiscordSite {
  }
  async details(player,cookies,guildId){
   const c=await this.context(player,cookies,guildId);
-  return {channels:c.channels.map(ch=>({id:ch.id,name:ch.name,roleIds:c.roles.filter(r=>r.id!==guildId&&!r.managed&&(r.mentionable||(channelPermissions(c.guild,c.roles,c.botMember,ch)&131072n)!==0n)).map(r=>r.id)})),roles:c.roles.filter(r=>r.id!==guildId&&!r.managed).map(r=>({id:r.id,name:r.name})),alerts:this.store.list('subscriptions').filter(s=>s.guild===guildId&&c.channels.some(ch=>ch.id===s.channel))};
+  return {channels:c.channels.map(ch=>({id:ch.id,name:ch.name,roleIds:c.roles.filter(r=>r.id!==guildId&&!r.managed&&(r.mentionable||(channelPermissions(c.guild,c.roles,c.botMember,ch)&131072n)!==0n)).map(r=>r.id)})),roles:c.roles.filter(r=>r.id!==guildId&&!r.managed).map(r=>({id:r.id,name:r.name})),alerts:this.store.list('subscriptions').filter(s=>s.guild===guildId&&c.channels.some(ch=>ch.id===s.channel)).map(s=>({...s,split:splitName(s.profile,s.split)}))};
  }
  async save(player,cookies,guildId,input){
   const c=await this.context(player,cookies,guildId),channel=c.channels.find(ch=>ch.id===input.channel);

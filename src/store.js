@@ -150,7 +150,7 @@ export class Store {
           if (previousSplits.some(x => x.index === split.index && x.ms === split.ms)) continue;
           const label = split.displayName ?? split.name;
           for (const sub of this.list('subscriptions')) {
-            if (!sub.enabled || (sub.player !== '*' && sub.player !== p.id) || profileKey(sub.profile) !== profileKey(a.profile) || (sub.split !== split.name && sub.split !== a.splits[i].name)) continue;
+            if (!sub.enabled || (sub.player !== '*' && sub.player !== p.id) || profileKey(sub.profile) !== profileKey(a.profile) || (key(splitName(sub.profile,sub.split)) !== split.name && sub.split !== a.splits[i].name)) continue;
             const confirmed = wrCheckpoint(this, a.profile, split.manualName ?? split.originalName ?? split.name);
             const ref = confirmed?.ms ?? a.benchmark?.splits[split.name] ?? a.benchmark?.splits[a.splits[i].name];
             const precision = confirmed?.precisionMs ?? 1, actual = Math.round(split.ms / precision) * precision;

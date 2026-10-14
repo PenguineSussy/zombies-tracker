@@ -26,7 +26,7 @@ test('autosplitter labels survive upload and resolve using the same map aliases'
  assert.match(s.answer('!current Runner'),/Last split: Rocket.*Next: TP/);
  assert.match(s.answer('!best Runner Rocket session'),/Rocket: 5:34/);
  assert.throws(()=>s.ingest(player.id,{...data,sequence:2,autosplitNames:['Rocket Test TP','Rocket Test TP']}),/Duplicate/);
- assert.equal(splitName({map:'revelations'},'Squid Leave'),'Exit');
+ assert.equal(splitName({map:'revelations'},'Squid Leave'),'Beast Exit');
  assert.equal(splitName({map:'revelations'},'House Enter'),'House');
  assert.equal(splitName({map:'zetsubou-no-shima'},'Rainbow'),'Rainbow Round End');
  assert.equal(splitName({map:'zetsubou-no-shima'},'KT-4'),'KT-4');

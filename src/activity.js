@@ -1,5 +1,6 @@
 import {runnerArchived} from './runner-visibility.js';
 import {profileKey,MAPS} from './domain.js';
+import {resolveSplits,splitName} from './split-rules.js';
 const entries=store=>store.list('metadata').filter(v=>v.kind==='runner-activity');
 const same=(a,b)=>a.index===b.index&&a.name===b.name&&a.ms===b.ms;
 export function recordActivity(store,p,a,previous,old){
@@ -27,5 +28,13 @@ export function recordActivity(store,p,a,previous,old){
  for(const [i,e]of sorted.entries())if(i>=100||now-e.at>86400000)store.db.prepare('DELETE FROM metadata WHERE id=?').run(e.id);
 }
 export function publicActivity(store){
- return entries(store).filter(e=>store.clock()-e.at<=3600000&&store.get('players',e.player)?.public&&!runnerArchived(store.get('players',e.player),store.clock())).sort((a,b)=>b.at-a.at||b.id.localeCompare(a.id)).slice(0,20).map(e=>({id:e.id,runner:store.get('players',e.player).name,player:e.player,type:e.type,at:e.at,ms:e.ms,igtMs:e.igtMs??null,split:e.split?.displayName??e.split?.name,map:MAPS.find(m=>m.id===e.profile.map)?.name??e.profile.map,category:e.profile.category}));
+ return entries(store).filter(e=>store.clock()-e.at<=3600000&&store.get('players',e.player)?.public&&!runnerArchived(store.get('players',e.player),store.clock())).sort((a,b)=>b.at-a.at||b.id.localeCompare(a.id)).slice(0,20).map(e=>{
+  const attempt=e.split&&store.get('attempts',e.attempt);
+  // Keep stored events raw for undo/deduplication; resolve with the full run's
+  // aliases and checkpoint context, just like the runner panel and commands.
+  const hasContext=attempt&&attempt.splits.some(s=>same(s,e.split));
+  const rows=hasContext?attempt.splits:e.split?[e.split]:[];
+  const resolved=resolveSplits(e.profile,rows,{timing:!!hasContext,finished:hasContext&&attempt.phase==='Ended'&&attempt.complete}).find(s=>s.index===e.split?.index&&s.ms===e.split?.ms);
+  return {id:e.id,runner:store.get('players',e.player).name,player:e.player,type:e.type,at:e.at,ms:e.ms,igtMs:e.igtMs??null,split:resolved?splitName(e.profile,resolved.displayName??resolved.name):undefined,map:MAPS.find(m=>m.id===e.profile.map)?.name??e.profile.map,category:e.profile.category};
+ });
 }
