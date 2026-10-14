@@ -54,10 +54,10 @@ function renderSession(box,s){
     if(!g.isCurrentProfile){section.append(node('p',`${catalog.allMaps.find(m=>m.id===g.profile.map)?.name??g.profile.map} · ${g.profile.category??'Legacy'} — Previously played · ${g.resets} session resets · ${format(g.durationMs)} tracked time`,'muted'));continue;}
     const group=node('details');group.append(node('summary',`${catalog.allMaps.find(m=>m.id===g.profile.map)?.name??g.profile.map} · ${g.profile.category??'Legacy'} · ${g.attempts} attempts`));
     group.append(node('p',`${g.finishes} complete finishes · Fastest: ${g.fastestMs==null?'not recorded':format(g.fastestMs)}`));
-    const table=node('table'),head=node('tr');for(const label of ['Checkpoint','Average','Fastest','Samples'])head.append(node('th',label));table.append(head);
+    const table=node('table'),head=node('tr');for(const label of ['Split','Average','Fastest','Samples'])head.append(node('th',label));table.append(head);
     for(const s of g.splits){const row=node('tr');for(const v of [s.name,format(s.averageMs),format(s.bestMs),s.count])row.append(node('td',v));table.append(row);}group.append(table);section.append(group);
   }
-  section.append(node('p','Times are cumulative RTA checkpoints, grouped by map and category. Practice and missing splits are excluded from time statistics.','small muted'));
+  section.append(node('p','Times are cumulative RTA splits, grouped by map and category. Practice and missing splits are excluded from time statistics.','small muted'));
   if(s.unconfirmedEnds)section.append(node('p',`${s.unconfirmedEnds} attempt endings were not observed; they are not counted as confirmed resets.`,'small muted'));
   box.append(section);
 }
@@ -174,9 +174,9 @@ async function details(id){
   if(p.attempt)box.append(node('p',`LiveSplit at last update: ${runTime(p.attempt.elapsedMs,p.attempt.igtMs)}${p.attempt.stageMap?' · '+catalog.maps.find(m=>m.id===p.attempt.stageMap)?.name:''}`,'muted'));
   box.append(node('p',p.attempt?.attemptCount!=null?`LiveSplit total attempts (loaded splits): ${p.attempt.attemptCount.toLocaleString()}`:'LiveSplit total attempts: unavailable — update to addon 0.2.5.','muted'));
   renderSession(box,p.session);
-  if(p.attempt?.splits.length){const table=node('table'),head=node('tr');head.append(node('th','Checkpoint'),node('th','Run time'));table.append(head);for(const split of p.attempt.splits){const row=node('tr');row.append(node('td',split.displayName??split.name),node('td',runTime(split.ms,split.igtMs)));table.append(row);}box.append(table);}else box.append(node('p','No checkpoints recorded yet.','muted'));
+  if(p.attempt?.splits.length){const table=node('table'),head=node('tr');head.append(node('th','Split'),node('th','Run time'));table.append(head);for(const split of p.attempt.splits){const row=node('tr');row.append(node('td',split.displayName??split.name),node('td',runTime(split.ms,split.igtMs)));table.append(row);}box.append(table);}else box.append(node('p','No splits recorded yet.','muted'));
   if(p.attempt?.practice)box.append(node('p','Practice attempt — excluded from records.','small muted'));
-  if(p.attempt&&!p.attempt.complete&&p.attempt.phase==='Ended')box.append(node('p','Incomplete run: required checkpoints may be missing.','small muted'));
+  if(p.attempt&&!p.attempt.complete&&p.attempt.phase==='Ended')box.append(node('p','Incomplete run: required splits may be missing.','small muted'));
 }
 action('refresh',refresh);
 action('query-form',async()=>{$('answer').textContent=(await api('/api/query',{method:'POST',body:{command:$('command').value}})).reply;},'submit');

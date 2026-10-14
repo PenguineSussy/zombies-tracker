@@ -86,11 +86,11 @@ export function snapshot(input) {
   let previous = -1, previousTime = -1, previousIgt = -1;
   const splits = input.splits.map(s => {
     check(Number.isInteger(s.index) && s.index > previous && s.index < input.index, 'Splits must be ordered, unique, and completed.');
-    check(Number.isSafeInteger(s.ms) && s.ms >= 0 && s.ms >= previousTime && s.ms <= input.elapsedMs, 'Invalid checkpoint time.');
+    check(Number.isSafeInteger(s.ms) && s.ms >= 0 && s.ms >= previousTime && s.ms <= input.elapsedMs, 'Invalid split time.');
     previous = s.index; previousTime = s.ms;
     const splitIgt = igt(s.igtMs);
     if (splitIgt != null) {
-      check(splitIgt >= previousIgt && (igtMs == null || splitIgt <= igtMs), 'Invalid checkpoint IGT.');
+      check(splitIgt >= previousIgt && (igtMs == null || splitIgt <= igtMs), 'Invalid split IGT.');
       previousIgt = splitIgt;
     }
     return { index: s.index, name: key(s.name), displayName: clean(s.name), ms: s.ms, igtMs: splitIgt };
@@ -119,7 +119,7 @@ export function snapshot(input) {
   if(input.autosplitNames!=null) {
     check(Array.isArray(input.autosplitNames)&&input.autosplitNames.length>0&&input.autosplitNames.length<=500,'Invalid autosplitter layout.');
     const hints=input.autosplitNames.map(v=>clean(v));
-    check(new Set(hints.map(key)).size===hints.length,'Duplicate autosplitter checkpoints.');
+    check(new Set(hints.map(key)).size===hints.length,'Duplicate autosplitter splits.');
     check(result.index<=hints.length&&(!result.records||result.records.splits.length===hints.length),'Autosplitter layout does not match run.');
     result.splits=result.splits.map(s=>({...s,autosplitName:hints[s.index]}));
     if(result.current&&result.index>=0)result.current=hints[result.index]??result.current;
@@ -132,8 +132,8 @@ export function snapshot(input) {
     const mapped=s=>names[s.index]?{...s,originalName:s.displayName??s.name,manualName:names[s.index],name:key(names[s.index]),displayName:names[s.index]}:s;
     result.splits=result.splits.map(mapped);
     if(result.records)result.records.splits=result.records.splits.map(mapped);
-    check(new Set(result.splits.map(s=>s.name)).size===result.splits.length,'Duplicate mapped checkpoints.');
-    if(result.records)check(new Set(result.records.splits.map(s=>s.name)).size===result.records.splits.length,'Duplicate mapped saved checkpoints.');
+    check(new Set(result.splits.map(s=>s.name)).size===result.splits.length,'Duplicate mapped splits.');
+    if(result.records)check(new Set(result.records.splits.map(s=>s.name)).size===result.records.splits.length,'Duplicate mapped saved splits.');
     if(result.current&&result.index>=0)result.current=names[result.index]??result.current;
   }
   if(result.profile.map==='super-easter-egg') {

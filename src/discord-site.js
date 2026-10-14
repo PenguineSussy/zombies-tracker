@@ -165,7 +165,7 @@ export class DiscordSite {
   check(runners.length<=20&&!runners.includes(''),'Enter up to 20 runner names separated by commas, or * for all public runners.');
   check(!runners.includes('*')||runners.length===1,'Use * by itself for all public runners.');
   for(const runner of runners)check(runner==='*'||this.store.get('players',runner)?.public,'Choose a public runner or * for every public runner. Check: '+runner);
-  check(typeof input.split==='string'&&input.split.trim().length>0&&input.split.length<=100,'Enter a checkpoint name.');
+  check(typeof input.split==='string'&&input.split.trim().length>0&&input.split.length<=100,'Enter a split name.');
   check(this.store.list('subscriptions').filter(s=>s.guild===guildId).length+runners.length<=200,'This server has reached its 200-alert limit.',409);
   const common={guild:guildId,channel:channel.id,role:role?.id,profile:profile(input.profile),split:input.split,mode:input.mode,thresholdMs:input.mode==='under'?milliseconds(input.threshold):null};
   return this.store.transaction(()=>{const alerts=runners.map(runner=>this.store.subscribe({...common,player:runner}));return alerts.length===1?alerts[0]:{alerts};});

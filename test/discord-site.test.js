@@ -49,7 +49,7 @@ test('Discord only lists managed servers and validates guild, channel, role and 
  await assert.rejects(f.site.save(f.player,cookie,guild,{...alert,role:'12345'}),/role/);
  await assert.rejects(f.site.save(f.player,cookie,guild,{...alert,role:guild}),/role/);
  await assert.rejects(f.site.save(f.player,cookie,'77777',alert),/Manage Server/);
- await assert.rejects(f.site.save(f.player,cookie,guild,{...alert,split:''}),/checkpoint/);
+ await assert.rejects(f.site.save(f.player,cookie,guild,{...alert,split:''}),/split/);
  f.store.privacy(f.player,false);await assert.rejects(f.site.save(f.player,cookie,guild,alert),/public runner/);f.store.privacy(f.player,true);
  f.state.mentionable=false;await assert.rejects(f.site.save(f.player,cookie,guild,alert),/mentionable/);f.state.mentionable=true;
  f.state.manage=false;await assert.rejects(f.site.remove(f.player,cookie,guild,sub.id),/Manage Server/);assert.ok(f.store.get('subscriptions',sub.id));

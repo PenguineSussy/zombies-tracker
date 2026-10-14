@@ -56,7 +56,7 @@ export function resolveSplits(profile,rows,{timing=true,finished=false}={}) {
   });
   if(candidates.length===1){chosen[i]=candidates[0];result[i].inferred=true;}
  }
- // Don't collapse two separate checkpoints into one record when both use aliases.
+ // Don't collapse two separate splits into one record when both use aliases.
  const counts=new Map();for(const r of chosen)if(r)counts.set(r.name,(counts.get(r.name)??0)+1);
  return result.map((s,i)=>{const r=chosen[i];return r&&counts.get(r.name)===1?{...s,name:r.name.toLowerCase(),displayName:r.name,needsAlias:false}:{...s,needsAlias:rules.length>0&&!s.manualName&&!s.autosplitName};});
 }

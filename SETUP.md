@@ -53,7 +53,7 @@ Members with Manage Server then run these in the channel that should receive the
 | `/track-alerts` | List this server's alerts and their IDs |
 | `/track-unalert id` | Remove an alert |
 
-`split` accepts the checkpoint names and aliases shown on the site (for example `Boss` for Boss Enter) or the runner's exact LiveSplit split name. `mode` defaults to every time the split is reached; `under` needs a `threshold` such as `7:35`, and `wr` pings only when ahead of the reviewed WR checkpoint. Without `map`/`category` the alert uses the runner's current map and category. Alerts fire once per split per attempt, only for public runners and live, non-practice runs, and are dropped if the runner resets or undoes the split before delivery.
+`split` accepts the split names and aliases shown on the site (for example `Boss` for Boss Enter) or the runner's exact LiveSplit split name. `mode` defaults to every time the split is reached; `under` needs a `threshold` such as `7:35`, and `wr` pings only when ahead of the reviewed WR split. Without `map`/`category` the alert uses the runner's current map and category. Alerts fire once per split per attempt, only for public runners and live, non-practice runs, and are dropped if the runner resets or undoes the split before delivery.
 
 ## Updating
 
@@ -68,7 +68,7 @@ Use the existing Discord application. In its Developer Portal, enable server ins
 3. Restart/deploy the tracker. Existing slash command registrations do not change for this feature.
 4. On Chatbot, use **Add bot to a server** and approve Discord's installation screen. The invite requests View Channel and Send Messages, not Administrator.
 5. Sign in with a runner key, choose **Connect Discord**, and approve `identify` and `guilds`. Select a server you manage, an accessible text/announcement channel, and an optional role the bot can mention.
-6. Choose a runner (or `*` for every public runner), map, category, checkpoint and alert condition, then save. Remove alerts from the same panel or with `/track-unalert`.
+6. Choose a runner (or `*` for every public runner), map, category, split and alert condition, then save. Remove alerts from the same panel or with `/track-unalert`.
 
 The server verifies Manage Server/Administrator ownership and current channel/role permissions. Discord management sessions last at most one hour, are held in server memory, and require reconnecting after expiry or server restart. No Discord user refresh token is stored. Disconnecting website management does not remove the bot or stop existing server alerts.
 

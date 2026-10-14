@@ -14,7 +14,7 @@ using LiveSplit.Model;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;
 
-[assembly: AssemblyVersion("1.0.5.0")]
+[assembly: AssemblyVersion("1.0.6.0")]
 [assembly: ComponentFactory(typeof(LiveSplit.ZombiesTracker.Factory))]
 
 namespace LiveSplit.ZombiesTracker
@@ -319,7 +319,7 @@ namespace LiveSplit.ZombiesTracker
             map.SelectedIndexChanged += delegate { RefreshCategories(); };
             add(practice);
             add(aliasEditor);
-            add(new Label {Text="Aliases change tracker labels only. Finish or reset, Apply, then save your layout. For Super EE choose map-prefixed checkpoints and a Complete marker for each map.",AutoSize=true,MaximumSize=new Size(450,0)});
+            add(new Label {Text="Aliases change tracker labels only. Finish or reset, Apply, then save your layout. For Super EE choose map-prefixed splits and a Complete marker for each map.",AutoSize=true,MaximumSize=new Size(450,0)});
             var import = new Button { Text = "Import downloaded config.json", AutoSize = true };
             import.Click += delegate {
                 using (var dialog = new OpenFileDialog { Filter = "Tracker configuration|*.json" })

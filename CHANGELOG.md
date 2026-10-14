@@ -1,5 +1,11 @@
 # Changes
 
+## 1.0.4
+- Add user-supplied Mega Gums WR split times: DE Rocket 5:45 and Revelations Beast Enter 6:44.
+- Use split/splits throughout website, bot replies, help and addon settings (addon 1.0.6).
+- Look up WR times using resolved split names, including custom names mapped by autosplitter hints.
+- Explain missing WR split coverage separately from unloaded or changed WR records.
+
 ## Website/bot 1.0.3 and LiveSplit addon 1.0.5 — October 13, 2026
 
 - Activity scroller resolves canonical checkpoint names with the same aliases and run context as the runner panel.

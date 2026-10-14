@@ -4,7 +4,7 @@ import {Store} from '../src/store.js';
 import {splitName,resolveRecords,resolveSplits} from '../src/split-rules.js';
 import {ChatResponder} from '../src/chat.js';
 const profile={map:'der-eisendrache',category:'Mega Gums'};
-test('custom Rocket name is shared by records, commands, current checkpoint and site',t=>{
+test('custom Rocket name is shared by records, commands, current split and site',t=>{
  const s=new Store();t.after(()=>s.close());const {player}=s.register('Runner');
  const names=['Penguine Eats Bread','R7'];
  const records={pbMs:451000,splits:names.map((name,index)=>({index,name,pbSplitMs:[346000,451000][index],bestSplitMs:[334000,440000][index],bestSegmentMs:[334000,94000][index]}))};
@@ -38,7 +38,7 @@ test('uncertain saved timings do not invent a canonical split',()=>{
  assert.equal(resolveRecords({...profile,map:'moon'},[{index:0,name:'Joke',pbSplitMs:334000}])[0].name,'Joke');
 });
 
-test('manual aliases win over autosplitter and timing while unmapped checkpoints use fallback',t=>{
+test('manual aliases win over autosplitter and timing while unmapped splits use fallback',t=>{
  const s=new Store();t.after(()=>s.close());const {player}=s.register('Aliases');
  const data={attemptId:'manual-alias-001',sequence:1,profile,phase:'Running',index:1,elapsedMs:350000,current:'R7',splits:[{index:0,name:'My Custom Name',ms:280000}],manualNames:['Rocket',null],autosplitNames:['Bow','R7'],records:{pbMs:450000,splits:[{index:0,name:'My Custom Name',pbSplitMs:290000,bestSplitMs:275000,bestSegmentMs:275000},{index:1,name:'R7',pbSplitMs:450000,bestSplitMs:440000,bestSegmentMs:150000}]}};
  s.ingest(player.id,data);
@@ -59,7 +59,7 @@ test('Super EE manual map completion aliases retain cumulative timing and comple
 
 test('alias setup guidance is only a last resort',t=>{
  const s=new Store();t.after(()=>s.close());const {player}=s.register('UnknownRunner');
- const base={attemptId:'unknown-alias-001',sequence:1,profile,phase:'Running',index:1,elapsedMs:1000,splits:[{index:0,name:'Joke checkpoint',ms:1000}]};
- s.ingest(player.id,base);assert.match(s.answer('!best UnknownRunner "Joke checkpoint" session'),/Set its alias/);
+ const base={attemptId:'unknown-alias-001',sequence:1,profile,phase:'Running',index:1,elapsedMs:1000,splits:[{index:0,name:'Joke split',ms:1000}]};
+ s.ingest(player.id,base);assert.match(s.answer('!best UnknownRunner "Joke split" session'),/Set its alias/);
  s.ingest(player.id,{...base,sequence:2,manualNames:['Rocket']});assert.doesNotMatch(s.answer('!best UnknownRunner Rocket session'),/Set its alias/);
 });

@@ -35,7 +35,7 @@ test('legacy history stays separate from new gum category records',()=>{
   const old={map:'moon',objective:'main easter egg',players:1,rules:'no gums',route:'standard',timing:'RealTime'};
   assert.notEqual(profileKey(old),profileKey(profile({map:'moon',category:'No Gums'})));
 });
-test('records and WR checkpoints do not cross gum categories',()=>{
+test('records and WR splits do not cross gum categories',()=>{
   const store=new Store(':memory:');
   try{
     const {player}=store.register('SoloTest');

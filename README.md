@@ -33,7 +33,7 @@ In a connected chat, runner commands use that channel's linked runner. Add `@nam
 
 | Command | Result |
 | --- | --- |
-| `!current` | Current run and checkpoint |
+| `!current` | Current run and split |
 | `!session` | Session summary and resets |
 | `!sessionpb` | Fastest completed run this session |
 | `!pb map` | PB for the selected map |
@@ -41,11 +41,11 @@ In a connected chat, runner commands use that channel's linked runner. Add `@nam
 | `!best split alltime` | Saved best split and best segment |
 | `!best split session` | Session best split and segment |
 | `!splits alltime` | Split bests; use `session` for session bests |
-| `!pace` | PB pace plus available WR checkpoint comparisons |
+| `!pace` | PB pace plus available WR split comparisons |
 | `!help` | Command list |
 
 
-Replace `map` with a map name such as `DE`, and `split` with a checkpoint such as `Rocket`. Map PB/WR commands default to Mega Gums; append a category when needed. Chat cooldowns are adjustable from 5–300 seconds (default 15).
+Replace `map` with a map name such as `DE`, and `split` with a split such as `Rocket`. Map PB/WR commands default to Mega Gums; append a category when needed. Chat cooldowns are adjustable from 5–300 seconds (default 15).
 
 
 ## What it tracks
@@ -55,8 +55,8 @@ Replace `map` with a map name such as `DE`, and `split` with a checkpoint such a
 - No Gums, Classic Gums, Mega Gums and Any%, with map-specific restrictions.
 - Ten individual maps plus the six-map Super Easter Egg.
 - Optional therun.gg input; Twitch and YouTube chat replies and opt-in announcements.
-- WR finish records from ZWR and reviewed checkpoints for matching map/category records. Missing checkpoints stay unavailable; `~` marks whole-second estimates.
+- WR finish records from ZWR and reviewed splits for matching map/category records. Missing splits stay unavailable; `~` marks whole-second estimates.
 
 
-Stats are self-reported timer data. A faster time or checkpoint does not automatically verify an official WR.
+Stats are self-reported timer data. A faster time or split does not automatically verify an official WR.
 Self-made rules document that help the bot with timing and commands: [LittleMontyBot Rules Document](https://docs.google.com/document/d/1arPynVeBmHWqB8ZAXyha9CtHKic2vv2ff9EL5_vCstw/edit?tab=t.0)

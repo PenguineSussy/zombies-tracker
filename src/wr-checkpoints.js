@@ -2,7 +2,7 @@ import {milliseconds,profileKey,superStage} from './domain.js';
 import {splitName} from './split-rules.js';
 
 // Reviewed 2026-10-07. Whole-second video displays retain their limited precision.
-// Bind checkpoints to the reviewed record so a new WR cannot inherit old splits.
+// Bind splits to the reviewed record so a new WR cannot inherit old splits.
 const baseline=[
  {
   "profile": {
@@ -115,13 +115,14 @@ const baseline=[
   "ms": 1849000
  }
 ];
+// Rocket (DE) and Beast Enter (Revelations): user-supplied RTA times, 2026-10-13.
 const reviewed={
  'shadows-of-evil':{Rift:'2:11',Sword:'7:35',Flag:'11:08',End:'19:26'},
  'the-giant':{End:'1:03.50'},
- 'der-eisendrache':{Bow:'4:37',Crackle:'6:56',TP:'9:45',Key:'14:52','Boss Enter':'20:29',End:'25:42.70'},
+ 'der-eisendrache':{Bow:'4:37',Rocket:'5:45',Crackle:'6:56',TP:'9:45',Key:'14:52','Boss Enter':'20:29',End:'25:42.70'},
  'zetsubou-no-shima':{Bunker:'3:50',Skull:'7:39','Rainbow Round End':'11:54','Boss Enter':'16:32',End:'20:06.05'},
  'gorod-krovi':{'Fly 1':'4:59',Spit:'6:40','Fly 2':'8:56',Challenges:'15:58',Download:'23:24',End:'31:01.30'},
- revelations:{Keeper:'3:07','Beast Exit':'7:49',House:'11:58','Boss 1':'17:35',Basketball:'20:15','Boss 2':'21:51',End:'23:04.25'},
+ revelations:{Keeper:'3:07','Beast Enter':'6:44','Beast Exit':'7:49',House:'11:58','Boss 1':'17:35',Basketball:'20:15','Boss 2':'21:51',End:'23:04.25'},
  moon:{Power:'0:44.50','Samantha Says':'4:34.75',Terminals:'5:51.95','Vril Sphere':'10:28.20','Canister 1':'11:14.00','Canister 2':'14:51.25',End:'18:59.90'},
  origins:{'Ice Staff':'6:35','Fire Enter':'11:18','Lightning Enter':'14:38','Ice Leave':'18:58',Upgrade:'21:50',End:'30:49.55'},
  'shangri-la':{Tiles:'1:38',Crystal:'3:16',Napalm:'5:48',Radio:'8:20',End:'10:16'},
@@ -134,11 +135,18 @@ export const WR_CHECKPOINTS=Object.entries(reviewed).map(([map,splits])=>{
   splits:Object.entries(splits).map(([name,value])=>({name,ms:Math.round(milliseconds(value)/50)*50,precisionMs:value.includes('.')?50:1000}))};
 });
 export function wrCheckpoint(store,profile,name){
+ return wrSplitLookup(store,profile,name).split;
+}
+export function wrSplitLookup(store,profile,name){
  const record=store.get('metadata',`zwr:${profileKey(profile)}`);
  const reviewed=WR_CHECKPOINTS.find(r=>profileKey(r.profile)===profileKey(profile));
- if(!reviewed||!record||record.recordId!==reviewed.recordId||record.holder!==reviewed.holder||record.ms!==reviewed.listedMs)return null;
- // LiveSplit subsplit markers are display syntax, not part of the checkpoint name.
+ const missing=reason=>({split:null,reason});
+ if(!reviewed)return missing('no reviewed WR splits for this map and category');
+ if(!record)return missing('the WR record has not loaded');
+ if(String(record.recordId)!==String(reviewed.recordId)||record.holder!==reviewed.holder||record.ms!==reviewed.listedMs)return missing('reviewed splits do not match the current WR record');
+ // LiveSplit subsplit markers are display syntax, not part of the split name.
  const clean=String(name??'').replace(/^\s*(?:\{[^}]*\})?\s*-?\s*/,'');
  const canonical=profile.map==='super-easter-egg'?(superStage(clean,true)??(/^end$/i.test(clean)?'revelations':null)):splitName(profile,clean).toLowerCase();
- return reviewed.splits.find(s=>(profile.map==='super-easter-egg'?superStage(s.name,true):s.name.toLowerCase())===canonical)??null;
+ const split=reviewed.splits.find(s=>(profile.map==='super-easter-egg'?superStage(s.name,true):s.name.toLowerCase())===canonical)??null;
+ return split?{split,reason:null}:missing('no reviewed WR time for this split');
 }

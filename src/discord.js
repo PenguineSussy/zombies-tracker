@@ -13,11 +13,11 @@ export function verifyDiscord(publicKey, timestamp, signature, raw, now = Date.n
 const stringOption = (name, description, required = true) => ({ name, description, type: 3, required });
 export const discordCommands = [
   ...['current', 'splits', 'pace', 'session', 'pb'].map(name => ({ name, description: `Show a runner's ${name}`, options: [stringOption('player', 'Registered tracker username')] })),
-  { name: 'best', description: 'Session or all-time recorded checkpoint best', options: [stringOption('player', 'Registered tracker username'), stringOption('split', 'Milestone name, e.g. bow'), { ...stringOption('scope', 'Record scope', false), choices: [{name:'Session',value:'session'}, {name:'All-time recorded',value:'alltime'}] }] },
+  { name: 'best', description: 'Session or all-time recorded split best', options: [stringOption('player', 'Registered tracker username'), stringOption('split', 'Milestone name, e.g. bow'), { ...stringOption('scope', 'Record scope', false), choices: [{name:'Session',value:'session'}, {name:'All-time recorded',value:'alltime'}] }] },
   { name: 'track-alert', description: 'Post in this channel (and optionally ping a role) when a runner reaches a split', default_member_permissions: '32', dm_permission: false,
-    options: [stringOption('player','Registered tracker username, or * for every public runner'), stringOption('split','Checkpoint name, e.g. Boss Enter'),
+    options: [stringOption('player','Registered tracker username, or * for every public runner'), stringOption('split','Split name, e.g. Boss Enter'),
       {name:'role',description:'Role to ping',type:8,required:false},
-      { ...stringOption('mode','When to notify (default: every time the split is reached)',false), choices:[{name:'Every time the split is reached',value:'milestone'},{name:'At or under a time',value:'under'},{name:'Ahead of WR checkpoint',value:'wr'}] },
+      { ...stringOption('mode','When to notify (default: every time the split is reached)',false), choices:[{name:'Every time the split is reached',value:'milestone'},{name:'At or under a time',value:'under'},{name:'Ahead of WR split',value:'wr'}] },
       stringOption('threshold','Required for under: e.g. 7:35',false),
       { ...stringOption('map','Map (default: the runner’s current map)',false), choices:ENABLED_MAPS.map(m=>({name:m.name,value:m.id})) },
       { ...stringOption('category','Category (default: the runner’s current category, or Mega Gums)',false), choices:CATEGORIES.map(c=>({name:c,value:c})) }] },
@@ -45,7 +45,7 @@ export function discordInteraction(store, interaction) {
         const sub = store.subscribe({ split:options.split, role:options.role, mode, player:anyone ? '*' : player.id, guild:interaction.guild_id, channel:interaction.channel_id, profile:selected, thresholdMs: options.threshold ? milliseconds(options.threshold) : null });
         const rules = SPLIT_RULES[selected.map] ?? [], label = splitName(selected, options.split);
         content = `Alert created (${sub.id}): ${anyone ? 'any public runner' : player.name} / ${label} / ${profileLabel(selected)}${sub.role ? ` / pings <@&${sub.role}>` : ''}.`
-          + (rules.length && !rules.some(r => r.name === label) ? `\nNote: "${label}" is not a standard checkpoint for this map, so it only matches a LiveSplit split with exactly that name. Standard: ${rules.map(r => r.name).join(', ')}.` : '')
+          + (rules.length && !rules.some(r => r.name === label) ? `\nNote: "${label}" is not a standard split for this map, so it only matches a LiveSplit split with exactly that name. Standard: ${rules.map(r => r.name).join(', ')}.` : '')
           + (sub.role ? '\nThe bot needs Send Messages here, and the role must be mentionable (or the bot needs Mention All Roles).' : '');
       } else if (name === 'track-alerts') {
         content = store.list('subscriptions').filter(s => s.guild === interaction.guild_id).map(s => `${s.id}: ${s.player === '*' ? 'any runner' : s.player} / ${splitName(s.profile,s.split)} / ${s.mode} / ${profileLabel(s.profile)} / <#${s.channel}>${s.role ? ` / <@&${s.role}>` : ''}`).join('\n') || 'No alerts configured.';

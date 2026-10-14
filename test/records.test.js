@@ -23,7 +23,7 @@ test('records are isolated by category, runner and practice; invalid and stale u
  store.privacy(store.get('players',player.id),false);assert.match(store.answer('!pb @runner'),/isn't sharing/);
  store.removePlayer(player);assert.equal(store.list('metadata').filter(x=>x.kind==='saved-records').length,0);
 });
-test('skipped checkpoints never create a segment best and imported records survive heartbeats',t=>{
+test('skipped splits never create a segment best and imported records survive heartbeats',t=>{
  const {store,send}=fixture(t);send();send({sequence:2,records:null});assert.match(store.answer('!pb @runner'),/27:05/);
  send({attemptId:'running-01',phase:'Running',index:2,elapsedMs:500000,splits:[{index:1,name:'R7',ms:400000}],records:null});
  assert.match(store.answer('!best @runner R7 alltime'),/6:40 \(1:00 segment\)/);

@@ -16,10 +16,10 @@ namespace LiveSplit.ZombiesTracker {
    foreach(var link in links??new SplitLink[0]) {
     if(link==null||!Detector.Maps.Any(m=>m.Enabled&&m.Id==link.Map)) throw new InvalidOperationException("Choose a supported map for each split alias.");
     var row=new SplitLink{Map=link.Map,Source=Protocol.Clean(link.Source),Target=Protocol.Clean(link.Target)};
-    // Preserve saved layouts when the Revelations checkpoint labels change.
+    // Preserve saved layouts when the Revelations split labels change.
     if(row.Map=="revelations") row.Target=SplitAliases.Known(row.Map,row.Target)??row.Target;
     if(row.Map=="super-easter-egg" && row.Target.StartsWith("Revelations - ")) row.Target="Revelations - "+(SplitAliases.Known("revelations",row.Target.Substring(14))??row.Target.Substring(14));
-    if(!Targets(row.Map).Contains(row.Target)) throw new InvalidOperationException("Choose a checkpoint from the dropdown.");
+    if(!Targets(row.Map).Contains(row.Target)) throw new InvalidOperationException("Choose a split from the dropdown.");
     if(result.Any(r=>r.Map==row.Map&&Detector.Normalize(r.Source)==Detector.Normalize(row.Source))) throw new InvalidOperationException("Each LiveSplit name can have only one mapping per map.");
     result.Add(row);
     if(result.Count>2000)throw new InvalidOperationException("Too many split aliases.");
@@ -29,7 +29,7 @@ namespace LiveSplit.ZombiesTracker {
   public static string[] Resolve(IEnumerable<SplitLink> links,string map,string[] names,string[] automatic) {
    var rows=Validate(links).Where(r=>r.Map==map).ToArray();
    var resolved=names.Select((name,i)=>{var row=rows.FirstOrDefault(r=>Detector.Normalize(r.Source)==Detector.Normalize(name));return row!=null?row.Target:automatic!=null?automatic[i]:name;}).ToArray();
-   if(resolved.Select(Detector.Normalize).Distinct().Count()!=resolved.Length)throw new InvalidOperationException("Two splits resolve to the same checkpoint. Give them distinct mappings before uploading.");
+   if(resolved.Select(Detector.Normalize).Distinct().Count()!=resolved.Length)throw new InvalidOperationException("Two splits resolve to the same split. Give them distinct mappings before uploading.");
    return resolved;
   }
  }
@@ -42,7 +42,7 @@ namespace LiveSplit.ZombiesTracker {
    var label=new Label{Text="Split aliases - select a map; leave unused rows blank.",Dock=DockStyle.Top,Height=22};
    Controls.Add(grid);Controls.Add(maps);Controls.Add(label);
    grid.Columns.Add(new DataGridViewTextBoxColumn{HeaderText="Your LiveSplit name",Name="source"});
-   grid.Columns.Add(new DataGridViewComboBoxColumn{HeaderText="Tracker checkpoint",Name="target",FlatStyle=FlatStyle.Flat});
+   grid.Columns.Add(new DataGridViewComboBoxColumn{HeaderText="Tracker split",Name="target",FlatStyle=FlatStyle.Flat});
    grid.DataError+=(s,e)=>{e.ThrowException=false;};
    foreach(var map in Detector.Maps.Where(m=>m.Enabled))maps.Items.Add(map);
    maps.SelectedIndexChanged+=delegate { if(loading)return; try{SaveRows();ShowMap(((MapInfo)maps.SelectedItem).Id);}catch(Exception ex){MessageBox.Show(ex.Message,"Split aliases");loading=true;maps.SelectedItem=Detector.Maps.First(m=>m.Id==selected);loading=false;} };
@@ -55,7 +55,7 @@ namespace LiveSplit.ZombiesTracker {
     if(r.IsNewRow)continue;
     var source=Convert.ToString(r.Cells[0].Value).Trim();var target=Convert.ToString(r.Cells[1].Value).Trim();
     if(source==""&&target=="")continue;
-    if(source==""||target=="")throw new InvalidOperationException("Fill in both the LiveSplit name and checkpoint, or delete the row.");
+    if(source==""||target=="")throw new InvalidOperationException("Fill in both the LiveSplit name and split, or delete the row.");
     rows.Add(new SplitLink{Map=selected,Source=source,Target=target});
    }
    saved=ManualAliases.Validate(saved.Where(r=>r.Map!=selected).Concat(rows));

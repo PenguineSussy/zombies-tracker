@@ -8,7 +8,7 @@ export function setupDiscord({api,notice,player,catalog}){
  function rememberChannel(){if(!player()||!details)return;try{const choices=savedChoices();choices.guild=loadedGuild;choices[loadedGuild]={channel:$('channel').value,role:$('role').value};localStorage.setItem(selectionKey(),JSON.stringify(choices));}catch{}}
  const required=()=>{if(!player())throw Error('Sign in with your runner key first.');};
  function customCheckpoint(){const custom=$('split').value==='__custom';$('custom-label').hidden=!custom;$('custom').required=custom;}
- function categories(){const values=catalog()?.categoriesByMap?.[$('map').value]??[];$('category').replaceChildren(...values.map(v=>option(v,v)));if(values.includes('Mega Gums'))$('category').value='Mega Gums';$('split').replaceChildren(...(catalog()?.checkpointsByMap?.[$('map').value]??[]).map(n=>option(n,n)),option('__custom','Custom checkpoint…'));$('custom').value='';customCheckpoint();}
+ function categories(){const values=catalog()?.categoriesByMap?.[$('map').value]??[];$('category').replaceChildren(...values.map(v=>option(v,v)));if(values.includes('Mega Gums'))$('category').value='Mega Gums';$('split').replaceChildren(...(catalog()?.checkpointsByMap?.[$('map').value]??[]).map(n=>option(n,n)),option('__custom','Custom split…'));$('custom').value='';customCheckpoint();}
  function roles(preferred=$('role').value){const ids=details?.channels.find(c=>c.id===$('channel').value)?.roleIds??[];$('role').replaceChildren(option('','No role ping'),...(details?.roles??[]).filter(r=>ids.includes(r.id)).map(r=>option(r.id,r.name)));if(ids.includes(preferred))$('role').value=preferred;}
  async function loadServer(){
   rememberChannel();const rev=++revision,id=$('guild').value,preferred=savedChoices()[id]??{};details=null;$('server-controls').hidden=true;$('server-invite').hidden=true;$('server-note').textContent='';
@@ -21,7 +21,7 @@ export function setupDiscord({api,notice,player,catalog}){
   const nodes=data.alerts.map(a=>{
    const box=document.createElement('p'),text=document.createElement('span'),button=document.createElement('button');
    const channel=data.channels.find(c=>c.id===a.channel),role=data.roles.find(r=>r.id===a.role),map=catalog()?.maps.find(m=>m.id===a.profile.map);
-   text.textContent=`${a.player==='*'?'All public runners':a.player} · ${map?.name??a.profile.map} · ${a.profile.category} · ${a.split} · #${channel?.name??a.channel}${role?' · @'+role.name:''} · ${a.mode==='wr'?'Faster than WR':a.mode==='under'?'At or under '+Math.floor(a.thresholdMs/60000)+':'+String(Math.floor(a.thresholdMs/1000)%60).padStart(2,'0'):'Every checkpoint completion'} `;
+   text.textContent=`${a.player==='*'?'All public runners':a.player} · ${map?.name??a.profile.map} · ${a.profile.category} · ${a.split} · #${channel?.name??a.channel}${role?' · @'+role.name:''} · ${a.mode==='wr'?'Faster than WR':a.mode==='under'?'At or under '+Math.floor(a.thresholdMs/60000)+':'+String(Math.floor(a.thresholdMs/1000)%60).padStart(2,'0'):'Every split completion'} `;
    button.type='button';button.className='secondary';button.textContent='Remove';button.setAttribute('aria-label','Remove alert for '+a.player+' '+a.split+' in '+(channel?.name??a.channel));
    button.addEventListener('click',async()=>{button.disabled=true;try{await api('/api/me/discord/guilds/'+id+'/alerts/'+a.id,{method:'DELETE'});if($('guild').value===id)await loadServer();}catch(e){notice(e.message,true);button.disabled=false;}});
    box.append(text,button);return box;

@@ -9,7 +9,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { check, clean, key, snapshot, profile, profileKey, profileLabel, time, parseCommand, requireEnabledMap } from './domain.js';
 import {streamLink} from './streams.js';
-import {wrCheckpoint} from './wr-checkpoints.js';
+import {wrSplitLookup} from './wr-checkpoints.js';
 
 const hash = token => createHash('sha256').update(String(token)).digest('hex');
 const decode = row => row ? JSON.parse(row.body) : null;
@@ -137,21 +137,21 @@ export class Store {
         if(!previous || s.observedAt>=previous.observedAt) this.put('metadata',recordId,{...s.records,id:recordId,kind:'saved-records',player:p.id,profile:s.profile,observedAt:s.observedAt});
       }
       delete a.records;
-      // Cancel queued alerts for checkpoints removed by undo; don't retract already delivered pings.
+      // Cancel queued alerts for splits removed by undo; don't retract already delivered pings.
       for (const job of this.list('outbox')) {
         if (job.attempt === id && job.status === 'pending' && !a.splits.some(x => x.index === job.split.index && x.ms === job.split.ms)) {
           job.status = 'cancelled'; this.put('outbox', job.id, job);
         }
       }
       if (!a.practice && p.public && !s.suppressAlerts && now - s.observedAt <= 30000) {
-        // Alerts match the checkpoint name shown on the site (aliases resolved) or the runner's own split name.
+        // Alerts match the split name shown on the site (aliases resolved) or the runner's own split name.
         const resolved = resolveSplits(a.profile, a.splits, { finished: a.phase === 'Ended' && a.complete });
         for (const [i, split] of resolved.entries()) {
           if (previousSplits.some(x => x.index === split.index && x.ms === split.ms)) continue;
           const label = split.displayName ?? split.name;
           for (const sub of this.list('subscriptions')) {
             if (!sub.enabled || (sub.player !== '*' && sub.player !== p.id) || profileKey(sub.profile) !== profileKey(a.profile) || (key(splitName(sub.profile,sub.split)) !== split.name && sub.split !== a.splits[i].name)) continue;
-            const confirmed = wrCheckpoint(this, a.profile, split.manualName ?? split.originalName ?? split.name);
+            const wr = wrSplitLookup(this, a.profile, split.name), confirmed = wr.split;
             const ref = confirmed?.ms ?? a.benchmark?.splits[split.name] ?? a.benchmark?.splits[a.splits[i].name];
             const precision = confirmed?.precisionMs ?? 1, actual = Math.round(split.ms / precision) * precision;
             const qualifies = sub.mode === 'milestone' || (sub.mode === 'under' && split.ms <= sub.thresholdMs) || (sub.mode === 'wr' && ref != null && actual < ref);
@@ -159,7 +159,7 @@ export class Store {
             if (!qualifies || a.notified.includes(dedup)) continue;
             a.notified.push(dedup);
             const jobId = `${a.id}:${dedup}`;
-            const comparison = ref == null ? 'WR checkpoint comparison unavailable.' : `${precision === 1000 ? '~' : ''}${time(Math.abs(ref - actual))} ${actual < ref ? 'ahead of' : actual > ref ? 'behind' : 'level with'} WR`;
+            const comparison = ref == null ? `WR Split unavailable: ${wr.reason}.` : `${precision === 1000 ? '~' : ''}${time(Math.abs(ref - actual))} ${actual < ref ? 'ahead of' : actual > ref ? 'behind' : 'level with'} WR Split`;
             this.put('outbox', jobId, { id: jobId, attempt: id, player: p.id, subscription: sub.id,
               split, channel: sub.channel, role: sub.role, status: 'pending', tries: 0, nextTry: now, createdAt: now,
               content: `${p.name} | ${profileLabel(a.profile)}\n${label}: ${runTime(split.ms,split.igtMs)}\n${comparison}${!confirmed && a.benchmark ? '\nBenchmark source: ' + a.benchmark.source : ''}` });
@@ -306,7 +306,7 @@ export class Store {
         return `${p.name} | ${label} | Session bests (split/segment): `+(group?.splits.map(s=>{const b=this.best(p,s.name,'session',selected);return `${b?.displayName??s.name} — ${time(b?.ms)} (${time(b?.bestSegmentMs)})`;}).join(' · ')||'unavailable');
       }
       if(q.command==='splits'&&!matches)return `${p.name} | ${label} | No current run for this map and category. Use !splits ${p.id} ${selected.map} alltime for saved bests.`;
-      if (q.command === 'splits') return `${p.name} | ${label} | Current run: ${a?.splits.length ? a.splits.map(s => (s.displayName??s.name) + ' — ' + runTime(s.ms,s.igtMs)).join(' · ') : 'No checkpoints recorded.'}${a && !a.complete ? ' Partial history.' : ''}`;
+      if (q.command === 'splits') return `${p.name} | ${label} | Current run: ${a?.splits.length ? a.splits.map(s => (s.displayName??s.name) + ' — ' + runTime(s.ms,s.igtMs)).join(' · ') : 'No splits recorded.'}${a && !a.complete ? ' Partial history.' : ''}`;
       if (q.command === 'pace') return paceAnswer(this,p);
       if (q.command === 'session') {
         return this.sessionAnswer(p,false,q.profile?selected:null);
@@ -329,9 +329,9 @@ export class Store {
   }
   benchmark(input) {
     const p = profile(input.profile), splits = {};
-    check(input.splits && typeof input.splits === 'object' && !Array.isArray(input.splits), 'Checkpoint times required.');
+    check(input.splits && typeof input.splits === 'object' && !Array.isArray(input.splits), 'Split times required.');
     for (const [name, ms] of Object.entries(input.splits)) { check(Number.isSafeInteger(ms) && ms >= 0 && ms <= 604800000, 'Invalid benchmark time.'); splits[key(name)] = ms; }
-    check(Object.keys(splits).length > 0 && Object.keys(splits).length <= 500, 'Supply 1–500 checkpoints.');
+    check(Object.keys(splits).length > 0 && Object.keys(splits).length <= 500, 'Supply 1–500 splits.');
     let source; try { source = new URL(input.source); } catch { check(false, 'Benchmark source URL required.'); }
     check(source.protocol === 'https:' && !source.username && !source.password, 'Use an HTTPS source URL.');
     const b = { id: randomUUID(), profile: p, splits, source: source.href, holder: clean(input.holder), verifiedDate: clean(input.verifiedDate), createdAt: this.clock() };

@@ -7,7 +7,7 @@ import {publicActivity} from '../src/activity.js';
 
 const profile={map:'der-eisendrache',category:'Mega Gums',players:1,timing:'RealTime'};
 const event=(extra={})=>({attemptId:'igt-attempt-001',sequence:1,profile,phase:'Running',index:1,elapsedMs:512000,igtMs:431000,current:'Crackle',splits:[{index:0,name:'Rocket',ms:500000,igtMs:420000}],...extra});
-test('IGT reaches public run, commands and Discord checkpoint alerts without changing RTA thresholds',t=>{
+test('IGT reaches public run, commands and Discord split alerts without changing RTA thresholds',t=>{
  const store=new Store();t.after(()=>store.close());const {player}=store.register('Runner');
  store.subscribe({guild:'123456',channel:'234567',player:player.id,profile,split:'Rocket',mode:'under',thresholdMs:450000});
  store.ingest(player.id,event());
@@ -25,8 +25,8 @@ test('missing IGT stays absent; malformed and decreasing IGT is rejected',()=>{
  const legacy=event({igtMs:undefined,splits:[{index:0,name:'Rocket',ms:500000}]});
  assert.equal(snapshot(legacy).igtMs,null);assert.equal(snapshot(legacy).splits[0].igtMs,null);
  for(const igtMs of [-1,'431000',Infinity,604800001])assert.throws(()=>snapshot(event({igtMs})),/IGT/);
- assert.throws(()=>snapshot(event({igtMs:400000})),/checkpoint IGT/);
- assert.throws(()=>snapshot(event({index:2,splits:[...event().splits,{index:1,name:'Crackle',ms:510000,igtMs:410000}]})),/checkpoint IGT/);
+ assert.throws(()=>snapshot(event({igtMs:400000})),/split IGT/);
+ assert.throws(()=>snapshot(event({index:2,splits:[...event().splits,{index:1,name:'Crackle',ms:510000,igtMs:410000}]})),/split IGT/);
  assert.equal(snapshot(event({igtMs:0,splits:[{index:0,name:'Rocket',ms:500000,igtMs:0}]})).igtMs,0);
  assert.equal(snapshot(event({phase:'NotRunning',index:-1,splits:[],elapsedMs:0})).igtMs,null);
 });

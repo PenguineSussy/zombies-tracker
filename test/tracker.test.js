@@ -55,11 +55,11 @@ test('two runners have isolated history and timing methods do not mix',t=>{
   assert.equal(store.best(store.get('players',second.id),'bow','alltime').ms,280000);
   assert.equal(store.best(store.get('players',player.id),'bow','alltime',{...P,timing:'GameTime'}),null);
 });
-test('checkpoint completion uses actual split time rather than current elapsed timer',t=>{
+test('split completion uses actual split time rather than current elapsed timer',t=>{
   const {store,player}=fixture(t);store.ingest(player.id,event({index:2,elapsedMs:470000,current:'Next step',splits:[{index:0,name:'bow',ms:283000},{index:1,name:'crackle',ms:451000}]}));
   const answer=store.answer('!current @Player1');assert.match(answer,/Crackle — 7:31/);assert.match(answer,/Running: 7:50/);assert.match(answer,/Next: Next step/);
 });
-test('reset keeps session checkpoints; new session only resets session bests',t=>{
+test('reset keeps session splits; new session only resets session bests',t=>{
   const {store,player}=fixture(t);store.ingest(player.id,event());
   store.ingest(player.id,event({attemptId:'idle-00001',phase:'NotRunning',index:-1,elapsedMs:0,current:null,splits:[],complete:false}));
   let p=store.get('players',player.id);assert.equal(store.best(p,'bow','session').ms,283000);
@@ -72,7 +72,7 @@ test('idle heartbeats continue after session changes without reopening an ended 
   store.session(store.get('players',player.id),'start');const session=store.get('players',player.id).sessionId;store.ingest(player.id,{...idle,sequence:3});assert.equal(store.get('players',player.id).sessionId,session);
   store.ingest(player.id,event({attemptId:'attempt-002'}));assert.equal(store.get('attempts',player.id+':attempt-002').sessionId,session);
 });
-test('completed full-run PB requires every checkpoint even if sender claims completeness',t=>{
+test('completed full-run PB requires every split even if sender claims completeness',t=>{
   const {store,player}=fixture(t);store.ingest(player.id,event({phase:'Ended',index:2,complete:true}));assert.match(store.answer('!pb @Player1'),/unavailable/);
   store.ingest(player.id,event({attemptId:'attempt-002',phase:'Ended'}));assert.match(store.answer('!pb @Player1'),/4:45/);
 });
@@ -86,10 +86,10 @@ test('duplicates, stale sequences and closed-attempt uploads cannot rewrite acti
   const {store,player}=fixture(t);store.ingest(player.id,event());assert.equal(store.ingest(player.id,event()).accepted,false);
   store.ingest(player.id,event({attemptId:'attempt-002'}));assert.throws(()=>store.ingest(player.id,event({sequence:2})),/closed/);
 });
-test('practice is excluded; skipped checkpoints cannot manufacture records or full-run PBs',t=>{
+test('practice is excluded; skipped splits cannot manufacture records or full-run PBs',t=>{
   const {store,player}=fixture(t);store.ingest(player.id,event({practice:true}));assert.equal(store.best(store.get('players',player.id),'bow','alltime'),null);
   store.ingest(player.id,event({attemptId:'attempt-002',index:2,phase:'Ended',complete:false,splits:[{index:1,name:'crackle',ms:284000}]}));assert.match(store.answer('!pb @Player1'),/unavailable/);
-  assert.throws(()=>store.ingest(player.id,event({attemptId:'attempt-003',splits:[{index:0,name:'bow',ms:999999}]})),/checkpoint/);
+  assert.throws(()=>store.ingest(player.id,event({attemptId:'attempt-003',splits:[{index:0,name:'bow',ms:999999}]})),/split/);
 });
 test('freshness and privacy apply to command responses and alerts',t=>{
   const {store,player,tick}=fixture(t);store.ingest(player.id,event());tick(31000);assert.match(store.answer('!current @Player1'),/offline/);
@@ -125,7 +125,7 @@ test('Discord signatures reject tampering and old timestamps',()=>{
 test('Discord role-alert configuration enforces guild management permissions',t=>{
   const {store}=fixture(t);const reply=discordInteraction(store,{type:2,data:{name:'track-alert',options:[]},guild_id:'123456',member:{permissions:'0'}});assert.match(reply.data.content,/Manage Server/);assert.equal(store.list('subscriptions').length,0);
 });
-test('LiveSplit reconciler records last checkpoint, undo, reset and reconnect without retroactive alerts',()=>{
+test('LiveSplit reconciler records last split, undo, reset and reconnect without retroactive alerts',()=>{
   const r=new Reconciler({profile:P,aliases:{'Bow Done':'bow'}});
   let s=r.update(raw());const first=s.attemptId;assert.equal(s.suppressAlerts,true);
   s=r.update(raw({index:1,elapsedMs:285000,current:'Crackle',previous:'Bow Done',previousMs:283000}));assert.equal(s.splits[0].ms,283000);assert.equal(s.splits[0].name,'bow');

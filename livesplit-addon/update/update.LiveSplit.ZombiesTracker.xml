@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <updates>
-  <update version="1.0.5">
+  <update version="1.0.6">
     <changelog>
-      <change>Rename Revelations checkpoints to Beast Enter and Beast Exit.</change>
+      <change>Use split terminology throughout addon settings.</change>
       <change>Preserve saved Revelations and Super Easter Egg aliases during the update.</change>
     </changelog>
     <files>

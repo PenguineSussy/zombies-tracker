@@ -1,4 +1,4 @@
-# Dr Monty Bot — LiveSplit addon 1.0.5
+# Dr Monty Bot — LiveSplit addon 1.0.6
 
 Tracks Black Ops III Solo Easter Egg runs in RTA, with optional LiveSplit IGT displayed alongside it. No separate companion or terminal is needed.
 
@@ -34,20 +34,20 @@ Detection reads map/category metadata, run labels, saved filename and recognizab
 
 Categories: **No Gums, Classic Gums, Mega Gums, Any%**. Zetsubou No Shima and Super Easter Egg exclude No Gums. Ascension and Shangri-La allow only Any%. Multiplayer labels block uploads.
 
-The addon preserves your LiveSplit split names and comparisons; no alias editor is required. Version 0.2.9 reads the compatible BO3 ASL component’s public `split_names` dictionary and checked settings without running or editing the script. It uploads checkpoint hints only when the enabled count and recognized name anchors agree with the run layout. Missing/extra splits, conflicting maps, or multiple ASL components disable those hints. The server applies the shared LittleMontyBot names and conservative timing rules to live and saved records. Ambiguous names stay unchanged; Moon and Origins never use timing-only guesses. Removed Fire Dupe and Lightning/Fire milestones are not mapped; ZNS uses Rainbow Round End, separate from KT4. Names must be unique, 1–80 characters and contain no `<`, `>` or `@`. Reset before changing run details.
+The addon preserves your LiveSplit split names and comparisons; no alias editor is required. Version 0.2.9 reads the compatible BO3 ASL component’s public `split_names` dictionary and checked settings without running or editing the script. It uploads split hints only when the enabled count and recognized name anchors agree with the run layout. Missing/extra splits, conflicting maps, or multiple ASL components disable those hints. The server applies the shared LittleMontyBot names and conservative timing rules to live and saved records. Ambiguous names stay unchanged; Moon and Origins never use timing-only guesses. Removed Fire Dupe and Lightning/Fire milestones are not mapped; ZNS uses Rainbow Round End, separate from KT4. Names must be unique, 1–80 characters and contain no `<`, `>` or `@`. Reset before changing run details.
 
 ## What it tracks
 
-- Live RTA and optional IGT, checkpoints, starts, finishes, pauses, undo and resets. IGT is read from initialized LiveSplit Game Time and never estimated.
-- Website timers, checkpoint tables, activity and Discord alerts display both when available, e.g. 8:32 RTA (7:11 IGT). RTA remains the basis for records, pace and alert thresholds.
+- Live RTA and optional IGT, splits, starts, finishes, pauses, undo and resets. IGT is read from initialized LiveSplit Game Time and never estimated.
+- Website timers, split tables, activity and Discord alerts display both when available, e.g. 8:32 RTA (7:11 IGT). RTA remains the basis for records, pace and alert thresholds.
 - Loaded split-file attempt count, separately from tracked session resets.
-- RTA Personal Best and its checkpoint times, saved best cumulative splits and best segments.
+- RTA Personal Best and its split times, saved best cumulative splits and best segments.
 
 Comparisons are read independently of the selected display comparison. The addon does not change your comparisons or split layout. Deleted history cannot be recovered. Saved PBs are runner-provided records, not verified leaderboard submissions.
 
 ## Super Easter Egg
 
-Use one continuous timer with all six maps; Revelations must be last. Keep each map's splits together. Prefix checkpoints with their map and finish each map with a completion marker:
+Use one continuous timer with all six maps; Revelations must be last. Keep each map's splits together. Prefix splits with their map and finish each map with a completion marker:
 
 1. `SOE - Complete`
 2. `The Giant - Complete`
@@ -83,11 +83,11 @@ Run `test.ps1` for native tests. The HTTP integration test requires the full bot
 
 ## Split aliases
 
-In Edit Layout → Zombies Tracker, select a map under Split aliases. Enter your exact LiveSplit split name and select the matching tracker checkpoint. Finish or reset the run, Apply settings, then save your layout. Delete a mapping row to restore automatic matching. Mappings stay separate for each map and never rename your LiveSplit splits.
+In Edit Layout → Zombies Tracker, select a map under Split aliases. Enter your exact LiveSplit split name and select the matching tracker split. Finish or reset the run, Apply settings, then save your layout. Delete a mapping row to restore automatic matching. Mappings stay separate for each map and never rename your LiveSplit splits.
 
-For Super Easter Egg, select that entry and choose map-prefixed checkpoints. Each of the six map blocks must end with its Map - Complete checkpoint; Revelations must be last. All times stay cumulative.
+For Super Easter Egg, select that entry and choose map-prefixed splits. Each of the six map blocks must end with its Map - Complete split; Revelations must be last. All times stay cumulative.
 
-Saved aliases take priority, then compatible autosplitter hints, then rules-based matching. Unrecognized checkpoints receive alias-setup guidance only after those methods fail.
+Saved aliases take priority, then compatible autosplitter hints, then rules-based matching. Unrecognized splits receive alias-setup guidance only after those methods fail.
 
 
 ## Version 1.0.2
