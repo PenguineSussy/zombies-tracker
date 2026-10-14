@@ -1,5 +1,12 @@
 # Changes
 
+## Website/bot 1.0.2 and LiveSplit addon 1.0.4 — October 13, 2026
+
+- Optional LiveSplit IGT beside RTA in live runs, checkpoints, activity, commands and alerts. Missing game time stays absent; RTA still drives comparisons.
+- BO3-only game selector and recognition of Black Ops III Zombies names.
+- Read gum category and validate explicit speedrun type from Additional Info. Preserve saved settings and aliases.
+- BO2 remains private and is not included in this update.
+
 ## LiveSplit addon 0.2.8 — October 7, 2026
 
 - Background update checks in addon settings, without interrupting runs.

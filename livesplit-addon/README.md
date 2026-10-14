@@ -1,6 +1,6 @@
-# Dr Monty Bot — LiveSplit addon 1.0.3
+# Dr Monty Bot — LiveSplit addon 1.0.4
 
-Tracks Black Ops III Solo Easter Egg runs in RTA. No separate companion or terminal is needed.
+Tracks Black Ops III Solo Easter Egg runs in RTA, with optional LiveSplit IGT displayed alongside it. No separate companion or terminal is needed.
 
 ## Install or update
 
@@ -30,7 +30,7 @@ Use clear split-file metadata, for example:
 - Game: `Call of Duty: Black Ops III`
 - Category: `Der Eisendrache - Mega Gums - Solo`
 
-Detection reads map/category metadata, run labels, saved filename and recognizable split names. It does not inspect game memory. Game Name may be the supported map itself (for example `Der Eisendrache`, `Origins`, or `DE`), or the BO3 game name with map information elsewhere. A map-only title is treated as BO3 in this BO3-only release. Blank, unknown, and explicitly different game names still stop tracking, even with a map override. A map override must match the detected map; it cannot enable an unknown or disabled map. If detection is unclear, correct the Game Name and Category Name in Edit Splits. Category Name is used for gum detection. A blank Category Name defaults to Mega Gums, or Any% on Ascension and Shangri-La. A nonempty unrecognized or conflicting category pauses uploads. Category overrides remain available.
+Detection reads map/category metadata, run labels, saved filename and recognizable split names. It does not inspect game memory. Game Name may be the supported map itself (for example `Der Eisendrache`, `Origins`, or `DE`), or the BO3 game name with map information elsewhere. A map-only title is treated as BO3 in this BO3-only release. Black Ops III Zombies is also recognized. The tracker Game selector offers Automatic detection or Black Ops III Zombies; select BO3 to use a blank or custom game title. Explicit BO2/BO4 titles remain blocked. A map override must match the detected map; it cannot enable an unknown or disabled map. If detection is unclear, correct the Game Name and Category Name in Edit Splits. Category Name and Additional Info gum/category fields are used for gum detection; conflicts pause tracking. Explicit Speedrun Type, Run Type or Objective metadata must identify an Easter Egg run. A blank Category Name defaults to Mega Gums, or Any% on Ascension and Shangri-La. A nonempty unrecognized or conflicting category pauses uploads. Category overrides remain available.
 
 Categories: **No Gums, Classic Gums, Mega Gums, Any%**. Zetsubou No Shima and Super Easter Egg exclude No Gums. Ascension and Shangri-La allow only Any%. Multiplayer labels block uploads.
 
@@ -38,7 +38,8 @@ The addon preserves your LiveSplit split names and comparisons; no alias editor 
 
 ## What it tracks
 
-- Live timer, checkpoints, starts, finishes, pauses, undo and resets.
+- Live RTA and optional IGT, checkpoints, starts, finishes, pauses, undo and resets. IGT is read from initialized LiveSplit Game Time and never estimated.
+- Website timers, checkpoint tables, activity and Discord alerts display both when available, e.g. 8:32 RTA (7:11 IGT). RTA remains the basis for records, pace and alert thresholds.
 - Loaded split-file attempt count, separately from tracked session resets.
 - RTA Personal Best and its checkpoint times, saved best cumulative splits and best segments.
 

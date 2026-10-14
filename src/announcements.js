@@ -1,9 +1,14 @@
 import {MAPS,profileKey,time} from './domain.js';
+import {runTime} from './reply-format.js';
 import {splitName} from './split-rules.js';
 
 export const announcementDefaults=()=>({gold:false,pb:false,wr:false,communityWr:false});
 const jobs=store=>store.list('metadata').filter(v=>v.kind==='chat-announcement');
 const segment=(a,s)=>{const previous=a.splits.find(x=>x.index===s.index-1);return s.index===0?s.ms:previous?s.ms-previous.ms:null;};
+const igtSegment=(a,s)=>{
+  const previous=s.index===0?0:a.splits.find(x=>x.index===s.index-1)?.igtMs;
+  return s.igtMs==null||previous==null?null:s.igtMs-previous;
+};
 const matching=(a,b)=>a.index===b.index&&a.name===b.name&&a.ms===b.ms;
 const context=a=>`${MAPS.find(m=>m.id===a.profile.map)?.name??a.profile.map} / ${a.profile.category}`;
 
@@ -31,14 +36,14 @@ export function queueAnnouncements(store,p,a,previous) {
     if(prior?.bestSegmentMs>0&&(s.index===0||saved.splits[s.index-1]?.name===predecessor))values.push(prior.bestSegmentMs);
     for(const h of history){const v=h.splits.find(v=>v.index===s.index&&(v.originalName??v.name)===s.name);if(!v)continue;const before=h.splits.find(x=>x.index===s.index-1);if(s.index>0&&(before?.originalName??before?.name)!==predecessor)continue;const value=segment(h,v);if(value>0)values.push(value);}
     const before=Math.min(...values);
-    if(Number.isFinite(before)&&ms<before)events.push({type:'gold',split:s,ms,before,label:splitName(a.profile,s.displayName??s.name)});
+    if(Number.isFinite(before)&&ms<before)events.push({type:'gold',split:s,ms,igtMs:igtSegment(a,s),before,label:splitName(a.profile,s.displayName??s.name)});
   }
   const last=a.splits.at(-1);
   if(a.phase==='Ended'&&a.complete&&last&&last.ms===a.elapsedMs) {
     const before=Math.min(...[saved?.pbMs,...history.filter(v=>v.phase==='Ended'&&v.complete).map(v=>v.elapsedMs)].filter(v=>Number.isFinite(v)&&v>0));
-    if(Number.isFinite(before)&&a.elapsedMs<before)events.push({type:'pb',split:last,ms:a.elapsedMs,before});
+    if(Number.isFinite(before)&&a.elapsedMs<before)events.push({type:'pb',split:last,ms:a.elapsedMs,igtMs:a.igtMs,before});
     const wr=store.get('metadata',`zwr:${profileKey(a.profile)}`);
-    if(wr?.ms>0&&a.elapsedMs<wr.ms)events.push({type:'wr',split:last,ms:a.elapsedMs,before:wr.ms});
+    if(wr?.ms>0&&a.elapsedMs<wr.ms)events.push({type:'wr',split:last,ms:a.elapsedMs,igtMs:a.igtMs,before:wr.ms});
   }
   for(const c of channels)for(const event of events) {
     if(c.player===p.id?c.announcements?.[event.type]!==true:event.type!=='wr'||c.announcements?.communityWr!==true)continue;
@@ -50,7 +55,7 @@ export function queueAnnouncements(store,p,a,previous) {
 
 export function announcementText(j,limit=450) {
   const label=j.type==='gold'?`${j.label} segment`:j.type==='pb'?'PB':'listed WR';
-  const result=`@${j.runner} ${j.type==='gold'?'GOLD':j.type==='pb'?'NEW PB':'WR TIME BEATEN'}! ${label}: ${time(j.ms)} RTA (previous ${time(j.before)}, improved by ${time(j.before-j.ms)}). ${context(j)}`;
+  const result=`@${j.runner} ${j.type==='gold'?'GOLD':j.type==='pb'?'NEW PB':'WR TIME BEATEN'}! ${label}: ${runTime(j.ms,j.igtMs)} (previous ${time(j.before)}, improved by ${time(j.before-j.ms)}). ${context(j)}`;
   return result.length<=limit?result:result.slice(0,limit-1)+'…';
 }
 

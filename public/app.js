@@ -3,6 +3,7 @@ import {streamCandidates,distinctSlots,playerUrl} from './watch.js?v=0.3.0';
 const $=id=>document.getElementById(id);
 let token='', me=null, loginExpiresAt=null, catalog, selected=new URLSearchParams(location.search).get('runner');
 const format=ms=>{const s=Math.floor(Math.abs(ms)/1000),h=Math.floor(s/3600);return `${ms<0?'-':''}${h?h+':'+String(Math.floor(s/60)%60).padStart(2,'0'):Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;};
+const runTime=(rta,igt)=>`${format(rta)} RTA${igt==null?'':` (${format(igt)} IGT)`}`;
 function notice(text,error=false){$('notice').textContent=text;$('notice').classList.toggle('error',error);$('notice').hidden=false;}
 async function api(path,{method='GET',body,key=''}={}){
   const r=await fetch(path,{method,headers:{...(body?{'Content-Type':'application/json'}:{}),...(key?{Authorization:`Bearer ${key}`}:{})},...(body?{body:JSON.stringify(body)}:{})});
@@ -170,10 +171,10 @@ async function details(id){
   if(p.private){box.append(node('p','This runner is no longer sharing tracking data.','muted'));return;}
   if(p.lastSeen)box.append(node('p','Last seen: '+new Date(p.lastSeen).toLocaleString(),'small muted'));
   box.append(node('p',`${p.status}${p.attempt?.current?' · Current: '+p.attempt.current:''}`,'muted'));
-  if(p.attempt)box.append(node('p',`LiveSplit RTA at last update: ${format(p.attempt.elapsedMs)}${p.attempt.stageMap?' · '+catalog.maps.find(m=>m.id===p.attempt.stageMap)?.name:''}`,'muted'));
+  if(p.attempt)box.append(node('p',`LiveSplit at last update: ${runTime(p.attempt.elapsedMs,p.attempt.igtMs)}${p.attempt.stageMap?' · '+catalog.maps.find(m=>m.id===p.attempt.stageMap)?.name:''}`,'muted'));
   box.append(node('p',p.attempt?.attemptCount!=null?`LiveSplit total attempts (loaded splits): ${p.attempt.attemptCount.toLocaleString()}`:'LiveSplit total attempts: unavailable — update to addon 0.2.5.','muted'));
   renderSession(box,p.session);
-  if(p.attempt?.splits.length){const table=node('table'),head=node('tr');head.append(node('th','Checkpoint'),node('th','Run time'));table.append(head);for(const split of p.attempt.splits){const row=node('tr');row.append(node('td',split.displayName??split.name),node('td',format(split.ms)));table.append(row);}box.append(table);}else box.append(node('p','No checkpoints recorded yet.','muted'));
+  if(p.attempt?.splits.length){const table=node('table'),head=node('tr');head.append(node('th','Checkpoint'),node('th','Run time'));table.append(head);for(const split of p.attempt.splits){const row=node('tr');row.append(node('td',split.displayName??split.name),node('td',runTime(split.ms,split.igtMs)));table.append(row);}box.append(table);}else box.append(node('p','No checkpoints recorded yet.','muted'));
   if(p.attempt?.practice)box.append(node('p','Practice attempt — excluded from records.','small muted'));
   if(p.attempt&&!p.attempt.complete&&p.attempt.phase==='Ended')box.append(node('p','Incomplete run: required checkpoints may be missing.','small muted'));
 }

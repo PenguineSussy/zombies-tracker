@@ -80,17 +80,24 @@ export function snapshot(input) {
   check(['Running', 'Paused', 'Ended', 'NotRunning'].includes(input.phase), 'Invalid timer phase.');
   check(Number.isInteger(input.index) && input.index >= -1 && input.index <= 500, 'Invalid split index.');
   check(Number.isSafeInteger(input.elapsedMs) && input.elapsedMs >= -3600000 && input.elapsedMs <= 604800000, 'Invalid elapsed time.');
+  const igt = value => { check(value == null || (Number.isSafeInteger(value) && value >= 0 && value <= 604800000), 'Invalid IGT.'); return value ?? null; };
+  const igtMs = igt(input.igtMs);
   check(Array.isArray(input.splits) && input.splits.length <= 500, 'Invalid splits.');
-  let previous = -1, previousTime = -1;
+  let previous = -1, previousTime = -1, previousIgt = -1;
   const splits = input.splits.map(s => {
     check(Number.isInteger(s.index) && s.index > previous && s.index < input.index, 'Splits must be ordered, unique, and completed.');
     check(Number.isSafeInteger(s.ms) && s.ms >= 0 && s.ms >= previousTime && s.ms <= input.elapsedMs, 'Invalid checkpoint time.');
     previous = s.index; previousTime = s.ms;
-    return { index: s.index, name: key(s.name), displayName: clean(s.name), ms: s.ms };
+    const splitIgt = igt(s.igtMs);
+    if (splitIgt != null) {
+      check(splitIgt >= previousIgt && (igtMs == null || splitIgt <= igtMs), 'Invalid checkpoint IGT.');
+      previousIgt = splitIgt;
+    }
+    return { index: s.index, name: key(s.name), displayName: clean(s.name), ms: s.ms, igtMs: splitIgt };
   });
   check(new Set(splits.map(s => s.name)).size === splits.length, 'Milestone names must be unique. Map repeated splits to distinct names.');
   const result = { attemptId: input.attemptId, sequence: input.sequence, profile: profile(input.profile),
-    phase: input.phase, index: input.index, elapsedMs: input.elapsedMs,
+    phase: input.phase, index: input.index, elapsedMs: input.elapsedMs, igtMs: input.phase === 'NotRunning' ? null : igtMs,
     current: input.current && input.current !== '-' ? clean(input.current) : null,
     splits, practice: input.practice === true, complete: input.complete === true, suppressAlerts: input.suppressAlerts === true,
     observedAt: Number.isSafeInteger(input.observedAt) ? input.observedAt : Date.now() };
@@ -107,7 +114,7 @@ export function snapshot(input) {
     const validTime=v=>{check(v==null || (Number.isSafeInteger(v)&&v>=0&&v<=604800000),'Invalid saved time.');return v??null;};
     const saved=input.records.splits.map((s,i)=>{check(s.index===i,'Saved splits must be in order.');return {index:i,name:key(s.name),displayName:clean(s.name),pbSplitMs:validTime(s.pbSplitMs),bestSplitMs:validTime(s.bestSplitMs),bestSegmentMs:validTime(s.bestSegmentMs)};});
     check(new Set(saved.map(s=>s.name)).size===saved.length,'Saved split names must be unique.');
-    result.records={pbMs:validTime(input.records.pbMs),splits:saved};
+    result.records={pbMs:validTime(input.records.pbMs),pbIgtMs:validTime(input.records.pbIgtMs),splits:saved};
   }
   if(input.autosplitNames!=null) {
     check(Array.isArray(input.autosplitNames)&&input.autosplitNames.length>0&&input.autosplitNames.length<=500,'Invalid autosplitter layout.');

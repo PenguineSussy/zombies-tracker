@@ -64,6 +64,14 @@ class Tests
             Check(Detector.RunCategory("","","ascension")=="Any%","Any only category default");
             Check(Detector.RunCategory("No Gums Mega Gums","","der-eisendrache")==null,"conflict not defaulted");
             Check(Detector.RunCategory("Typo","","der-eisendrache")==null,"nonempty unknown category not defaulted");
+            foreach (var game in new[]{"Black Ops III Zombies","Call of Duty: Black Ops III Zombies","BO3 Zombies"})
+                Check(Detector.Detect(game,"DE","",new Dictionary<string,string>(),new string[0],"").Success,"Zombies game title " + game);
+            Check(Detector.Detect("","DE","",new Dictionary<string,string>(),new string[0],"",null,"bo3").Success,"explicit BO3 permits blank game title");
+            Check(!Detector.Detect("Black Ops II Zombies","Origins","",new Dictionary<string,string>(),new string[0],"",null,"bo3").Success,"explicit BO3 cannot relabel BO2");
+            Check(!Detector.Detect("BO3","DE","",new Dictionary<string,string>{{"Speedrun Type","High Round"}},new string[0],"").Success,"unsupported speedrun type blocked");
+            Check(Detector.Detect("BO3","","",new Dictionary<string,string>{{"Map","DE"},{"Speedrun Type","Easter Egg"}},new string[0],"").Success,"map and speedrun metadata");
+            Check(Detector.MetadataCategory("DE",new Dictionary<string,string>{{"Gum Category","Classic Gums"}},"","der-eisendrache")=="Classic Gums","gum metadata used");
+            Check(Detector.MetadataCategory("Mega Gums",new Dictionary<string,string>{{"Gum Category","Classic Gums"}},"","der-eisendrache")==null,"conflicting metadata blocked");
             var settings=new XmlDocument();settings.LoadXml("<Settings><Split>True</Split><CustomSettings><Setting id='zm_castle'>True</Setting><Setting id='Bow'>False</Setting><Setting id='Rocket Test TP'>True</Setting><Setting id='First TP'>True</Setting></CustomSettings></Settings>");
             var order=new Dictionary<int,string>{{0,"Bow"},{1,"Rocket Test TP"},{2,"First TP"}};
             Check(AutosplitBridge.Select(order,settings.DocumentElement,"zm_castle",2).SequenceEqual(new[]{"Rocket Test TP","First TP"}),"selected ASL order");
@@ -112,18 +120,22 @@ class Tests
             var countProbe = Protocol.Capture(state, new RunProfile { map="der-eisendrache", category="No Gums", players=1, timing="RealTime" }, "count-probe", 1, false, false);
             Check(countProbe.addonVersion==AddonUpdates.InstalledVersion,"snapshots report addon version");
             Check(countProbe.attemptCount == 34324 && run.AttemptCount == 34324, "saved attempt count captured without mutation");
+            Check(countProbe.igtMs == null,"idle does not invent IGT");
             var model = new TimerModel { CurrentState = state };
             using(var settingsProbe=new TrackerComponent(state)) {
                 var settingsDoc=new XmlDocument(); settingsDoc.LoadXml("<Settings><Enabled>False</Enabled><ProtectedToken>" + Convert.ToBase64String(Protection.Protect(Encoding.UTF8.GetBytes("synthetic-test-key"))) + "</ProtectedToken></Settings>");
                 var linksNode=settingsDoc.CreateElement("SplitAliases");linksNode.InnerText=new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(aliasRows);settingsDoc.DocumentElement.AppendChild(linksNode);
                 settingsProbe.SetSettings(settingsDoc.DocumentElement);
                 var settingsPanel=(SettingsPanel)settingsProbe.GetSettingsControl(LiveSplit.UI.LayoutMode.Vertical);
+                var gameOptions=settingsPanel.ReadOptions(); gameOptions.Game="bo3"; settingsPanel.LoadOptions(gameOptions);
                 settingsPanel.RestoreAliasMap("der-eisendrache");
                 var selectionXml=settingsProbe.GetSettings(new XmlDocument());
                 Check(selectionXml["AliasEditorMap"].InnerText=="der-eisendrache","alias editor selection saved in layout");
+                Check(selectionXml["Game"].InnerText=="bo3","game selection saved in layout");
                 using(var reopened=new TrackerComponent(state)) {
                     reopened.SetSettings(selectionXml);
                     var reopenedPanel=(SettingsPanel)reopened.GetSettingsControl(LiveSplit.UI.LayoutMode.Vertical);
+                    Check(reopenedPanel.ReadOptions().Game=="bo3","game selection restored in replacement layout");
                     Check(reopenedPanel.AliasMap=="der-eisendrache","alias selection restored in replacement layout");
                     reopenedPanel.RestoreAliasMap("super-easter-egg");
                     Check(settingsPanel.AliasMap=="der-eisendrache","alias selection stays separate between layouts");
@@ -166,11 +178,17 @@ class Tests
             Check(history.splits[1].bestSplitMs == 405000 && history.splits[1].bestSegmentMs == 60000, "cumulative history and segment are independent; missing prefix excluded");
             Check(history.splits[0].pbSplitMs == (long)historyRun[0].PersonalBestSplitTime.RealTime.Value.TotalMilliseconds, "PB checkpoint stays separate from best split and gold");
             Check(history.pbMs == 1625000, "PB from final Personal Best comparison");
+            historyRun[2].PersonalBestSplitTime = new Time {RealTime=TimeSpan.FromSeconds(1625),GameTime=TimeSpan.FromSeconds(1500)};
+            Check(Protocol.ReadRecords(historyRun).pbIgtMs==1500000,"saved PB reads paired Game Time");
             Check(historyRun[0].PersonalBestSplitTime.RealTime.Value.TotalSeconds == 355 && historyRun[0].BestSegmentTime.RealTime.Value.TotalSeconds == 334, "record reading does not mutate comparisons");
-            model.Start(); Pump(40); model.Split();
+            model.Start();
+            Check(Protocol.Capture(state, profile, "test-attempt", 1, false, false).igtMs == null,"uninitialized game time stays absent");
+            model.InitializeGameTime(); state.IsGameTimePaused = true; state.SetGameTime(TimeSpan.FromSeconds(7));
+            Pump(40); model.Split();
             state.CurrentTimingMethod = TimingMethod.GameTime;
             var sample = Protocol.Capture(state, profile, "test-attempt", 1, false, false);
             Check(sample.splits.Count == 1 && sample.splits[0].name == "Bow Done" && sample.splits[0].ms > 0, "original split name / RTA despite GameTime display");
+            Check(sample.igtMs == 7000 && sample.splits[0].igtMs == 7000,"live and checkpoint IGT captured separately from RTA");
             model.Pause();
             sample = Protocol.Capture(state, profile, "test-attempt", 2, false, false);
             Check(sample.elapsedMs == (long)Math.Round(state.CurrentTime.RealTime.Value.TotalMilliseconds), "paused elapsed equals LiveSplit RTA exactly");
@@ -182,6 +200,7 @@ class Tests
             Check(sample.splits.Count == 0, "undo removes checkpoints");
             model.Reset(false); sample = Protocol.Capture(state, profile, "test-reset", 1, false, false);
             Check(sample.phase == "NotRunning" && sample.splits.Count == 0 && sample.index == -1, "reset");
+            Check(sample.igtMs == null,"reset clears IGT");
             string lifecycleDir=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"ZombiesTracker-Lifecycle-"+Guid.NewGuid());
             var delayed=new DelayedUpload();
             string lifecycleKey=Guid.NewGuid().ToString();

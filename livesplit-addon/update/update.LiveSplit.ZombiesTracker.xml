@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <updates>
-  <update version="1.0.3">
+  <update version="1.0.4">
     <changelog>
-      <change>Start tracking independently of rendering callbacks, while keeping inactive layout copies idle.</change>
-      <change>Show a waiting status before activation. Saved aliases and settings are preserved.</change>
+      <change>Show LiveSplit IGT alongside RTA when available, including completed checkpoints.</change>
+      <change>Add a BO3 game selector, Zombies game names, and Additional Info gum category and speedrun type detection.</change>
     </changelog>
     <files>
       <file path="Components/LiveSplit.ZombiesTracker.dll" status="changed" />

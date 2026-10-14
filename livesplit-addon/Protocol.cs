@@ -18,6 +18,7 @@ namespace LiveSplit.ZombiesTracker
         public int index { get; set; }
         public string name { get; set; }
         public long ms { get; set; }
+        public long? igtMs { get; set; }
     }
     public sealed class Snapshot
     {
@@ -32,6 +33,7 @@ namespace LiveSplit.ZombiesTracker
         public string phase { get; set; }
         public int index { get; set; }
         public long elapsedMs { get; set; }
+        public long? igtMs { get; set; }
         public string current { get; set; }
         public List<Checkpoint> splits { get; set; }
         public bool complete { get; set; }
@@ -51,6 +53,7 @@ namespace LiveSplit.ZombiesTracker
     public sealed class SavedRecords
     {
         public long? pbMs { get; set; }
+        public long? pbIgtMs { get; set; }
         public List<SavedSplit> splits { get; set; }
     }
     public static class Protocol
@@ -74,6 +77,7 @@ namespace LiveSplit.ZombiesTracker
                 addonVersion = AddonUpdates.InstalledVersion,
                 attemptId = id, attemptCount = state.Run.AttemptCount, sequence = sequence, profile = profile, phase = state.CurrentPhase.ToString(), index = index,
                 elapsedMs = idle ? 0 : (long)Math.Round(elapsed.Value.TotalMilliseconds), current = null,
+                igtMs = idle || !state.IsGameTimeInitialized ? null : Milliseconds(state.CurrentTime.GameTime),
                 splits = new List<Checkpoint>(), complete = !idle, practice = practice, suppressAlerts = suppress,
                 observedAt = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalMilliseconds
             };
@@ -85,7 +89,7 @@ namespace LiveSplit.ZombiesTracker
                 if (i == index) snapshot.current = name;
                 if (i >= index) continue;
                 var time = state.Run[i].SplitTime[timing];
-                if (time.HasValue) snapshot.splits.Add(new Checkpoint { index = i, name = name, ms = (long)Math.Round(time.Value.TotalMilliseconds) });
+                if (time.HasValue) snapshot.splits.Add(new Checkpoint { index = i, name = name, ms = (long)Math.Round(time.Value.TotalMilliseconds), igtMs = state.IsGameTimeInitialized ? Milliseconds(state.Run[i].SplitTime.GameTime) : null });
                 else snapshot.complete = false;
             }
             return snapshot;
@@ -99,7 +103,7 @@ namespace LiveSplit.ZombiesTracker
         // Never run a comparison generator against the user's live Run: it writes comparisons.
         public static SavedRecords ReadRecords(IRun run)
         {
-            var result = new SavedRecords { splits = new List<SavedSplit>(), pbMs = run.Count == 0 ? null : Milliseconds(run[run.Count - 1].PersonalBestSplitTime.RealTime) };
+            var result = new SavedRecords { splits = new List<SavedSplit>(), pbMs = run.Count == 0 ? null : Milliseconds(run[run.Count - 1].PersonalBestSplitTime.RealTime), pbIgtMs = run.Count == 0 ? null : Milliseconds(run[run.Count - 1].PersonalBestSplitTime.GameTime) };
             var totals = new Dictionary<int, TimeSpan>();
             for (int i = 0; i < run.Count; i++)
             {

@@ -50,6 +50,16 @@ namespace LiveSplit.ZombiesTracker
             if (string.IsNullOrWhiteSpace(category)) return CategoriesForMap(map).Contains("Mega Gums") ? "Mega Gums" : "Any%";
             return Category(new[]{category}, "");
         }
+        public static string MetadataCategory(string category, IDictionary<string,string> variables, string manual, string map)
+        {
+            if (!string.IsNullOrWhiteSpace(manual)) return Category(new string[0], manual);
+            var values = variables.Where(v => Has(v.Key,"gum") || Normalize(v.Key).Contains("gum") || Has(v.Key,"category")).Select(v => v.Value).Where(v => !string.IsNullOrWhiteSpace(v)).ToList();
+            if (values.Count == 0) return RunCategory(category, manual, map);
+            // Conflicting explicit categories must not silently fall back to Mega Gums.
+            if (values.Any(v => Category(new[]{v}, "") == null)) return null;
+            values.Add(category);
+            return Category(values, "");
+        }
         public static readonly MapInfo[] Maps = {
             new MapInfo("super-easter-egg", "Super Easter Egg (6 maps)", true, "Super Easter Egg", "Super EE", "SuperEE"),
             new MapInfo("shadows-of-evil", "Shadows of Evil", true, "SOE"),
@@ -117,13 +127,19 @@ namespace LiveSplit.ZombiesTracker
                 : new Detection { Reason = maps[0].Name + " is disabled on this tracker." };
             return null;
         }
-        public static Detection Detect(string game, string category, string fileTitle, IDictionary<string, string> variables, IEnumerable<string> splits, string manualMap, IEnumerable<SplitLink> aliases = null)
+        public static Detection Detect(string game, string category, string fileTitle, IDictionary<string, string> variables, IEnumerable<string> splits, string manualMap, IEnumerable<SplitLink> aliases = null, string manualGame = "")
         {
             // Overrides must never bypass the supported-game boundary.
             var supportedGames = new[] { "bo3", "black ops 3", "black ops iii", "call of duty black ops 3", "call of duty black ops iii" };
             bool mapTitle = Maps.Any(m => m.Enabled && m.Aliases.Any(a => Normalize(a) == Normalize(game)));
-            if (!supportedGames.Contains(Normalize(game)) && !mapTitle)
+            string gameName = Normalize(game);
+            if (gameName.EndsWith(" zombies")) gameName = gameName.Substring(0, gameName.Length - 8);
+            bool otherGame = new[]{"bo2","bo4","black ops ii","black ops 2","black ops iv","black ops 4"}.Any(g => Has(game,g));
+            if (otherGame || (manualGame != "bo3" && !supportedGames.Contains(gameName) && !mapTitle))
                 return new Detection { Reason = "Unsupported game/map - tracking paused. Set Game Name to a supported BO3 map (for example Der Eisendrache), or Call of Duty: Black Ops III with a map label. Other games are not enabled." };
+            foreach (var variable in variables.Where(v => new[]{"speedrun type","run type","objective"}.Contains(Normalize(v.Key))))
+                if (!string.IsNullOrWhiteSpace(variable.Value) && !new[]{"easter egg","easter eggs","main easter egg","ee","super easter egg","super ee"}.Contains(Normalize(variable.Value)))
+                    return new Detection { Reason = "Unsupported speedrun type - only Solo Easter Egg runs are tracked. Check Additional Info." };
             var names = splits.ToArray();
             var primary = new List<string> { game, category, fileTitle };
             foreach (var item in variables)
@@ -132,7 +148,7 @@ namespace LiveSplit.ZombiesTracker
             if (!string.IsNullOrWhiteSpace(manualMap))
             {
                 // Independently identify the split file so a saved override cannot relabel a new map.
-                result = Detect(game, category, fileTitle, variables, names, "", aliases);
+                result = Detect(game, category, fileTitle, variables, names, "", aliases, manualGame);
                 if (!result.Success) return result;
                 if (result.Map != manualMap)
                     return new Detection { Reason = "Unsupported game/map - tracking paused. The selected map does not match the split file. Use automatic detection or correct the map selection." };

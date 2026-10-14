@@ -1,4 +1,4 @@
-import {replyProfile,duration,lastSeen,achievedDate,replyTiming as timingLabel} from './reply-format.js';
+import {replyProfile,duration,lastSeen,achievedDate,runTime,replyTiming as timingLabel} from './reply-format.js';
 import {recordActivity} from './activity.js';
 import {capturePacePB,paceAnswer} from './pace.js';
 import {queueAnnouncements} from './announcements.js';
@@ -162,7 +162,7 @@ export class Store {
             const comparison = ref == null ? 'WR checkpoint comparison unavailable.' : `${precision === 1000 ? '~' : ''}${time(Math.abs(ref - actual))} ${actual < ref ? 'ahead of' : actual > ref ? 'behind' : 'level with'} WR`;
             this.put('outbox', jobId, { id: jobId, attempt: id, player: p.id, subscription: sub.id,
               split, channel: sub.channel, role: sub.role, status: 'pending', tries: 0, nextTry: now, createdAt: now,
-              content: `${p.name} | ${profileLabel(a.profile)}\n${label}: ${time(split.ms)}\n${comparison}${!confirmed && a.benchmark ? '\nBenchmark source: ' + a.benchmark.source : ''}` });
+              content: `${p.name} | ${profileLabel(a.profile)}\n${label}: ${runTime(split.ms,split.igtMs)}\n${comparison}${!confirmed && a.benchmark ? '\nBenchmark source: ' + a.benchmark.source : ''}` });
           }
         }
       }
@@ -288,7 +288,7 @@ export class Store {
       if (q.command === 'current') {
         if (p.status === 'offline') return `${p.name}'s tracker is offline.${p.lastSeen?' Last connected '+lastSeen(p.lastSeen,this.clock())+'.':''}${p.source?.type==='therun'?' No recent therun.gg update; playing status unknown.':''}`;
         if (!a || a.phase === 'NotRunning') return `${p.name} is connected and waiting to start a run.`;
-        return `${p.name} | ${label} | ${a.phase==='Ended'?'Finished':a.phase==='Paused'?'Paused':p.source?.type==='therun'?'Last reported timer':'Running'}: ${time(a.elapsedMs)} ${timingLabel(p.profile)}${last?' | Last split: '+(last.displayName??last.name)+' — '+time(last.ms):''}${a.current&&a.phase!=='Ended'?' | Next: '+a.current:''} | Resets: ${this.sessionStats(p)?.groups.find(g=>g.isCurrentProfile)?.resets??0}${a.practice?' | Practice attempt':''}`;
+        return `${p.name} | ${label} | ${a.phase==='Ended'?'Finished':a.phase==='Paused'?'Paused':p.source?.type==='therun'?'Last reported timer':'Running'}: ${runTime(a.elapsedMs,a.igtMs)}${last?' | Last split: '+(last.displayName??last.name)+' — '+runTime(last.ms,last.igtMs):''}${a.current&&a.phase!=='Ended'?' | Next: '+a.current:''} | Resets: ${this.sessionStats(p)?.groups.find(g=>g.isCurrentProfile)?.resets??0}${a.practice?' | Practice attempt':''}`;
       }
       if (q.command === 'best') {
         check(q.split, 'Specify a split, e.g. !best @player bow session.');
@@ -306,7 +306,7 @@ export class Store {
         return `${p.name} | ${label} | Session bests (split/segment): `+(group?.splits.map(s=>{const b=this.best(p,s.name,'session',selected);return `${b?.displayName??s.name} — ${time(b?.ms)} (${time(b?.bestSegmentMs)})`;}).join(' · ')||'unavailable');
       }
       if(q.command==='splits'&&!matches)return `${p.name} | ${label} | No current run for this map and category. Use !splits ${p.id} ${selected.map} alltime for saved bests.`;
-      if (q.command === 'splits') return `${p.name} | ${label} | Current run: ${a?.splits.length ? a.splits.map(s => (s.displayName??s.name) + ' — ' + time(s.ms)).join(' · ') : 'No checkpoints recorded.'}${a && !a.complete ? ' Partial history.' : ''}`;
+      if (q.command === 'splits') return `${p.name} | ${label} | Current run: ${a?.splits.length ? a.splits.map(s => (s.displayName??s.name) + ' — ' + runTime(s.ms,s.igtMs)).join(' · ') : 'No checkpoints recorded.'}${a && !a.complete ? ' Partial history.' : ''}`;
       if (q.command === 'pace') return paceAnswer(this,p);
       if (q.command === 'session') {
         return this.sessionAnswer(p,false,q.profile?selected:null);
@@ -320,9 +320,9 @@ export class Store {
         if(q.profile)requireEnabledMap(selected.map);
         if(!selected)return `${p.name}: PB unavailable; no run profile selected. Use !pb @${p.id} DE.`;
         const best = this.attempts(p.id).filter(a => a.phase === 'Ended' && a.complete && !a.practice && profileKey(a.profile) === profileKey(selected)).sort((a,b) => a.elapsedMs - b.elapsedMs)[0];
-        const saved=this.savedRecords(p,selected)?.pbMs;
+        const savedRecords=this.savedRecords(p,selected),saved=savedRecords?.pbMs;
         const fromSaved=saved!=null && (!best || saved<=best.elapsedMs);
-        return `${p.name} | ${replyProfile(selected)} | PB: ${fromSaved?time(saved):best?time(best.elapsedMs):'unavailable'} ${timingLabel(selected)}`;
+        return `${p.name} | ${replyProfile(selected)} | PB: ${fromSaved?runTime(saved,savedRecords.pbIgtMs):best?runTime(best.elapsedMs,best.igtMs):'unavailable'}`;
       }
       return 'Unknown command.';
     } catch (error) { if (error.status) return error.message; throw error; }
