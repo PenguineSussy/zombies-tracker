@@ -54,7 +54,7 @@ Replace `map` with a map name such as `DE`, and `split` with a split such as `Ro
 - Live RTA, PB comparisons, best splits/segments, attempts and session resets.
 - No Gums, Classic Gums, Mega Gums and Any%, with map-specific restrictions.
 - Ten individual maps plus the six-map Super Easter Egg.
-- Optional therun.gg input; Twitch and YouTube chat replies and opt-in announcements.
+- Optional therun.gg fallback with automatic LiveSplit addon priority. After 30 seconds without addon updates, fallback waits for a new upstream attempt/reset to avoid duplicate runs. Saved therun.gg settings are preserved. Twitch and YouTube chat replies and opt-in announcements.
 - WR finish records from ZWR and reviewed splits for matching map/category records. Missing splits stay unavailable; `~` marks whole-second estimates.
 
 

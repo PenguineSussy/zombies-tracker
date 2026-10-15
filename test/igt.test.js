@@ -4,6 +4,18 @@ import {Store} from '../src/store.js';
 import {snapshot} from '../src/domain.js';
 import {announcementText} from '../src/announcements.js';
 import {publicActivity} from '../src/activity.js';
+import {createApp} from '../src/server.js';
+
+test('public HTTP runner timer includes the addon IGT with therun fallback configured',async()=>{
+ const app=createApp();
+ try{
+  const {player}=app.store.register('Runner');player.source={type:'therun',username:'Runner'};app.store.savePlayer(player);
+  app.store.ingest(player.id,event({observedAt:Date.now()}));
+  await new Promise(r=>app.server.listen(0,'127.0.0.1',r));
+  const run=await(await fetch(`http://127.0.0.1:${app.server.address().port}/api/players/runner`)).json();
+  assert.equal(run.attempt.igtMs,431000);assert.equal(run.attempt.splits[0].igtMs,420000);
+ }finally{app.stop();app.store.close();}
+});
 
 const profile={map:'der-eisendrache',category:'Mega Gums',players:1,timing:'RealTime'};
 const event=(extra={})=>({attemptId:'igt-attempt-001',sequence:1,profile,phase:'Running',index:1,elapsedMs:512000,igtMs:431000,current:'Crackle',splits:[{index:0,name:'Rocket',ms:500000,igtMs:420000}],...extra});

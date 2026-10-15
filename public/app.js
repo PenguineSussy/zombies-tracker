@@ -118,10 +118,10 @@ async function loadMe(){
   me=await api('/api/me');loginExpiresAt=me.loginExpiresAt;rememberExpiry(loginExpiresAt);expiryNote();$('account-state').textContent=`${me.name} · ${me.public?'Public':'Private'}`;
   renderAddonUpdate(me.addonUpdate);
   $('privacy').textContent=me.public?'Make tracking private':'Make tracking public';
-  $('source-status').textContent=`Source: ${me.source?.type??'direct'}${me.sourceError?' · '+me.sourceError:''}. Session: ${me.sessionStarted?new Date(me.sessionStarted).toLocaleString():'not started'}.`;
+  $('source-status').textContent=`Source: ${me.activeSource??me.source?.type??'direct'}${me.source?.type==='therun'?' (automatic LiveSplit priority; therun.gg fallback)':''}${me.sourceError?' · '+me.sourceError:''}. Session: ${me.sessionStarted?new Date(me.sessionStarted).toLocaleString():'not started'}.`;
 }
 function renderAddonUpdate(update){
-  const box=$('addon-update');box.replaceChildren();box.hidden=!update||me?.source?.type==='therun';if(box.hidden)return;
+  const box=$('addon-update');box.replaceChildren();box.hidden=!update||(me?.activeSource??me?.source?.type)==='therun';if(box.hidden)return;
   box.classList.toggle('important',update.state==='required');
   const title=update.state==='required'?'Important addon update':update.state==='available'?'Addon update available':update.state==='unknown'?'Check your LiveSplit addon version':'LiveSplit addon is up to date';
   box.append(node('strong',title));
@@ -186,7 +186,7 @@ let recoveryAccount='';
 action('recover-form',async()=>{const result=await api('/api/recovery/discord/start',{method:'POST',body:{username:$('recover-name').value.trim()}});location.assign(result.url);},'submit');
 action('recovery-reset',async()=>{const result=await api('/api/recovery/discord/reset',{method:'POST',body:{username:recoveryAccount}});$('recovery-confirm').hidden=true;rememberExpiry(result.expiresAt);revealKey(result.token);await loadMe();showTab('setup');notice('New key created. Save it and update the key in every LiveSplit layout you use.');});
 action('copy-key',async()=>{await navigator.clipboard.writeText($('new-key').textContent);notice('Runner key copied.');});
-action('enable-addon',async()=>{requireLogin();await api('/api/me/source',{method:'POST',body:{type:'direct'}});await loadMe();notice('LiveSplit upload enabled. Paste your runner key into the addon, enable uploads, and Apply. Use only one data source.');});
+action('enable-addon',async()=>{requireLogin();await api('/api/me/source',{method:'POST',body:{type:'direct'}});await loadMe();notice('LiveSplit upload enabled. Paste your runner key into the addon, enable uploads, and Apply. LiveSplit takes priority when connected; a saved therun.gg connection can remain as fallback.');});
 action('connect-therun',async()=>{requireLogin();await api('/api/me/source',{method:'POST',body:{type:'therun',username:$('therun-user').value,game:$('therun-game').value,category:$('therun-category').value,variables:json('therun-variables'),aliases:json('aliases'),profile:profile(),practice:$('practice').checked}});await loadMe();notice('therun.gg source saved. Matching public live updates are checked about every 15 seconds.');});
 for(const mode of ['start','end'])action(mode+'-session',async()=>{requireLogin();await api('/api/me/session',{method:'POST',body:{action:mode}});await loadMe();notice(mode==='start'?'New session started.':'Session ended. Disable addon uploads or disconnect therun.gg to keep it ended.');});
 action('privacy',async()=>{requireLogin();await api('/api/me/privacy',{method:'POST',body:{public:!me.public}});await loadMe();await refresh();notice(me.public?'Public tracking enabled.':'Tracking is private; chat queries and new role alerts are hidden.');});

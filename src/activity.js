@@ -16,7 +16,7 @@ export function recordActivity(store,p,a,previous,old){
  if(old&&old.id!==a.id&&old.resetObserved&&!old.practice&&now-old.observedAt<=30000&&a.phase==='NotRunning'&&a.resetEvent!==false)add('reset',old,{ms:old.elapsedMs,igtMs:old.igtMs});
  if(previous&&['Running','Paused'].includes(previous.phase)&&now-previous.observedAt<=30000){
   const finished=a.phase==='Ended'&&a.complete&&a.splits.at(-1)?.ms===a.elapsedMs;
-  for(const split of a.splits)if(!previous.splits.some(s=>same(s,split))&&!(finished&&split===a.splits.at(-1)))add('split',a,{split,ms:split.ms,igtMs:split.igtMs});
+  for(const split of a.splits)if(!previous.splits.some(s=>same(s,split))&&!(a.handoverSplits??[]).some(s=>s.index===split.index&&s.ms===split.ms)&&!(finished&&split===a.splits.at(-1)))add('split',a,{split,ms:split.ms,igtMs:split.igtMs});
   if(finished){
    const saved=store.get('metadata',`saved-records:${p.id}:${profileKey(a.profile)}`)?.pbMs;
    const times=store.attempts(p.id).filter(h=>h.id!==a.id&&!h.practice&&h.phase==='Ended'&&h.complete&&profileKey(h.profile)===profileKey(a.profile)).map(h=>h.elapsedMs);

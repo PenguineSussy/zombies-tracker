@@ -171,7 +171,7 @@ test('OAuth refresh retries unauthorized calls and preserves rotated refresh tok
     count++;return new Response('{}',{status:options.headers.Authorization==='Bearer new'?200:401});
   });assert.equal((await oauth.request('https://example.org')).status,200);assert.equal(count,2);assert.equal(oauth.refreshToken,'rotated');
 });
-test('HTTP registration, authenticated ingestion, source exclusion, privacy and deletion',async t=>{
+test('HTTP registration, authenticated ingestion, automatic source priority, privacy and deletion',async t=>{
   const app=createApp();await new Promise(r=>app.server.listen(0,'127.0.0.1',r));t.after(()=>{app.stop();app.store.close();});const base=`http://127.0.0.1:${app.server.address().port}`;
   const request=async(path,method='GET',body,token)=>fetch(base+path,{method,headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});
   const registration=await (await request('/api/register','POST',{username:'HTTPPlayer'})).json();const token=registration.token;
@@ -179,7 +179,7 @@ test('HTTP registration, authenticated ingestion, source exclusion, privacy and 
   assert.equal((await request('/api/ingest','POST',event(),token)).status,200);
   assert.equal((await request('/discord/interactions','POST',{type:1})).status,401);
   assert.equal((await request('/api/me/source','POST',{type:'therun',username:'HTTPPlayer',game:'BO3',category:'DE',profile:P},token)).status,200);
-  assert.equal((await request('/api/ingest','POST',event({sequence:2}),token)).status,409);
+  assert.equal((await request('/api/ingest','POST',event({sequence:2}),token)).status,200);
   await request('/api/me/privacy','POST',{public:false},token);assert.deepEqual(await (await request('/api/players')).json(),[]);
   assert.equal((await request('/api/me','DELETE',undefined,token)).status,200);assert.equal((await request('/api/me','GET',undefined,token)).status,401);
 });

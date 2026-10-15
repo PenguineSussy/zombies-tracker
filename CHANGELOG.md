@@ -1,5 +1,11 @@
 # Changes
 
+## 1.0.5
+- Include IGT in the public runner timer response, alongside the existing split IGT.
+- Automatically prioritize fresh LiveSplit uploads while preserving the saved therun.gg fallback.
+- Resume fallback after addon disconnect at a safe run/reset boundary; suppress duplicate history and alerts during handover.
+- Drain stale queued addon snapshots without reclaiming ownership of old attempts.
+
 ## 1.0.4
 - Add user-supplied Mega Gums WR split times: DE Rocket 5:45 and Revelations Beast Enter 6:44.
 - Use split/splits throughout website, bot replies, help and addon settings (addon 1.0.6).

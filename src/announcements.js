@@ -28,6 +28,7 @@ export function queueAnnouncements(store,p,a,previous) {
   const history=store.attempts(p.id).filter(v=>v.id!==a.id&&!v.practice&&profileKey(v.profile)===profileKey(a.profile));
   const events=[];
   for(const s of a.splits) {
+    if(a.handoverSplits?.some(v=>v.index===s.index&&v.ms===s.ms))continue;
     if(previous.splits.some(v=>matching(v,s)))continue;
     const ms=segment(a,s);if(ms==null||ms<=0)continue;
     const prior=saved?.splits.find(v=>v.index===s.index&&v.name===s.name);

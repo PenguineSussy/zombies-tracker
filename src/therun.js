@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { check, clean, key, profile, profileKey, requireEnabledMap } from './domain.js';
+import {directConnected} from './source-routing.js';
 
 export function sourceConfig(input) {
   if (input.type === 'direct') return { type: 'direct' };
@@ -60,12 +61,12 @@ export function startTheRun(store, fetcher = fetch, log = console.log) {
           const current = store.get('players', player.id);
           if (!current || JSON.stringify(current.source) !== JSON.stringify(source)) continue;
           const event = translateRun(run, source, seen.has(player.id) ? current.activeAttempt : null, store.clock());
-          store.ingest(player.id, event); seen.add(player.id);
+          const result=store.ingest(player.id, event,'therun'); if(result.accepted)seen.add(player.id);
           current.sourceError = null;
           const updated = store.get('players', player.id); updated.sourceError = null; store.savePlayer(updated);
         } catch (error) {
           const current = store.get('players', player.id);
-          if (current) { current.sourceError = error.status ? error.message : 'therun.gg connection unavailable.'; store.savePlayer(current); }
+          if (current && JSON.stringify(current.source)===JSON.stringify(source) && !directConnected(current,store.clock())) { current.sourceError = error.status ? error.message : 'therun.gg connection unavailable.'; store.savePlayer(current); }
         }
       }
     } finally { busy = false; if (!stopped) timer = setTimeout(poll, 15000); }

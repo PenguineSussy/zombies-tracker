@@ -10,6 +10,7 @@ import { dirname } from 'node:path';
 import { check, clean, key, snapshot, profile, profileKey, profileLabel, time, parseCommand, requireEnabledMap } from './domain.js';
 import {streamLink} from './streams.js';
 import {wrSplitLookup} from './wr-checkpoints.js';
+import {routeSource,activeSource} from './source-routing.js';
 
 const hash = token => createHash('sha256').update(String(token)).digest('hex');
 const decode = row => row ? JSON.parse(row.body) : null;
@@ -86,19 +87,28 @@ export class Store {
     p.sessionStarted = action === 'start' ? this.clock() : null;
     this.savePlayer(p); return p;
   }
-  attempts(player) { return this.db.prepare('SELECT body FROM attempts WHERE player=?').all(player).map(decode).map(displayAttempt); }
-  ingest(playerId, raw) {
+  attempts(player) { return this.db.prepare('SELECT body FROM attempts WHERE player=?').all(player).map(decode).filter(a=>!a.supersededBy).map(displayAttempt); }
+  ingest(playerId, raw, provider='direct') {
     const s = snapshot(raw);
     return this.transaction(() => {
       const now = this.clock(), p = this.get('players', playerId);
       check(p, 'Unknown runner.', 404);
+      if(provider==='therun'){
+        const routed=routeSource(this,p,s,provider);
+        if(routed.skip)return {accepted:false,reason:routed.skip};
+      }
       const id = `${p.id}:${s.attemptId}`;
       let a = this.get('attempts', id);
       if (!a) requireEnabledMap(s.profile.map);
       if (a && s.sequence <= a.sequence) return { accepted: false, reason: 'duplicate-or-old' };
+      if(a?.closed&&p.source?.type==='therun'&&provider==='direct')return {accepted:false,reason:'closed-source-attempt'};
       if (a) {
         check(profileKey(a.profile) === profileKey(s.profile) && a.practice === s.practice, 'An attempt cannot change category or practice mode.', 409);
         check(p.activeAttempt === id && !a.closed, 'Attempt already closed; start a new attempt.', 409);
+      }
+      if(provider!=='therun'){
+        const routed=routeSource(this,p,s,provider);
+        if(routed.skip)return {accepted:false,reason:routed.skip};
       }
       const window=this.sessionWindow(p);
       if(window?.endedAt!=null&&p.sessionId) {
@@ -120,15 +130,17 @@ export class Store {
       const previousSplits = a?.splits ?? [];
       const baseline = this.list('benchmarks').filter(b => profileKey(b.profile) === profileKey(s.profile)).sort((x,y) => y.createdAt - x.createdAt)[0];
       a = { ...s, id, player: p.id, sessionId: p.sessionId ?? a?.sessionId,
-        startedAt: a?.startedAt ?? now, updatedAt: now,
+        startedAt: a?.startedAt ?? s.handover?.startedAt ?? now, updatedAt: now,
         activityAt: s.phase==='Ended'&&a?.phase==='Ended'?(a.activityAt??a.observedAt??a.updatedAt):Math.min(now,s.observedAt),
         benchmark: a ? a.benchmark : baseline ?? null, pacePb: a ? a.pacePb : s.phase==='Ended'?null:capturePacePB(this,p,s,id), closed: false,
-        notified: a?.notified ?? [] };
+        handoverSplits:a?.handoverSplits??s.handover?.splits??[],
+        notified: a?.notified ?? s.handover?.notified ?? [] };
+      delete a.handover;
       // A reset ends the old attempt above, then reports an empty idle state in a new ID.
       if (a.phase === 'NotRunning') a.complete = false;
       check(s.observedAt <= now + 60000, 'Runner clock is ahead of server time.');
-      p.profile = s.profile; p.activeAttempt = id; p.lastSeen = p.source?.type === 'therun' ? Math.min(now, s.observedAt) : now;
-      if(s.addonVersion && (p.source?.type??'direct')==='direct' && s.observedAt >= (p.addon?.reportedAt??0)) p.addon={version:s.addonVersion,reportedAt:Math.min(now,s.observedAt)};
+      p.profile = s.profile; p.activeAttempt = id; p.lastSeen = provider === 'therun' ? Math.min(now, s.observedAt) : now;
+      if(s.addonVersion && provider==='direct' && s.observedAt >= (p.addon?.reportedAt??0)) p.addon={version:s.addonVersion,reportedAt:Math.min(now,s.observedAt)};
       queueAnnouncements(this,p,a,previousAttempt);
       recordActivity(this,p,a,previousAttempt,old);
       if(s.records && !s.practice) {
@@ -148,6 +160,7 @@ export class Store {
         const resolved = resolveSplits(a.profile, a.splits, { finished: a.phase === 'Ended' && a.complete });
         for (const [i, split] of resolved.entries()) {
           if (previousSplits.some(x => x.index === split.index && x.ms === split.ms)) continue;
+          if(a.handoverSplits.some(x=>x.index===split.index&&x.ms===split.ms))continue;
           const label = split.displayName ?? split.name;
           for (const sub of this.list('subscriptions')) {
             if (!sub.enabled || (sub.player !== '*' && sub.player !== p.id) || profileKey(sub.profile) !== profileKey(a.profile) || (key(splitName(sub.profile,sub.split)) !== split.name && sub.split !== a.splits[i].name)) continue;
@@ -179,7 +192,7 @@ export class Store {
       const saved=this.savedRecords(p)?.splits.find(s=>(s.originalName??s.name).toLowerCase()===a.current.toLowerCase());
       if(saved?.displayName)a.current=saved.displayName;
     }
-    return { ...p, status: !p.lastSeen || this.clock() - p.lastSeen > (p.source?.type === 'therun' ? 120000 : 30000) ? 'offline' : a?.phase ?? 'NotRunning', attempt: a };
+    return { ...p, status: !p.lastSeen || this.clock() - p.lastSeen > (activeSource(p) === 'therun' ? 120000 : 30000) ? 'offline' : a?.phase ?? 'NotRunning', attempt: a };
   }
   best(p, split, scope, selectedProfile = p.profile) {
     if (!selectedProfile) return null;
@@ -286,9 +299,9 @@ export class Store {
       const a = matches?p.attempt:null, label = replyProfile(selected);
       const last = a?.splits.at(-1);
       if (q.command === 'current') {
-        if (p.status === 'offline') return `${p.name}'s tracker is offline.${p.lastSeen?' Last connected '+lastSeen(p.lastSeen,this.clock())+'.':''}${p.source?.type==='therun'?' No recent therun.gg update; playing status unknown.':''}`;
+        if (p.status === 'offline') return `${p.name}'s tracker is offline.${p.lastSeen?' Last connected '+lastSeen(p.lastSeen,this.clock())+'.':''}${activeSource(p)==='therun'?' No recent therun.gg update; playing status unknown.':''}`;
         if (!a || a.phase === 'NotRunning') return `${p.name} is connected and waiting to start a run.`;
-        return `${p.name} | ${label} | ${a.phase==='Ended'?'Finished':a.phase==='Paused'?'Paused':p.source?.type==='therun'?'Last reported timer':'Running'}: ${runTime(a.elapsedMs,a.igtMs)}${last?' | Last split: '+(last.displayName??last.name)+' — '+runTime(last.ms,last.igtMs):''}${a.current&&a.phase!=='Ended'?' | Next: '+a.current:''} | Resets: ${this.sessionStats(p)?.groups.find(g=>g.isCurrentProfile)?.resets??0}${a.practice?' | Practice attempt':''}`;
+        return `${p.name} | ${label} | ${a.phase==='Ended'?'Finished':a.phase==='Paused'?'Paused':activeSource(p)==='therun'?'Last reported timer':'Running'}: ${runTime(a.elapsedMs,a.igtMs)}${last?' | Last split: '+(last.displayName??last.name)+' — '+runTime(last.ms,last.igtMs):''}${a.current&&a.phase!=='Ended'?' | Next: '+a.current:''} | Resets: ${this.sessionStats(p)?.groups.find(g=>g.isCurrentProfile)?.resets??0}${a.practice?' | Practice attempt':''}`;
       }
       if (q.command === 'best') {
         check(q.split, 'Specify a split, e.g. !best @player bow session.');

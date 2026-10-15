@@ -11,6 +11,7 @@ import { Store } from './store.js';
 import { MAPS, ENABLED_MAPS, CATEGORIES, categoriesForMap, check } from './domain.js';
 import { verifyDiscord, discordInteraction, deliverAlerts } from './discord.js';
 import { sourceConfig, startTheRun } from './therun.js';
+import {activeSource} from './source-routing.js';
 import { startTwitch, startYouTube } from './chat.js';
 import { publicStreams } from './streams.js';
 import { startStreamMonitor } from './stream-monitor.js';
@@ -72,13 +73,13 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
       if(req.method==='GET' && path==='/api/addon-release')return send(addonRelease);
       if(req.method==='GET'&&path==='/api/discord/config')return send(discordSite.config());
       if(req.method==='GET' && path==='/api/activity')return send(publicActivity(store));
-      if(req.method==='GET' && path==='/api/players')return send(store.list('players').filter(p=>p.public).slice(0,200).map(p=>runnerArchived(p,store.clock())?{id:p.id,name:p.name,status:'offline',lastSeen:p.lastSeen,archived:true}:({id:p.id,name:p.name,status:store.view(p.id).status,lastSeen:p.lastSeen,archived:false,profile:p.profile,source:p.source?.type??'direct',streams:publicStreams(p,store.clock(),store)})));
+      if(req.method==='GET' && path==='/api/players')return send(store.list('players').filter(p=>p.public).slice(0,200).map(p=>runnerArchived(p,store.clock())?{id:p.id,name:p.name,status:'offline',lastSeen:p.lastSeen,archived:true}:({id:p.id,name:p.name,status:store.view(p.id).status,lastSeen:p.lastSeen,archived:false,profile:p.profile,source:activeSource(p),streams:publicStreams(p,store.clock(),store)})));
       if(req.method==='GET' && path.startsWith('/api/players/')) {
         const v=store.view(decodeURIComponent(path.slice('/api/players/'.length)));
         if(!v.private&&runnerArchived(v,store.clock()))return send({id:v.id,name:v.name,status:'offline',lastSeen:v.lastSeen,archived:true});
         // Do not expose private source configuration, benchmark internals, or alert metadata.
         return send({id:v.id,name:v.name,private:v.private,status:v.status,lastSeen:v.lastSeen,profile:v.profile,session:v.private?null:store.sessionStats(v),streams:publicStreams(v,store.clock(),store),
-          attempt:v.attempt?{attemptCount:v.attempt.attemptCount??null,phase:v.attempt.phase,current:v.attempt.current,stageMap:v.attempt.stageMap,elapsedMs:v.attempt.elapsedMs,splits:v.attempt.splits,complete:v.attempt.complete,practice:v.attempt.practice}:null});
+          attempt:v.attempt?{attemptCount:v.attempt.attemptCount??null,phase:v.attempt.phase,current:v.attempt.current,stageMap:v.attempt.stageMap,elapsedMs:v.attempt.elapsedMs,igtMs:v.attempt.igtMs??null,splits:v.attempt.splits,complete:v.attempt.complete,practice:v.attempt.practice}:null});
       }
       const raw=await body(req);let data={};
       if(raw.length){try{data=JSON.parse(raw);}catch{check(false,'Invalid JSON.');}}
@@ -137,7 +138,7 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
       }
       if(req.method==='GET'&&path==='/api/me')return send({...p,loginExpiresAt,addonUpdate:addonStatus(p)});
       if(req.method==='POST'&&path==='/api/me/streams')return send(store.streams(p,data));
-      if(req.method==='POST'&&path==='/api/ingest'){check(!p.source||p.source.type==='direct','This runner uses therun.gg; switch to direct before sending LiveSplit updates.',409);return send(store.ingest(p.id,data));}
+      if(req.method==='POST'&&path==='/api/ingest')return send(store.ingest(p.id,data));
       if(req.method==='POST'&&path==='/api/me/privacy')return send(store.privacy(p,data.public));
       if(req.method==='POST'&&path==='/api/me/session')return send(store.session(p,data.action));
       if(req.method==='POST'&&path==='/api/me/rotate')return send({token:store.rotate(p)});
@@ -149,7 +150,7 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
         if(JSON.stringify(oldSource)===JSON.stringify(source))return send(p);
         const a=p.activeAttempt&&store.get('attempts',p.activeAttempt);
         if(a){a.closed=true;store.saveAttempt(a);}
-        p.source={...source,connectionId:randomUUID()};p.activeAttempt=null;p.lastSeen=null;p.sourceError=null;store.savePlayer(p);return send(p);
+        p.source={...source,connectionId:randomUUID()};p.activeAttempt=null;p.lastSeen=null;p.sourceError=null;p.activeSource=source.type;delete p.directLastSeen;delete p.sourceRouting;store.savePlayer(p);return send(p);
       }
       check(false,'Not found.',404);
     } catch(error) {if(!res.headersSent)send({error:error.status?error.message:'Internal server error.'},error.status??500);if(!error.status)console.error(error);}
