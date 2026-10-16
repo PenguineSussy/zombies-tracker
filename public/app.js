@@ -3,7 +3,7 @@ import {streamCandidates,distinctSlots,playerUrl} from './watch.js?v=0.3.0';
 const $=id=>document.getElementById(id);
 let token='', me=null, loginExpiresAt=null, catalog, selected=new URLSearchParams(location.search).get('runner');
 const format=ms=>{const s=Math.floor(Math.abs(ms)/1000),h=Math.floor(s/3600);return `${ms<0?'-':''}${h?h+':'+String(Math.floor(s/60)%60).padStart(2,'0'):Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;};
-const runTime=(rta,igt)=>`${format(rta)} RTA${igt==null?'':` (${format(igt)} IGT)`}`;
+const runTime=(primary,igt,p,rta)=>p?.timing==='GameTime'?`${format(primary)} IGT${rta==null?'':` (${format(rta)} RTA)`}`:`${format(primary)} RTA${igt==null?'':` (${format(igt)} IGT)`}`;
 function notice(text,error=false){$('notice').textContent=text;$('notice').classList.toggle('error',error);$('notice').hidden=false;}
 async function api(path,{method='GET',body,key=''}={}){
   const r=await fetch(path,{method,headers:{...(body?{'Content-Type':'application/json'}:{}),...(key?{Authorization:`Bearer ${key}`}:{})},...(body?{body:JSON.stringify(body)}:{})});
@@ -57,17 +57,20 @@ function renderSession(box,s){
     const table=node('table'),head=node('tr');for(const label of ['Split','Average','Fastest','Samples'])head.append(node('th',label));table.append(head);
     for(const s of g.splits){const row=node('tr');for(const v of [s.name,format(s.averageMs),format(s.bestMs),s.count])row.append(node('td',v));table.append(row);}group.append(table);section.append(group);
   }
-  section.append(node('p','Times are cumulative RTA splits, grouped by map and category. Practice and missing splits are excluded from time statistics.','small muted'));
+  section.append(node('p','Times are cumulative splits in the run’s primary timing method, grouped by map and category. Practice and missing splits are excluded from time statistics.','small muted'));
   if(s.unconfirmedEnds)section.append(node('p',`${s.unconfirmedEnds} attempt endings were not observed; they are not counted as confirmed resets.`,'small muted'));
   box.append(section);
 }
-function profile(){return {map:$('map').value,category:$('category').value,players:1,timing:'RealTime'};}
+function profile(){return {map:$('map').value,category:$('category').value,players:1,timing:$('map').value.startsWith('bo2-')?'GameTime':'RealTime'};}
 function updateCategories(preferred=$('category').value){
   const map=$('map').value;
   const allowed=catalog.categoriesByMap?.[map]??(['ascension','shangri-la'].includes(map)?['Any%']:['zetsubou-no-shima','super-easter-egg'].includes(map)?['Classic Gums','Mega Gums','Any%']:['No Gums','Classic Gums','Mega Gums','Any%']);
+  $('category').hidden=allowed.length===1&&allowed[0]==='Standard';$('category').closest('label').hidden=$('category').hidden;
   $('category').replaceChildren(...allowed.map(c=>{const o=node('option',c);o.value=c;return o;}));
   $('category').value=allowed.includes(preferred)?preferred:allowed[0];
 }
+function updateMaps(preferred){const game=$('game').value;$('map').replaceChildren(...catalog.maps.filter(m=>m.game===game).map(m=>{const o=node('option',m.name);o.value=m.id;return o;}));if(preferred&&catalog.maps.some(m=>m.id===preferred&&m.game===game))$('map').value=preferred;updateCategories();}
+$('game').addEventListener('change',()=>updateMaps());
 $('map').addEventListener('change',()=>updateCategories());
 function json(id){try{return JSON.parse($(id).value);}catch{throw new Error(`${id}: enter valid JSON.`);}}
 function requireLogin(){if(!me)throw new Error('Register or sign in with your runner key first.');}
@@ -147,7 +150,7 @@ function renderRunners(){
  
  function card(p){
   const b=node('button',null,'runner');const state=p.archived?'OFFLINE':p.status==='Running'?'RUNNING':p.status==='NotRunning'?'IDLE':p.status.toUpperCase();
-  b.append(node('span',state,'pill'+(p.status==='Running'?' live':'')),node('strong',p.name),node('small',p.archived?'Run history is private':(catalog.allMaps??catalog.maps).find(m=>m.id===p.profile?.map)?.name??'Waiting for first connection'),node('small',p.archived?'':p.profile?.category?'Solo · '+p.profile.category+' · RTA':'No run recorded'));
+  b.append(node('span',state,'pill'+(p.status==='Running'?' live':'')),node('strong',p.name),node('small',p.archived?'Run history is private':(catalog.allMaps??catalog.maps).find(m=>m.id===p.profile?.map)?.name??'Waiting for first connection'),node('small',p.archived?'':p.profile?.category?(p.profile.map.startsWith('bo2-')?'BO2':'BO3')+' · Solo'+(p.profile.category==='Standard'?'':' · '+p.profile.category)+' · '+(p.profile.timing==='GameTime'?'IGT':'RTA'):'No run recorded'));
   const age=p.lastSeen==null?null:Math.max(0,Date.now()-p.lastSeen);
   const ago=age==null?'Never connected':age<60000?'just now':age<3600000?Math.floor(age/60000)+' min ago':age<86400000?Math.floor(age/3600000)+' hr ago':Math.floor(age/86400000)+' days ago';
   const seen=node('small',age==null?ago:'Last seen '+ago,'runner-last-seen');if(p.lastSeen!=null)seen.title=new Date(p.lastSeen).toLocaleString();b.append(seen);
@@ -171,17 +174,17 @@ async function details(id){
   if(p.private){box.append(node('p','This runner is no longer sharing tracking data.','muted'));return;}
   if(p.lastSeen)box.append(node('p','Last seen: '+new Date(p.lastSeen).toLocaleString(),'small muted'));
   box.append(node('p',`${p.status}${p.attempt?.current?' · Current: '+p.attempt.current:''}`,'muted'));
-  if(p.attempt)box.append(node('p',`LiveSplit at last update: ${runTime(p.attempt.elapsedMs,p.attempt.igtMs)}${p.attempt.stageMap?' · '+catalog.maps.find(m=>m.id===p.attempt.stageMap)?.name:''}`,'muted'));
-  box.append(node('p',p.attempt?.attemptCount!=null?`LiveSplit total attempts (loaded splits): ${p.attempt.attemptCount.toLocaleString()}`:'LiveSplit total attempts: unavailable — update to addon 0.2.5.','muted'));
+  if(p.attempt)box.append(node('p',`LiveSplit at last update: ${runTime(p.attempt.elapsedMs,p.attempt.igtMs,p.profile,p.attempt.realTime?.elapsedMs)}${p.attempt.stageMap?' · '+catalog.maps.find(m=>m.id===p.attempt.stageMap)?.name:''}`,'muted'));
+  box.append(node('p',p.attempt?.attemptCount!=null?`LiveSplit total attempts (loaded splits): ${p.attempt.attemptCount.toLocaleString()}`:'LiveSplit total attempts: unavailable — check your LiveSplit addon.','muted'));
   renderSession(box,p.session);
-  if(p.attempt?.splits.length){const table=node('table'),head=node('tr');head.append(node('th','Split'),node('th','Run time'));table.append(head);for(const split of p.attempt.splits){const row=node('tr');row.append(node('td',split.displayName??split.name),node('td',runTime(split.ms,split.igtMs)));table.append(row);}box.append(table);}else box.append(node('p','No splits recorded yet.','muted'));
+  if(p.attempt?.splits.length){const table=node('table'),head=node('tr');head.append(node('th','Split'),node('th','Run time'));table.append(head);for(const split of p.attempt.splits){const row=node('tr');row.append(node('td',split.displayName??split.name),node('td',runTime(split.ms,split.igtMs,p.profile,p.attempt.realTime?.splits.find(s=>s.index===split.index)?.ms)));table.append(row);}box.append(table);}else box.append(node('p','No splits recorded yet.','muted'));
   if(p.attempt?.practice)box.append(node('p','Practice attempt — excluded from records.','small muted'));
   if(p.attempt&&!p.attempt.complete&&p.attempt.phase==='Ended')box.append(node('p','Incomplete run: required splits may be missing.','small muted'));
 }
 action('refresh',refresh);
 action('query-form',async()=>{$('answer').textContent=(await api('/api/query',{method:'POST',body:{command:$('command').value}})).reply;},'submit');
 action('register-form',async()=>{const result=await api('/api/register',{method:'POST',body:{username:$('username').value},key:''});await saveKey(result.token);revealKey(result.token);await loadMe();await refresh();notice('Account created. Save your private runner key, then configure your data source.');},'submit');
-action('login-form',async()=>{const candidate=$('runner-key').value.trim();await api('/api/me',{key:candidate});await saveKey(candidate);await loadMe();if(me.profile)for(const [k,v]of Object.entries(me.profile))if($(k))$(k).value=v;updateCategories(me.profile?.category);fillStreams();notice('Signed in for 30 days on this browser. Keep your runner key for your next sign-in.');},'submit');
+action('login-form',async()=>{const candidate=$('runner-key').value.trim();await api('/api/me',{key:candidate});await saveKey(candidate);await loadMe();if(me.profile){$('game').value=me.profile.map.startsWith('bo2-')?'bo2':'bo3';updateMaps(me.profile.map);}if(me.profile)for(const [k,v]of Object.entries(me.profile))if($(k))$(k).value=v;updateCategories(me.profile?.category);fillStreams();notice('Signed in for 30 days on this browser. Keep your runner key for your next sign-in.');},'submit');
 let recoveryAccount='';
 action('recover-form',async()=>{const result=await api('/api/recovery/discord/start',{method:'POST',body:{username:$('recover-name').value.trim()}});location.assign(result.url);},'submit');
 action('recovery-reset',async()=>{const result=await api('/api/recovery/discord/reset',{method:'POST',body:{username:recoveryAccount}});$('recovery-confirm').hidden=true;rememberExpiry(result.expiresAt);revealKey(result.token);await loadMe();showTab('setup');notice('New key created. Save it and update the key in every LiveSplit layout you use.');});
@@ -194,7 +197,7 @@ action('export',async()=>{requireLogin();download(me.id+'-history.json',await ap
 action('rotate',async()=>{requireLogin();const r=await api('/api/me/rotate',{method:'POST',body:{}});await saveKey(r.token);revealKey(r.token);notice('Key rotated. Old keys no longer work. Update your key in the LiveSplit addon.');});
 action('logout',async()=>{await api('/api/logout',{method:'POST'});clearLogin();notice('Signed out. This browser will ask for your runner key next time.');});
 action('delete',async()=>{requireLogin();if($('delete-name').value.toLowerCase()!==me.id)throw new Error('Type your tracker username to confirm deletion.');await api('/api/me',{method:'DELETE'});$('logout').click();await refresh();notice('Account and recorded history deleted.');});
-async function init(){catalog=await api('/api/catalog');for(const m of catalog.maps){const o=node('option',m.name);o.value=m.id;$('map').append(o);}$('map').value='der-eisendrache';updateCategories();$('server-state').textContent='Tracker online';try{let legacy;try{legacy=sessionStorage.getItem('runnerKey');}catch{}if(legacy)await saveKey(legacy);await loadMe();fillStreams();}catch(error){if(error.status===401){let wasSaved=false;try{wasSaved=!!localStorage.getItem('montyLoginExpires');}catch{}clearLogin();if(wasSaved)notice('Your saved sign-in has expired or is no longer valid. Sign in again with your runner key.',true);}else throw error;}await refresh();}
+async function init(){catalog=await api('/api/catalog');updateMaps('der-eisendrache');$('server-state').textContent='Tracker online';try{let legacy;try{legacy=sessionStorage.getItem('runnerKey');}catch{}if(legacy)await saveKey(legacy);await loadMe();fillStreams();}catch(error){if(error.status===401){let wasSaved=false;try{wasSaved=!!localStorage.getItem('montyLoginExpires');}catch{}clearLogin();if(wasSaved)notice('Your saved sign-in has expired or is no longer valid. Sign in again with your runner key.',true);}else throw error;}await refresh();}
 void init().then(async()=>{await loadChatbot();if(location.hash==='#integrations')showTab('integrations');const q=new URLSearchParams(location.search);if(q.has('recovery')){showTab('setup');history.replaceState(null,'','/#setup');if(q.get('recovery')==='ready'){const result=await api('/api/recovery/discord/status');recoveryAccount=result.name.toLowerCase();$('recovery-account').textContent='Discord verified for '+result.name+'.';$('recovery-confirm').hidden=false;}else notice(q.get('reason')??'Recovery failed. Please verify again.',true);}if(q.has('discord')){notice(q.get('discord')==='connected'?'Discord connected. Choose your server to set up alerts.':q.get('reason')??'Discord connection failed.',q.get('discord')!=='connected');history.replaceState(null,'','/#integrations');}if(q.has('chatbot')){notice(q.get('chatbot')==='connected'?'Channel connected. Enable replies when ready.':q.get('reason')??'Connection failed.',q.get('chatbot')!=='connected');history.replaceState(null,'','/#integrations');}}).catch(e=>notice(e.message,true));
 setInterval(()=>{if(!document.hidden&&catalog){void refresh().catch(()=>{$('server-state').textContent='Connection unavailable';});if(me)void loadMe().catch(()=>{});}},10000);
 

@@ -3,14 +3,18 @@ $ErrorActionPreference = 'Stop'
 & "$PSScriptRoot\build.ps1" -LiveSplitDir $LiveSplitDir
 $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework\v4.0.30319\csc.exe'
 $testDir = Join-Path $PSScriptRoot 'test-bin'
+$testExe = Join-Path $testDir ('Tests-' + [Guid]::NewGuid().ToString('N').Substring(0,8) + '.exe')
 New-Item -ItemType Directory -Force -Path $testDir | Out-Null
+Copy-Item -LiteralPath "$PSScriptRoot\update\update.LiveSplit.ZombiesTracker.xml" -Destination (Join-Path $testDir "release.xml")
 Copy-Item -LiteralPath "$PSScriptRoot\dist\LiveSplit.ZombiesTracker.dll" -Destination $testDir -Force
 # Test dependencies stay in test-bin, never in the distributable archive.
-Get-ChildItem -LiteralPath $LiveSplitDir -Filter '*.dll' | Copy-Item -Destination $testDir -Force
+Get-ChildItem -LiteralPath $LiveSplitDir -Filter '*.dll' | Where-Object { $_.Name -ne 'LiveSplit.ZombiesTracker.dll' } | Copy-Item -Destination $testDir -Force
 $refs = @('LiveSplit.Core.dll','UpdateManager.dll','SpeedrunComSharp.dll') | ForEach-Object { '/r:' + (Join-Path $LiveSplitDir $_) }
 & $compiler /nologo /target:library /define:TESTING /platform:anycpu "/out:$testDir\LiveSplit.ZombiesTracker.dll" /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Web.Extensions.dll /r:System.Net.Http.dll /r:System.Security.dll $refs "$PSScriptRoot\AddonUpdates.cs" "$PSScriptRoot\Detection.cs" "$PSScriptRoot\AutosplitBridge.cs" "$PSScriptRoot\SplitAliases.cs" "$PSScriptRoot\ManualAliases.cs" "$PSScriptRoot\Protocol.cs" "$PSScriptRoot\UploadQueue.cs" "$PSScriptRoot\Component.cs" "$PSScriptRoot\Protection.cs"
 if ($LASTEXITCODE -ne 0) { throw 'Test component compilation failed.' }
-& $compiler /nologo /target:exe /platform:anycpu /r:System.Net.Http.dll /r:System.Web.Extensions.dll "/out:$testDir\Tests.exe" /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Security.dll "/r:$testDir\LiveSplit.ZombiesTracker.dll" $refs "$PSScriptRoot\Tests.cs"
+& $compiler /nologo /target:exe /platform:anycpu /r:System.Net.Http.dll /r:System.Web.Extensions.dll "/out:$testExe" /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Security.dll "/r:$testDir\LiveSplit.ZombiesTracker.dll" $refs "$PSScriptRoot\Tests.cs"
 if ($LASTEXITCODE -ne 0) { throw 'Test compilation failed.' }
-& "$testDir\Tests.exe"
+& "$testExe"
 if ($LASTEXITCODE -ne 0) { throw 'Addon tests failed.' }
+
+Set-Content -LiteralPath (Join-Path $testDir "latest-tests-exe.txt") -Value $testExe

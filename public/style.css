@@ -13,3 +13,5 @@
 :root .addon-update{border:1px solid #a95582;border-radius:10px;padding:14px;margin-bottom:16px;background:#271923}.addon-update.important{border:2px solid #ffb85c}.addon-update p{margin:8px 0}
 
 .alias-guide{margin:1rem 0;padding:1rem;border:1px solid #6b3658;border-radius:12px;background:rgba(233,117,185,.04)}.alias-guide h4{margin:0 0 .6rem}.alias-guide ol{padding-left:1.3rem}.alias-guide li{margin:.45rem 0}.alias-guide p:last-child{margin-bottom:0}
+
+.activity-controls{flex-wrap:wrap}.activity-filters{display:flex;flex-wrap:wrap;gap:10px;padding:0 12px 10px}.activity-filters label{display:flex;align-items:center;gap:7px;font-size:.75rem}.activity-filters select{width:auto;min-width:130px;max-width:100%;padding:4px 8px}

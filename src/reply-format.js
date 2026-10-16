@@ -1,5 +1,5 @@
 import {MAPS,time} from './domain.js';
-export function runTime(rta,igt){return `${time(rta)} RTA${igt==null?'':` (${time(igt)} IGT)`}`;}
+export function runTime(primary,igt,p,realTime){return p?.timing==='GameTime'?`${time(primary)} IGT${realTime==null?'':` (${time(realTime)} RTA)`}`:`${time(primary)} RTA${igt==null?'':` (${time(igt)} IGT)`}`;}
 export function replyProfile(p){
  if(!p)return 'No run selected';
  return (p.map?.startsWith('bo2-')?'BO2 · ':'')+(MAPS.find(m=>m.id===p.map)?.name??p.map)+(p.category&&p.category!=='Standard'?' · '+p.category:'');

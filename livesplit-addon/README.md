@@ -1,104 +1,25 @@
-# Dr Monty Bot — LiveSplit addon 1.0.6
+# Dr Monty Bot — LiveSplit addon 1.0.7
 
-Tracks Black Ops III Solo Easter Egg runs in RTA, with optional LiveSplit IGT displayed alongside it. No separate companion or terminal is needed.
+Tracks Solo Easter Egg runs in BO2 and BO3. BO2 uses LiveSplit Game Time (IGT) as the primary timer and shows Real Time (RTA) alongside it when available. BO3 keeps RTA primary with optional IGT.
 
 ## Install or update
 
-1. Save your splits and layout, then close LiveSplit.
-2. Extract the ZIP and copy `LiveSplit.ZombiesTracker.dll` into LiveSplit's `Components` folder.
-3. Reopen LiveSplit. Choose **Edit Layout → + → Other → Zombies Tracker**. Add it only once. When updating, keep your existing component.
-4. On https://doctormonty.beer, open **LiveSplit**, register or sign in, and enable the LiveSplit addon source.
-5. Open the component's settings. Enter the server URL and your private runner key, enable upload, and save your layout.
-6. Check the detected map/category before starting. Use Practice for test runs.
+Save your layout and close LiveSplit. Copy LiveSplit.ZombiesTracker.dll into Components, reopen LiveSplit, and add Other → Zombies Tracker once in Edit Layout. Enter https://doctormonty.beer and your private runner key, enable upload, Apply and save the layout. Existing split aliases are preserved. Update only after your run.
 
-Your key is encrypted for your Windows account. Do not share configured layouts or keys. Install the latest addon manually while LiveSplit is closed to enable future updates.
+## Game and category detection
 
-## Updates
+Use Black Ops II Zombies or Black Ops III Zombies as Game Name, or select the matching game in the component Game selector. Call of Duty and numeric/Roman-numeral variants are supported, including BOII Zombies. Identify the map in Additional Info, Category Name or the split-file name. Explicit game conflicts are rejected; BO2 Origins and BO3 Origins remain separate. Supported BO2 maps are TranZit, Die Rise, Buried, Mob of the Dead and Origins. Nuketown and co-op are excluded.
 
-Install the latest addon manually: save your layout and splits, close LiveSplit, and replace only `Components/LiveSplit.ZombiesTracker.dll`. Keep your existing layout and component settings.
+For TranZit, Die Rise and Buried, identify Bank/No Bank and Richtofen/Maxis (for example TranZit - No Bank Richtofen - Solo). Conflicting bank/side metadata is rejected. Mob and BO2 Origins use Standard. BO3 uses No Gums, Classic Gums, Mega Gums or Any%; Zetsubou/Super exclude No Gums, and Ascension/Shangri-La use Any%. Additional Info map, category and Easter Egg speedrun-type metadata is read.
 
-From 1.0.1 onward, LiveSplit can show its standard **New updates are available** prompt when it checks for component updates. Choose Yes to let LiveSplit install the new DLL and restart. Choose No to keep the current version. Save your layout and splits before accepting an update. The update replaces only the tracker DLL; saved aliases, runner settings and layouts stay in place.
+BO2 requires initialized IGT. Missing Game Time pauses capture rather than substituting RTA. Split capture, records, undo and reset read LiveSplit directly; the addon never renames your segments or changes comparisons. No separate companion is required. Native T6 settings masks are not inspected: recognizable names or explicit per-map aliases identify custom splits.
 
-The tracker also checks the configured server at startup and every six hours, showing release information in its settings. That background check does not install anything or open its own popup. Failed checks do not stop tracking. If LiveSplit cannot update automatically, use the website ZIP while LiveSplit is closed.
+## Split names and aliases
 
-Uploads include the addon version, so the signed-in website can highlight available or important updates.
+BO2 uses Fly 1–3 and End. Flight/Plane and legacy final names (such as Freedom or Headphones) remain aliases. Custom names can be mapped in the component Split aliases tab. Choose the correct map, map the exact LiveSplit name to a tracker split, finish or reset, Apply and save the layout. Saved aliases take priority over automatic hints. Super Easter Egg remains BO3-only and requires all six core maps with Revelations last; use map-prefixed aliases and Map - Complete markers.
 
-## Map and category detection
+## Tracking and updates
 
-Use clear split-file metadata, for example:
+Bot results, statistics and live activity ignore runs/splits below 5.000 seconds of the primary timer. Resets count once the run reaches five seconds. Raw snapshots remain available internally for reconnect and undo integrity. LiveSplit uploads have priority; optional therun.gg fallback waits for a safe new-run/reset boundary. Never share your runner key or configured layouts. The key and persistent queue use Windows encryption.
 
-- Game: `Call of Duty: Black Ops III`
-- Category: `Der Eisendrache - Mega Gums - Solo`
-
-Detection reads map/category metadata, run labels, saved filename and recognizable split names. It does not inspect game memory. Game Name may be the supported map itself (for example `Der Eisendrache`, `Origins`, or `DE`), or the BO3 game name with map information elsewhere. A map-only title is treated as BO3 in this BO3-only release. Black Ops III Zombies is also recognized. The tracker Game selector offers Automatic detection or Black Ops III Zombies; select BO3 to use a blank or custom game title. Explicit BO2/BO4 titles remain blocked. A map override must match the detected map; it cannot enable an unknown or disabled map. If detection is unclear, correct the Game Name and Category Name in Edit Splits. Category Name and Additional Info gum/category fields are used for gum detection; conflicts pause tracking. Explicit Speedrun Type, Run Type or Objective metadata must identify an Easter Egg run. A blank Category Name defaults to Mega Gums, or Any% on Ascension and Shangri-La. A nonempty unrecognized or conflicting category pauses uploads. Category overrides remain available.
-
-Categories: **No Gums, Classic Gums, Mega Gums, Any%**. Zetsubou No Shima and Super Easter Egg exclude No Gums. Ascension and Shangri-La allow only Any%. Multiplayer labels block uploads.
-
-The addon preserves your LiveSplit split names and comparisons; no alias editor is required. Version 0.2.9 reads the compatible BO3 ASL component’s public `split_names` dictionary and checked settings without running or editing the script. It uploads split hints only when the enabled count and recognized name anchors agree with the run layout. Missing/extra splits, conflicting maps, or multiple ASL components disable those hints. The server applies the shared LittleMontyBot names and conservative timing rules to live and saved records. Ambiguous names stay unchanged; Moon and Origins never use timing-only guesses. Removed Fire Dupe and Lightning/Fire milestones are not mapped; ZNS uses Rainbow Round End, separate from KT4. Names must be unique, 1–80 characters and contain no `<`, `>` or `@`. Reset before changing run details.
-
-## What it tracks
-
-- Live RTA and optional IGT, splits, starts, finishes, pauses, undo and resets. IGT is read from initialized LiveSplit Game Time and never estimated.
-- Website timers, split tables, activity and Discord alerts display both when available, e.g. 8:32 RTA (7:11 IGT). RTA remains the basis for records, pace and alert thresholds.
-- Loaded split-file attempt count, separately from tracked session resets.
-- RTA Personal Best and its split times, saved best cumulative splits and best segments.
-
-Comparisons are read independently of the selected display comparison. The addon does not change your comparisons or split layout. Deleted history cannot be recovered. Saved PBs are runner-provided records, not verified leaderboard submissions.
-
-## Super Easter Egg
-
-Use one continuous timer with all six maps; Revelations must be last. Keep each map's splits together. Prefix splits with their map and finish each map with a completion marker:
-
-1. `SOE - Complete`
-2. `The Giant - Complete`
-3. `DE - Complete`
-4. `ZNS - Complete`
-5. `GK - Complete`
-6. `Revelations - Complete`
-
-Do not reset between maps. All times are cumulative LiveSplit RTA. The website can lag briefly behind LiveSplit while updates arrive.
-
-## Connection help
-
-Use only one upload source per runner. Events queue securely during brief outages and retry in order. Restarting LiveSplit does not preserve attempt continuity.
-
-- **401/403:** check your runner key.
-- **409:** check the selected website source and stop duplicate uploaders.
-- **400:** check map/category, split names and your Windows clock.
-- **Unsupported game/map:** tracking is paused. Use a supported BO3 split file and correct its game/map labels. The website will go offline after its connection timeout; previous history is retained.
-- **No category:** use clear category metadata or select a category override.
-- **Queue/storage error:** restore connectivity or disk access. Review pending uploads before discarding them; discarding permanently removes unsent events and is allowed only while reset.
-
-## Source and building
-
-All addon source is in `source/` in this download and `livesplit-addon/` in the repository. On Windows, with LiveSplit installed:
-
-```powershell
-.\build.ps1 -LiveSplitDir 'C:\livesplit'
-```
-
-The build uses the installed .NET Framework compiler and LiveSplit's own assemblies. The result is `dist/LiveSplit.ZombiesTracker.dll`. LiveSplit assemblies are not redistributed.
-
-Run `test.ps1` for native tests. The HTTP integration test requires the full bot repository; see its `DEVELOPMENT.md`. Never install the test-only DLL from `test-bin`: the release DLL uses Windows DPAPI for key protection.
-
-## Split aliases
-
-In Edit Layout → Zombies Tracker, select a map under Split aliases. Enter your exact LiveSplit split name and select the matching tracker split. Finish or reset the run, Apply settings, then save your layout. Delete a mapping row to restore automatic matching. Mappings stay separate for each map and never rename your LiveSplit splits.
-
-For Super Easter Egg, select that entry and choose map-prefixed splits. Each of the six map blocks must end with its Map - Complete split; Revelations must be last. All times stay cumulative.
-
-Saved aliases take priority, then compatible autosplitter hints, then rules-based matching. Unrecognized splits receive alias-setup guidance only after those methods fail.
-
-
-## Version 1.0.2
-
-- Cancels uploads without waiting for HTTP during shutdown or layout changes.
-- Releases inactive layout ownership and supports returning to a saved layout.
-- Starts fresh tracking when another split file is loaded.
-- Remembers the alias editor map separately in each saved layout. Select the map, then save your layout.
-
-Validated with 126 native assertions and 136 integration assertions, including delayed uploads and layout handoff. Saved aliases and runner settings are preserved.
-
-## Version 1.0.3
-
-Tracking starts even without rendering callbacks. Inactive layout copies remain idle. A waiting status appears before activation. Saved keys and aliases are preserved.
+Update notices use the official server and repository manifest. The distributable includes only the tracker component; LiveSplit supplies its own dependencies. Real T6 gameplay checks are scheduled after this release.

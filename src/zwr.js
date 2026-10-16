@@ -2,9 +2,10 @@ import {ENABLED_MAPS,categoriesForMap,profileKey,milliseconds} from './domain.js
 import {readFileSync} from 'node:fs';
 
 export function zwrUrl(map) {
+  if(map.startsWith('bo2-'))return `https://zwr.gg/leaderboards/bo2/ee-speedrun/${map.slice(4)}/`;
   return map==='super-easter-egg'?'https://zwr.gg/leaderboards/bo3/Super-ee-speedrun/bo3-super-ee/':`https://zwr.gg/leaderboards/bo3/ee-speedrun/${map}/`;
 }
-const categories={'Mega Gums':'all-gobblegum','Classic Gums':'classic-gobblegum','No Gums':'no-gobblegum','Any%':'any-gobblegum'};
+const categories={'Mega Gums':'all-gobblegum','Classic Gums':'classic-gobblegum','No Gums':'no-gobblegum','Any%':'any-gobblegum','Bank Richtofen':'richtofen','No Bank Richtofen':'richtofen-nobank','Bank Maxis':'maxis','No Bank Maxis':'maxis-nobank'};
 const text=s=>s.replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&#39;|&apos;/g,"'").replace(/&quot;/g,'"').replace(/&#(\d+);/g,(_,n)=>String.fromCodePoint(Number(n))).trim();
 function recordDate(value) {
   const match=String(value??'').match(/^(\d{1,2})(?:st|nd|rd|th)?,?\s+([A-Za-z]+)\s+(\d{4})$/);
@@ -20,7 +21,7 @@ export function parseZwr(html,map,checkedAt=Date.now()) {
   const records=[];
   for(const category of categoriesForMap(map)) {
     const gum=map==='super-easter-egg'&&category==='Any%'?'any-gums':categories[category];
-    const board=map==='super-easter-egg'?`bo3-bo3-super-ee-Super-ee-speedrun-${gum}-1-board`:`bo3-${map}-ee-speedrun-${gum}-1-board`;
+    const board=map.startsWith('bo2-')?`bo2-${map.slice(4)}-ee-speedrun${category==='Standard'?'-ALL':'-'+gum}-1-board`:map==='super-easter-egg'?`bo3-bo3-super-ee-Super-ee-speedrun-${gum}-1-board`:`bo3-${map}-ee-speedrun-${gum}-1-board`;
     const start=html.indexOf(`data-json="${board}"`);
     if(start<0)continue;
     const rest=html.slice(start);const end=rest.slice(1).search(/<div class="Board\b|<div class="SubBoard\b/);
@@ -39,7 +40,7 @@ export function parseZwr(html,map,checkedAt=Date.now()) {
       details=json&&JSON.parse(json[2])['1']?.find(r=>Number(r.players)===1&&r.player1?.name===holder&&milliseconds(r.achieved)===ms);
     } catch { /* Missing or malformed metadata must not create a date. */ }
     const achievedDate=recordDate(details?.added);
-    const profile={map,category,players:1,timing:'RealTime'};
+    const profile={map,category,players:1,timing:map.startsWith('bo2-')?'GameTime':'RealTime'};
     records.push({id:`zwr:${profileKey(profile)}`,kind:'zwr',profile,ms,holder,source:zwrUrl(map),checkedAt,achievedDate,dateSource:achievedDate?'zwr-added':null,recordId:details?.id??null});
   }
   return records;

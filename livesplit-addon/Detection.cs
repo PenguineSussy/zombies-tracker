@@ -26,8 +26,20 @@ namespace LiveSplit.ZombiesTracker
     public static class Detector
     {
         public static readonly string[] Categories = { "No Gums", "Classic Gums", "Mega Gums", "Any%" };
+        public static bool IsBo2(string map) { return map != null && map.StartsWith("bo2-"); }
+        public static readonly string[] Bo2Categories = { "No Bank Richtofen", "No Bank Maxis", "Bank Richtofen", "Bank Maxis" };
+        public static string Bo2Category(IEnumerable<string> texts, string manual, string map) {
+            if(map=="bo2-origins" || map=="bo2-mob-of-the-dead") return string.IsNullOrEmpty(manual)||manual=="Standard" ? "Standard" : null;
+            if(!string.IsNullOrEmpty(manual)) return Bo2Categories.Contains(manual)?manual:null;
+            var values=texts.ToArray(); var all=string.Join(" ",values); bool no=Has(all,"no bank"), bank=Has(all,"bank");
+            if(no && values.Any(t=>Has(Regex.Replace(Normalize(t),@"\bno bank\b",""),"bank"))) return null;
+            bool richtofen=Has(all,"richtofen"),maxis=Has(all,"maxis");
+            if(!bank || richtofen==maxis) return null;
+            return (no?"No Bank ":"Bank ")+(richtofen?"Richtofen":"Maxis");
+        }
         public static string[] CategoriesForMap(string map)
         {
+            if(IsBo2(map)) return map=="bo2-origins"||map=="bo2-mob-of-the-dead"?new[]{"Standard"}:Bo2Categories;
             if (map == "ascension" || map == "shangri-la") return new[]{"Any%"};
             return map == "zetsubou-no-shima" || map == "super-easter-egg" ? Categories.Where(c => c != "No Gums").ToArray() : Categories;
         }
@@ -61,6 +73,11 @@ namespace LiveSplit.ZombiesTracker
             return Category(values, "");
         }
         public static readonly MapInfo[] Maps = {
+            new MapInfo("bo2-tranzit", "BO2 - TranZit", true, "TranZit"),
+            new MapInfo("bo2-die-rise", "BO2 - Die Rise", true, "Die Rise"),
+            new MapInfo("bo2-buried", "BO2 - Buried", true, "Buried"),
+            new MapInfo("bo2-mob-of-the-dead", "BO2 - Mob of the Dead", true, "Mob of the Dead", "MOTD"),
+            new MapInfo("bo2-origins", "BO2 - Origins", true, "Origins"),
             new MapInfo("super-easter-egg", "Super Easter Egg (6 maps)", true, "Super Easter Egg", "Super EE", "SuperEE"),
             new MapInfo("shadows-of-evil", "Shadows of Evil", true, "SOE"),
             new MapInfo("the-giant", "The Giant", true),
@@ -86,9 +103,9 @@ namespace LiveSplit.ZombiesTracker
             return Regex.Replace(b.ToString(), @"\s+", " ").Trim();
         }
         static bool Has(string text, string phrase) { return (" " + Normalize(text) + " ").Contains(" " + Normalize(phrase) + " "); }
-        static List<MapInfo> Matches(IEnumerable<string> texts, bool shortNames)
+        static List<MapInfo> Matches(IEnumerable<string> texts, bool shortNames, bool bo2)
         {
-            return Maps.Where(m => m.Aliases.Any(a => (shortNames || Normalize(a).Length > 3) && texts.Any(t => Has(t, a)))).ToList();
+            return Maps.Where(m => IsBo2(m.Id)==bo2 && m.Aliases.Any(a => (shortNames || Normalize(a).Length > 3) && texts.Any(t => Has(t, a)))).ToList();
         }
         static readonly string[] CoreIds = { "shadows-of-evil", "the-giant", "der-eisendrache", "zetsubou-no-shima", "gorod-krovi", "revelations" };
         public static string Stage(string name, bool completion)
@@ -130,13 +147,19 @@ namespace LiveSplit.ZombiesTracker
         public static Detection Detect(string game, string category, string fileTitle, IDictionary<string, string> variables, IEnumerable<string> splits, string manualMap, IEnumerable<SplitLink> aliases = null, string manualGame = "")
         {
             // Overrides must never bypass the supported-game boundary.
-            var supportedGames = new[] { "bo3", "black ops 3", "black ops iii", "call of duty black ops 3", "call of duty black ops iii" };
-            bool mapTitle = Maps.Any(m => m.Enabled && m.Aliases.Any(a => Normalize(a) == Normalize(game)));
+            var supportedGames = new[] { "bo3", "boiii", "black ops 3", "black ops iii", "call of duty black ops 3", "call of duty black ops iii" };
+            bool mapTitle = false;
             string gameName = Normalize(game);
             if (gameName.EndsWith(" zombies")) gameName = gameName.Substring(0, gameName.Length - 8);
-            bool otherGame = new[]{"bo2","bo4","black ops ii","black ops 2","black ops iv","black ops 4"}.Any(g => Has(game,g));
-            if (otherGame || (manualGame != "bo3" && !supportedGames.Contains(gameName) && !mapTitle))
-                return new Detection { Reason = "Unsupported game/map - tracking paused. Set Game Name to a supported BO3 map (for example Der Eisendrache), or Call of Duty: Black Ops III with a map label. Other games are not enabled." };
+            bool namedBo2 = new[]{"bo2","boii","black ops 2","black ops ii","call of duty black ops 2","call of duty black ops ii"}.Contains(gameName);
+            bool namedBo3 = supportedGames.Contains(gameName);
+            bool bo2MapTitle=Maps.Any(m=>m.Enabled && IsBo2(m.Id) && m.Aliases.Any(a=>Normalize(a)==Normalize(game)));
+            bool bo3MapTitle=Maps.Any(m=>m.Enabled && !IsBo2(m.Id) && m.Aliases.Any(a=>Normalize(a)==Normalize(game)));
+            bool bo2 = manualGame=="bo2" || namedBo2 || (manualGame!="bo3" && bo2MapTitle && !bo3MapTitle);
+            mapTitle=bo2?bo2MapTitle:bo3MapTitle;
+            bool otherGame = new[]{"bo4","black ops iv","black ops 4"}.Any(g => Has(game,g)) || (manualGame=="bo3" && namedBo2) || (manualGame=="bo2" && (namedBo3 || (bo3MapTitle && !bo2MapTitle)));
+            if (otherGame || (manualGame != "bo3" && manualGame != "bo2" && !namedBo2 && !namedBo3 && !mapTitle))
+                return new Detection { Reason = "Unsupported game/map - tracking paused. Set Game Name to a supported BO3 map (for example Der Eisendrache), or Call of Duty: Black Ops III with a map label. For BO2 choose Black Ops II Zombies and include the map in Category Name." };
             foreach (var variable in variables.Where(v => new[]{"speedrun type","run type","objective"}.Contains(Normalize(v.Key))))
                 if (!string.IsNullOrWhiteSpace(variable.Value) && !new[]{"easter egg","easter eggs","main easter egg","ee","super easter egg","super ee"}.Contains(Normalize(variable.Value)))
                     return new Detection { Reason = "Unsupported speedrun type - only Solo Easter Egg runs are tracked. Check Additional Info." };
@@ -155,10 +178,10 @@ namespace LiveSplit.ZombiesTracker
             }
             else
             {
-                bool super = primary.Any(t => Has(t, "Super Easter Egg") || Has(t, "Super EE") || Has(t, "SuperEE"));
-                result = super ? new Detection { Map = "super-easter-egg", Reason = "Super Easter Egg (6 maps) detected from run labels" } : Resolve(Matches(primary, true), "game/category, map variable, or split-file name");
-                if (result == null) result = Resolve(Matches(names, false), "split names");
-                if (result == null)
+                bool super = !bo2 && primary.Any(t => Has(t, "Super Easter Egg") || Has(t, "Super EE") || Has(t, "SuperEE"));
+                result = super ? new Detection { Map = "super-easter-egg", Reason = "Super Easter Egg (6 maps) detected from run labels" } : Resolve(Matches(primary, true, bo2), "game/category, map variable, or split-file name");
+                if (result == null) result = Resolve(Matches(names, false, bo2), "split names");
+                if (result == null && !bo2)
                 {
                     // Require two separate distinctive milestones. Generic Bow, Power and Boss are never sufficient.
                     var signatures = new Dictionary<string, string[][]> {

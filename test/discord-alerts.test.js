@@ -25,7 +25,7 @@ test('missing WR split times explain why without inventing a comparison',t=>{
  const {store,player}=fixture(t),r=WR_CHECKPOINTS.find(r=>profileKey(r.profile)===profileKey(P));
  store.put('metadata',`zwr:${profileKey(P)}`,{recordId:r.recordId,holder:r.holder,ms:r.listedMs});
  store.subscribe({guild:'123456',channel:'234567',player:'*',profile:P,split:'Custom milestone',mode:'milestone'});
- store.ingest(player.id,event({elapsedMs:1000,splits:[{index:0,name:'Custom milestone',ms:1000}]}));
+ store.ingest(player.id,event({elapsedMs:5000,splits:[{index:0,name:'Custom milestone',ms:5000}]}));
  assert.match(store.list('outbox')[0].content,/WR Split unavailable: no reviewed WR time for this split/);
 });
 test('existing Exit alert rules still match custom Revelations Beast Exit splits',t=>{

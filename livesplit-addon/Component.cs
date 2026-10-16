@@ -14,7 +14,7 @@ using LiveSplit.Model;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;
 
-[assembly: AssemblyVersion("1.0.6.0")]
+[assembly: AssemblyVersion("1.0.7.0")]
 [assembly: ComponentFactory(typeof(LiveSplit.ZombiesTracker.Factory))]
 
 namespace LiveSplit.ZombiesTracker
@@ -22,7 +22,7 @@ namespace LiveSplit.ZombiesTracker
     public sealed class Factory : IComponentFactory
     {
         public string ComponentName { get { return "Zombies Tracker"; } }
-        public string Description { get { return "Solo BO3 Easter Egg tracking with automatic map/category detection."; } }
+        public string Description { get { return "Solo BO2/BO3 Easter Egg tracking with automatic map/category detection."; } }
         public ComponentCategory Category { get { return ComponentCategory.Other; } }
         public IComponent Create(LiveSplitState state) { return new TrackerComponent(state); }
         public string UpdateName { get { return ComponentName; } }
@@ -122,14 +122,14 @@ namespace LiveSplit.ZombiesTracker
                 var variables = Variables();
                 string title = Path.GetFileNameWithoutExtension(state.Run.FilePath ?? "");
                 var detected = Detector.Detect(state.Run.GameName, state.Run.CategoryName, title, variables, state.Run.Select(s => s.Name), options.Map, options.Aliases, options.Game);
-                var category = Detector.MetadataCategory(state.Run.CategoryName, variables, options.Category, detected.Map);
-                panel.DetectionText = detected.Reason + "\r\n" + (category == null ? "Gum category unknown or conflicting; choose a category override." : category + " / Solo / Easter Egg / RTA");
+                var category = Detector.IsBo2(detected.Map) ? Detector.Bo2Category(new[]{state.Run.CategoryName, title}.Concat(variables.Where(v=>Detector.Normalize(v.Key).Contains("category")||Detector.Normalize(v.Key).Contains("bank")||Detector.Normalize(v.Key).Contains("side")).Select(v=>v.Value)), options.Category, detected.Map) : Detector.MetadataCategory(state.Run.CategoryName, variables, options.Category, detected.Map);
+                panel.DetectionText = detected.Reason + "\r\n" + (category == null ? "Gum category unknown or conflicting; choose a category override." : category + " / Solo / Easter Egg / " + (Detector.IsBo2(detected.Map)?"IGT + RTA":"RTA"));
                 if (!options.Enabled || uploader == null) { panel.StatusText = "Not uploading. Configure settings, then enable and Apply."; return; }
                 if (detected.NonSolo) throw new InvalidOperationException("Multiplayer detected. Only Solo runs are supported; no upload sent.");
                 if (!detected.Success || category == null) { panel.StatusText = !detected.Success ? "Unsupported game/map - tracking paused." : "Not uploading: resolve category above."; suppressNext = true; return; }
                 if (!Detector.CategoriesForMap(detected.Map).Contains(category)) { panel.StatusText = "Not uploading: this map allows only " + string.Join(", ", Detector.CategoriesForMap(detected.Map)) + "."; return; }
                 string phase = state.CurrentPhase.ToString();
-                var profile = new RunProfile { map = detected.Map, category = category, players = 1, timing = "RealTime" };
+                var profile = new RunProfile { map = detected.Map, category = category, players = 1, timing = Detector.IsBo2(detected.Map)?"GameTime":"RealTime", game = Detector.IsBo2(detected.Map)?"bo2":"bo3" };
                 string bridgeStatus;
                 var autosplitNames = AutosplitBridge.Read(state, detected.Map, out bridgeStatus);
                 var linkedNames = ManualAliases.Resolve(options.Aliases, detected.Map, state.Run.Select(s => s.Name).ToArray(), autosplitNames);
@@ -144,7 +144,8 @@ namespace LiveSplit.ZombiesTracker
                 var snapshot = Protocol.Capture(state, profile, id, sequence + 1, options.Practice, suppressNext || first);
                 if (!options.Practice && (first || fresh || ((idle || state.CurrentPhase == TimerPhase.Ended) && (transition || (DateTime.UtcNow - lastRecords).TotalSeconds >= 60))))
                 {
-                    snapshot.records = Protocol.ReadRecords(state.Run);
+                    snapshot.records = Protocol.ReadRecords(state.Run, profile.timing=="GameTime"?TimingMethod.GameTime:TimingMethod.RealTime);
+                    if(snapshot.realTime!=null) snapshot.realTime.records=Protocol.ReadRecords(state.Run,TimingMethod.RealTime);
                     lastRecords = DateTime.UtcNow;
                 }
                 snapshot.autosplitNames = autosplitNames;
@@ -225,7 +226,7 @@ namespace LiveSplit.ZombiesTracker
         {
             Func<string,string,string> read = (key, fallback) => root[key] == null ? fallback : root[key].InnerText;
             var value = new AddonOptions { Enabled = read("Enabled", "False") == "True", Server = read("Server", "https://doctormonty.beer"),
-                Game = read("Game", "") == "bo3" ? "bo3" : "", Map = read("Map", ""), Category = read("Category", ""), Practice = read("Practice", "False") == "True" };
+                Game = new[]{"bo3","bo2"}.Contains(read("Game", "")) ? read("Game", "") : "", Map = read("Map", ""), Category = read("Category", ""), Practice = read("Practice", "False") == "True" };
             try
             {
                 value.Aliases = ManualAliases.Validate(json.Deserialize<List<SplitLink>>(read("SplitAliases", "[]")));
@@ -306,16 +307,16 @@ namespace LiveSplit.ZombiesTracker
             var table = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1, Padding = new Padding(10) };
             Controls.Add(table);
             Action<Control> add = control => { control.Margin = new Padding(3, 4, 3, 4); control.Width = 450; table.Controls.Add(control); };
-            add(new Label { Text = "Solo BO3 Easter Egg Speedruns / RTA", AutoSize = true });
+            add(new Label { Text = "BO2 / BO3 Solo Easter Egg - IGT / RTA", AutoSize = true });
             add(updateStatus);
             var updateLink = new LinkLabel { Text = "Download latest addon (close LiveSplit before installing)", AutoSize = true };
             updateLink.LinkClicked += delegate { Try(delegate { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(AddonUpdates.DownloadUrl) { UseShellExecute = true }); }); };
             add(updateLink);
             add(enabled); add(new Label { Text = "Tracker server", AutoSize = true }); add(server);
             add(new Label { Text = "Private runner key (encrypted for this Windows account)", AutoSize = true }); add(token);
-            add(new Label { Text = "Game", AutoSize = true }); game.Items.AddRange(new[]{"Automatic detection", "Black Ops III Zombies"}); game.SelectedIndex = 0; add(game);
+            add(new Label { Text = "Game", AutoSize = true }); game.Items.AddRange(new[]{"Automatic detection", "Black Ops III Zombies", "Black Ops II Zombies"}); game.SelectedIndex = 0; add(game);
             add(new Label { Text = "Map", AutoSize = true }); map.Items.Add("Automatic detection"); foreach (var m in Detector.Maps.Where(m => m.Enabled)) map.Items.Add(m); map.SelectedIndex = 0; add(map);
-            add(new Label { Text = "Gum category", AutoSize = true }); category.Items.Add("Automatic detection"); category.Items.AddRange(Detector.Categories); category.SelectedIndex = 0; add(category);
+            add(new Label { Text = "Category", AutoSize = true }); category.Items.Add("Automatic detection"); category.Items.AddRange(Detector.Categories.Concat(Detector.Bo2Categories).ToArray()); category.SelectedIndex = 0; add(category);
             map.SelectedIndexChanged += delegate { RefreshCategories(); };
             add(practice);
             add(aliasEditor);
@@ -348,20 +349,20 @@ namespace LiveSplit.ZombiesTracker
             string previous = category.SelectedItem as string;
             string selectedMap = map.SelectedItem is MapInfo ? ((MapInfo)map.SelectedItem).Id : "";
             category.Items.Clear(); category.Items.Add("Automatic detection");
-            category.Items.AddRange(Detector.CategoriesForMap(selectedMap));
+            category.Items.AddRange(string.IsNullOrEmpty(selectedMap)?Detector.Categories.Concat(Detector.Bo2Categories).ToArray():Detector.CategoriesForMap(selectedMap));
             category.SelectedIndex = Math.Max(0, category.Items.IndexOf(previous ?? ""));
         }
         public AddonOptions ReadOptions()
         {
             return new AddonOptions { Enabled = enabled.Checked, Server = server.Text.Trim(), Token = token.Text.Trim(),
-                Game = game.SelectedIndex == 1 ? "bo3" : "",
+                Game = game.SelectedIndex == 1 ? "bo3" : game.SelectedIndex == 2 ? "bo2" : "",
                 Map = map.SelectedItem is MapInfo ? ((MapInfo)map.SelectedItem).Id : "", Category = category.SelectedIndex > 0 ? (string)category.SelectedItem : "",
                 Practice = practice.Checked, Aliases = aliasEditor.Read() };
         }
         public void LoadOptions(AddonOptions value)
         {
             aliasEditor.LoadLinks(value.Aliases);
-            game.SelectedIndex = value.Game == "bo3" ? 1 : 0;
+            game.SelectedIndex = value.Game == "bo3" ? 1 : value.Game == "bo2" ? 2 : 0;
             enabled.Checked = value.Enabled; server.Text = value.Server; token.Text = value.Token; practice.Checked = value.Practice;
             map.SelectedIndex = 0; foreach (var item in map.Items) if (item is MapInfo && ((MapInfo)item).Id == value.Map) map.SelectedItem = item;
             category.SelectedIndex = Math.Max(0, category.Items.IndexOf(value.Category));

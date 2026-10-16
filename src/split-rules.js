@@ -1,3 +1,4 @@
+import {bo2Splits} from './bo2-splits.js';
 // Reviewed LittleMontyBot guide, 2026-10-07. Rules are hints, never run-validity checks.
 const n=s=>String(s??'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 const rule=(name,min,max,aliases=[],from={},extra={})=>({name,min:min*1000,max:max==null?Infinity:max*1000,aliases:[name,...aliases].map(n),from,...extra});
@@ -29,11 +30,11 @@ export function splitName(profile,name){
   const rev=String(name??'').match(/^(?:revelations|rev)\s*[-:]\s*(.+)$/i);
   if(rev)return 'Revelations - '+splitName({map:'revelations'},rev[1]);
  }
- const matches=(SPLIT_RULES[profile?.map]??[]).filter(r=>r.aliases.includes(n(name)));
+ const matches=(profile?.map?.startsWith('bo2-')?bo2Splits(profile):(SPLIT_RULES[profile?.map]??[])).filter(r=>r.aliases.includes(n(name)));
  return matches.length===1?matches[0].name:String(name??'');
 }
 export function resolveSplits(profile,rows,{timing=true,finished=false}={}) {
- const rules=SPLIT_RULES[profile?.map]??[];
+ const rules=profile?.map?.startsWith('bo2-')?bo2Splits(profile):(SPLIT_RULES[profile?.map]??[]);
  const allowTiming=timing&&['Mega Gums','Any%'].includes(profile?.category)&&!['moon','origins'].includes(profile?.map);
  const result=rows.map(s=>({...s,originalName:s.originalName??s.displayName??s.name}));
  const chosen=rows.map(s=>{if(s.manualName){const name=splitName(profile,s.manualName);return {name,aliases:[n(name)]};}const raw=s.autosplitName??s.originalName??s.displayName??s.name;const hits=rules.filter(r=>r.aliases.includes(n(raw)));if(hits.length===1)return hits[0];const canonical=splitName(profile,raw);return canonical!==raw?{name:canonical,aliases:[n(canonical)]}:null;});

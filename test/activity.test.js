@@ -11,7 +11,7 @@ test('scroller uses full run context and aliases without changing stored event n
  assert.equal(events.find(e=>e.split==='Rocket').igtMs,310000);
  assert.equal(f.store.list('metadata').find(e=>e.kind==='runner-activity'&&e.split.index===0).split.displayName,'My custom name');
  f.send();assert.equal(publicActivity(f.store).length,0);
- f.send({index:1,elapsedMs:1000,splits:[{index:0,name:'Joke',ms:1000}],manualNames:['Rocket']});
+ f.send({index:1,elapsedMs:5000,splits:[{index:0,name:'Joke',ms:5000}],manualNames:['Rocket']});
  assert.equal(publicActivity(f.store)[0].split,'Rocket');
 });
 test('Revelations old manual aliases and cached events display the new names',t=>{
@@ -24,7 +24,7 @@ test('Revelations old manual aliases and cached events display the new names',t=
 test('activity captures split, PB against previous saved record, and reset without heartbeat duplicates',t=>{
  const f=setup(t);f.send({records:{pbMs:400000,splits:[{index:0,name:'Rocket',pbSplitMs:340000},{index:1,name:'End',pbSplitMs:400000}]}});f.send({index:1,elapsedMs:334000,splits:[{index:0,name:'Rocket',ms:334000}]});f.send({index:1,elapsedMs:335000,splits:[{index:0,name:'Rocket',ms:334000}]});assert.equal(publicActivity(f.store).length,1);
  f.send({phase:'Ended',index:2,elapsedMs:390000,splits:[{index:0,name:'Rocket',ms:334000},{index:1,name:'End',ms:390000}],records:{pbMs:390000,splits:[{index:0,name:'Rocket',pbSplitMs:334000},{index:1,name:'End',pbSplitMs:390000}]}});assert.ok(publicActivity(f.store).some(e=>e.type==='pb'));
- f.send({attemptId:'attempt-two'});f.send({attemptId:'attempt-idle',phase:'NotRunning',resetEvent:true});assert.equal(publicActivity(f.store).filter(e=>e.type==='reset').length,1);
+ f.send({attemptId:'attempt-two',elapsedMs:5000});f.send({attemptId:'attempt-idle',phase:'NotRunning',resetEvent:true});assert.equal(publicActivity(f.store).filter(e=>e.type==='reset').length,1);
 });
 test('activity excludes private, practice, replay and initial connection history; undo retracts split',t=>{
  const f=setup(t);const split={index:0,name:'Rocket',ms:334000};f.send({index:1,elapsedMs:334000,splits:[split]});assert.equal(publicActivity(f.store).length,0);

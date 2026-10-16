@@ -9,7 +9,7 @@ test('pace compares the PB split, never a gold or best split, and freezes it acr
  assert.match(f.s.answer('!pace @Runner'),/58 seconds ahead of PB/);assert.match(f.s.answer('!pace @Runner'),/finished/);
 });
 test('pace handles pre-split, idle, offline, paused and private runners',t=>{
- const f=setup(t);assert.match(f.s.answer('!pace @Runner'),/No active run/);f.send({records:f.records});assert.match(f.s.answer('!pace @Runner'),/No completed split/);
+ const f=setup(t);assert.match(f.s.answer('!pace @Runner'),/No active run/);f.send({records:f.records});assert.match(f.s.answer('!pace @Runner'),/Waiting for the run to reach 5 seconds/);
  f.send({phase:'Paused',index:1,elapsedMs:360000,splits:[{index:0,name:'Rocket',ms:360000}]});assert.match(f.s.answer('!pace @Runner'),/paused.*14 seconds behind PB/);
  f.advance(31000);assert.match(f.s.answer('!pace @Runner'),/offline; last recorded/);f.s.privacy(f.s.get('players','runner'),false);assert.match(f.s.answer('!pace @Runner'),/isn't sharing/);
 });

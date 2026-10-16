@@ -1,3 +1,4 @@
+import {eligibleRun,eligibleTime} from './minimum-run.js';
 import {MAPS,profileKey,time} from './domain.js';
 import {runTime} from './reply-format.js';
 import {splitName} from './split-rules.js';
@@ -21,13 +22,14 @@ export function queueAnnouncements(store,p,a,previous) {
       store.put('metadata',j.id,{...j,status:'cancelled'});
     }
   }
-  if(!previous||!['Running','Paused'].includes(previous.phase)||a.practice||!p.public||a.suppressAlerts||now-a.observedAt>30000||now-previous.observedAt>30000)return;
+  if(!eligibleRun(a)||!previous||!['Running','Paused'].includes(previous.phase)||a.practice||!p.public||a.suppressAlerts||now-a.observedAt>30000||now-previous.observedAt>30000)return;
   const channels=store.list('metadata').filter(c=>c.kind==='chat-connection'&&(c.player===p.id||c.announcements?.communityWr===true)&&c.connected&&c.enabled&&c.target&&['twitch','youtube'].includes(c.provider));
   if(!channels.some(c=>Object.values(c.announcements??{}).some(Boolean)))return;
   const saved=store.get('metadata',`saved-records:${p.id}:${profileKey(a.profile)}`);
-  const history=store.attempts(p.id).filter(v=>v.id!==a.id&&!v.practice&&profileKey(v.profile)===profileKey(a.profile));
+  const history=store.attempts(p.id).filter(v=>eligibleRun(v)&&v.id!==a.id&&!v.practice&&profileKey(v.profile)===profileKey(a.profile));
   const events=[];
   for(const s of a.splits) {
+    if(!eligibleTime(s.ms))continue;
     if(a.handoverSplits?.some(v=>v.index===s.index&&v.ms===s.ms))continue;
     if(previous.splits.some(v=>matching(v,s)))continue;
     const ms=segment(a,s);if(ms==null||ms<=0)continue;
@@ -37,12 +39,12 @@ export function queueAnnouncements(store,p,a,previous) {
     if(prior?.bestSegmentMs>0&&(s.index===0||saved.splits[s.index-1]?.name===predecessor))values.push(prior.bestSegmentMs);
     for(const h of history){const v=h.splits.find(v=>v.index===s.index&&(v.originalName??v.name)===s.name);if(!v)continue;const before=h.splits.find(x=>x.index===s.index-1);if(s.index>0&&(before?.originalName??before?.name)!==predecessor)continue;const value=segment(h,v);if(value>0)values.push(value);}
     const before=Math.min(...values);
-    if(Number.isFinite(before)&&ms<before)events.push({type:'gold',split:s,ms,igtMs:igtSegment(a,s),before,label:splitName(a.profile,s.displayName??s.name)});
+    if(Number.isFinite(before)&&ms<before)events.push({type:'gold',split:s,ms,igtMs:igtSegment(a,s),realTimeMs:a.realTime?segment(a.realTime,a.realTime.splits.find(v=>v.index===s.index)??{index:s.index,ms:NaN}):undefined,before,label:splitName(a.profile,s.displayName??s.name)});
   }
   const last=a.splits.at(-1);
   if(a.phase==='Ended'&&a.complete&&last&&last.ms===a.elapsedMs) {
-    const before=Math.min(...[saved?.pbMs,...history.filter(v=>v.phase==='Ended'&&v.complete).map(v=>v.elapsedMs)].filter(v=>Number.isFinite(v)&&v>0));
-    if(Number.isFinite(before)&&a.elapsedMs<before)events.push({type:'pb',split:last,ms:a.elapsedMs,igtMs:a.igtMs,before});
+    const before=Math.min(...[saved?.pbMs,...history.filter(v=>v.phase==='Ended'&&v.complete).map(v=>v.elapsedMs)].filter(v=>eligibleTime(v)));
+    if(Number.isFinite(before)&&a.elapsedMs<before)events.push({type:'pb',split:last,ms:a.elapsedMs,igtMs:a.igtMs,realTimeMs:a.realTime?.elapsedMs,before});
     const wr=store.get('metadata',`zwr:${profileKey(a.profile)}`);
     if(wr?.ms>0&&a.elapsedMs<wr.ms)events.push({type:'wr',split:last,ms:a.elapsedMs,igtMs:a.igtMs,before:wr.ms});
   }
@@ -56,7 +58,7 @@ export function queueAnnouncements(store,p,a,previous) {
 
 export function announcementText(j,limit=450) {
   const label=j.type==='gold'?`${j.label} segment`:j.type==='pb'?'PB':'listed WR';
-  const result=`@${j.runner} ${j.type==='gold'?'GOLD':j.type==='pb'?'NEW PB':'WR TIME BEATEN'}! ${label}: ${runTime(j.ms,j.igtMs)} (previous ${time(j.before)}, improved by ${time(j.before-j.ms)}). ${context(j)}`;
+  const result=`@${j.runner} ${j.type==='gold'?'GOLD':j.type==='pb'?'NEW PB':'WR TIME BEATEN'}! ${label}: ${runTime(j.ms,j.igtMs,j.profile,j.realTimeMs)} (previous ${time(j.before)}, improved by ${time(j.before-j.ms)}). ${context(j)}`;
   return result.length<=limit?result:result.slice(0,limit-1)+'…';
 }
 
@@ -66,7 +68,7 @@ export async function deliverAnnouncements(store,provider,send) {
   // restart or an ambiguous network response; failed sends require no blind retry.
   for(const j of jobs(store).filter(j=>j.provider===provider&&j.status==='pending'&&j.dueAt<=now).sort((a,b)=>a.dueAt-b.dueAt)) {
     const p=store.get('players',j.player),a=store.get('attempts',j.attempt),c=store.list('metadata').find(c=>c.kind==='chat-connection'&&c.provider===provider&&c.player===j.recipient&&c.target===j.target&&c.channelId===j.channelId&&c.connected);
-    const valid=p?.public&&p.activeAttempt===j.attempt&&now-p.lastSeen<=30000&&a&&!a.closed&&!a.practice&&!a.suppressAlerts&&a.splits.some(s=>matching(s,j.split))&&(j.type!=='gold'||segment(a,j.split)===j.ms)&&c?.connected&&c.enabled&&c.target===j.target&&c.channelId===j.channelId&&(j.recipient===j.player?c.announcements?.[j.type]===true:j.type==='wr'&&c.announcements?.communityWr===true)&&now-j.createdAt<=120000&&(j.type==='gold'||(a.phase==='Ended'&&a.complete&&a.elapsedMs===j.ms));
+    const valid=eligibleRun(a)&&eligibleTime(j.split?.ms)&&p?.public&&p.activeAttempt===j.attempt&&now-p.lastSeen<=30000&&a&&!a.closed&&!a.practice&&!a.suppressAlerts&&a.splits.some(s=>matching(s,j.split))&&(j.type!=='gold'||segment(a,j.split)===j.ms)&&c?.connected&&c.enabled&&c.target===j.target&&c.channelId===j.channelId&&(j.recipient===j.player?c.announcements?.[j.type]===true:j.type==='wr'&&c.announcements?.communityWr===true)&&now-j.createdAt<=120000&&(j.type==='gold'||(a.phase==='Ended'&&a.complete&&a.elapsedMs===j.ms));
     if(!valid){store.put('metadata',j.id,{...j,status:'cancelled'});continue;}
     if(j.type==='wr'){const wr=store.get('metadata',`zwr:${profileKey(j.profile)}`);if(!wr||wr.ms<=j.ms){store.put('metadata',j.id,{...j,status:'cancelled'});continue;}j.before=wr.ms;}
     const throttleKey=`chat-announcement-last:${provider}:${j.target}`;

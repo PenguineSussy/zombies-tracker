@@ -63,13 +63,13 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
         const content=await readFile(resolve(root,'downloads/Zombies-Tracker-LiveSplit.zip'));
         res.writeHead(200,{'Content-Type':'application/zip','Content-Disposition':'attachment; filename="Zombies-Tracker-LiveSplit.zip"'});res.end(content);return;
       }
-      if(req.method==='GET' && ['/','/app.js','/discord-panel.js','/watch.js','/activity.js','/style.css','/monty-logo.png'].includes(path)) {
+      if(req.method==='GET' && ['/','/app.js','/discord-panel.js','/watch.js','/activity.js','/activity-filters.js','/style.css','/monty-logo.png'].includes(path)) {
         const file=path==='/'?'index.html':path.slice(1);const content=await readFile(resolve(root,file));
         res.writeHead(200,{'Content-Type':file.endsWith('.png')?'image/png':file.endsWith('.js')?'text/javascript; charset=utf-8':file.endsWith('.css')?'text/css; charset=utf-8':'text/html; charset=utf-8'});res.end(content);return;
       }
-      if(req.method==='GET' && path==='/health')return send({ok:true,version:'1.0.0'});
+      if(req.method==='GET' && path==='/health')return send({ok:true,version:'1.0.6'});
       limit(req,'all',600);
-      if(req.method==='GET' && path==='/api/catalog')return send({maps:ENABLED_MAPS,allMaps:MAPS,checkpointsByMap:Object.fromEntries(ENABLED_MAPS.map(m=>[m.id,discordCheckpoints(m.id)])),categories:CATEGORIES,categoriesByMap:Object.fromEntries(ENABLED_MAPS.map(m=>[m.id,categoriesForMap(m.id)])),integrations:{discord:!!env.DISCORD_PUBLIC_KEY,twitch:!!env.TWITCH_CHANNEL_IDS,youtube:!!env.YOUTUBE_LIVE_CHAT_IDS,therun:true}});
+      if(req.method==='GET' && path==='/api/catalog')return send({maps:ENABLED_MAPS,allMaps:MAPS,checkpointsByMap:Object.fromEntries(ENABLED_MAPS.map(m=>[m.id,discordCheckpoints(m.id)])),checkpointsByProfile:Object.fromEntries(ENABLED_MAPS.map(m=>[m.id,Object.fromEntries(categoriesForMap(m.id).map(c=>[c,discordCheckpoints(m.id,c)]))])),categories:CATEGORIES,categoriesByMap:Object.fromEntries(ENABLED_MAPS.map(m=>[m.id,categoriesForMap(m.id)])),integrations:{discord:!!env.DISCORD_PUBLIC_KEY,twitch:!!env.TWITCH_CHANNEL_IDS,youtube:!!env.YOUTUBE_LIVE_CHAT_IDS,therun:true}});
       if(req.method==='GET' && path==='/api/addon-release')return send(addonRelease);
       if(req.method==='GET'&&path==='/api/discord/config')return send(discordSite.config());
       if(req.method==='GET' && path==='/api/activity')return send(publicActivity(store));
@@ -79,7 +79,7 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
         if(!v.private&&runnerArchived(v,store.clock()))return send({id:v.id,name:v.name,status:'offline',lastSeen:v.lastSeen,archived:true});
         // Do not expose private source configuration, benchmark internals, or alert metadata.
         return send({id:v.id,name:v.name,private:v.private,status:v.status,lastSeen:v.lastSeen,profile:v.profile,session:v.private?null:store.sessionStats(v),streams:publicStreams(v,store.clock(),store),
-          attempt:v.attempt?{attemptCount:v.attempt.attemptCount??null,phase:v.attempt.phase,current:v.attempt.current,stageMap:v.attempt.stageMap,elapsedMs:v.attempt.elapsedMs,igtMs:v.attempt.igtMs??null,splits:v.attempt.splits,complete:v.attempt.complete,practice:v.attempt.practice}:null});
+          attempt:v.attempt?{attemptCount:v.attempt.attemptCount??null,phase:v.attempt.phase,current:v.attempt.current,stageMap:v.attempt.stageMap,elapsedMs:v.attempt.elapsedMs,igtMs:v.attempt.igtMs??null,realTime:v.attempt.realTime?{elapsedMs:v.attempt.realTime.elapsedMs,splits:v.attempt.realTime.splits}:null,splits:v.attempt.splits,complete:v.attempt.complete,practice:v.attempt.practice}:null});
       }
       const raw=await body(req);let data={};
       if(raw.length){try{data=JSON.parse(raw);}catch{check(false,'Invalid JSON.');}}

@@ -1,0 +1,587 @@
+{
+  "reviewedOn": "2026-10-14",
+  "timing": "GameTime",
+  "records": [
+    {
+      "recordId": "124897",
+      "map": "bo2-tranzit",
+      "category": "No Bank Richtofen",
+      "holder": "SecondaryColors",
+      "listedFinishMs": 710000,
+      "video": "https://youtu.be/V9xNCvFmDEQ?si=Q68hrw9P0fpvO3xq",
+      "verifiedSplits": [
+        {
+          "name": "Jetgun",
+          "time": "8:36.65",
+          "ms": 516650,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "Tower",
+          "time": "9:16.35",
+          "ms": 556350,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "End",
+          "time": "11:50.50",
+          "ms": 710500,
+          "precisionMs": 50,
+          "source": "video-timer-overlay",
+          "originalName": "Lights"
+        }
+      ],
+      "otherObservedMilestones": [],
+      "status": "complete",
+      "proofImage": "tranzit-richtofen-nobank-frame811.png",
+      "videoSeconds": 811
+    },
+    {
+      "recordId": "98199",
+      "map": "bo2-tranzit",
+      "category": "No Bank Maxis",
+      "holder": "Excosis",
+      "listedFinishMs": 333000,
+      "video": "https://youtu.be/I0PBQ6wv0k8",
+      "verifiedSplits": [
+        {
+          "name": "End",
+          "time": "5:33",
+          "ms": 333000,
+          "precisionMs": 1000,
+          "source": "video-timer-overlay",
+          "originalName": "Turbines"
+        }
+      ],
+      "otherObservedMilestones": [
+        {
+          "label": "Power On",
+          "time": "3:06",
+          "status": "not-equivalent-to-current-T6-split"
+        },
+        {
+          "label": "Avogadro Dead",
+          "time": "5:18",
+          "status": "not-equivalent-to-current-T6-split"
+        }
+      ],
+      "status": "partial",
+      "proofImage": "tranzit-maxis-nobank-frame356.png",
+      "videoSeconds": 356
+    },
+    {
+      "recordId": "102437",
+      "map": "bo2-tranzit",
+      "category": "Bank Richtofen",
+      "holder": "Frothy Milkshake",
+      "listedFinishMs": 656150,
+      "video": "https://www.youtube.com/watch?v=aU1s0QyXJQg",
+      "verifiedSplits": [
+        {
+          "name": "Jetgun",
+          "time": "8:10.25",
+          "ms": 490250,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "Tower",
+          "time": "8:48.80",
+          "ms": 528800,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "End",
+          "time": "10:56.15",
+          "ms": 656150,
+          "precisionMs": 50,
+          "source": "video-timer-overlay",
+          "originalName": "Lights"
+        }
+      ],
+      "otherObservedMilestones": [],
+      "status": "complete",
+      "proofImage": "tranzit-richtofen-bank-frame715.png",
+      "videoSeconds": 715
+    },
+    {
+      "recordId": "118264",
+      "map": "bo2-tranzit",
+      "category": "Bank Maxis",
+      "holder": "Hatcher",
+      "listedFinishMs": 366000,
+      "video": "https://youtu.be/B1WSKEgi9qQ",
+      "verifiedSplits": [
+        {
+          "name": "End",
+          "time": "6:06.6",
+          "ms": 366600,
+          "precisionMs": 100,
+          "source": "video-timer-overlay",
+          "originalName": "Turbines"
+        }
+      ],
+      "otherObservedMilestones": [
+        {
+          "label": "Power On",
+          "time": "3:30.0",
+          "status": "not-equivalent-to-current-T6-split"
+        },
+        {
+          "label": "Avogadro Dead",
+          "time": "5:50.5",
+          "status": "not-equivalent-to-current-T6-split"
+        }
+      ],
+      "status": "partial",
+      "proofImage": "tranzit-maxis-bank-frame381.png",
+      "videoSeconds": 381
+    },
+    {
+      "recordId": "110227",
+      "map": "bo2-die-rise",
+      "category": "No Bank Richtofen",
+      "holder": "sable",
+      "listedFinishMs": 382000,
+      "video": "https://youtu.be/3-wwJClc8Vo",
+      "verifiedSplits": [],
+      "otherObservedMilestones": [
+        {
+          "label": "Puzzles Done",
+          "time": "2:44.4",
+          "status": "legacy-label-needs-T6-event-mapping"
+        },
+        {
+          "label": "Balls Wet",
+          "time": "3:13.9",
+          "status": "legacy-label-needs-T6-event-mapping"
+        }
+      ],
+      "status": "partial",
+      "proofImage": "die-rise-richtofen-nobank-frame385-hd.png",
+      "videoSeconds": 385,
+      "note": "Completion near the video end is obscured; listed finish stays 6:22."
+    },
+    {
+      "recordId": "102444",
+      "map": "bo2-die-rise",
+      "category": "No Bank Maxis",
+      "holder": "Excosis",
+      "listedFinishMs": 414000,
+      "video": "https://youtu.be/oO-cQ6_gSe0",
+      "verifiedSplits": [
+        {
+          "name": "End",
+          "time": "6:54.5",
+          "ms": 414500,
+          "precisionMs": 100,
+          "source": "video-timer-overlay",
+          "originalName": "High Maintenance"
+        }
+      ],
+      "otherObservedMilestones": [
+        {
+          "label": "Puzzles Done",
+          "time": "1:37.3",
+          "status": "legacy-label-needs-T6-event-mapping"
+        },
+        {
+          "label": "The Spire",
+          "time": "5:22.5",
+          "status": "legacy-label-needs-T6-event-mapping"
+        }
+      ],
+      "status": "partial",
+      "proofImage": "die-rise-maxis-nobank-frame444.png",
+      "videoSeconds": 444,
+      "note": "Legacy labels preserved separately."
+    },
+    {
+      "recordId": "117598",
+      "map": "bo2-die-rise",
+      "category": "Bank Richtofen",
+      "holder": "JettLag",
+      "listedFinishMs": 280450,
+      "video": "https://www.twitch.tv/videos/2667814897",
+      "verifiedSplits": [
+        {
+          "name": "Symbols",
+          "time": "1:35.45",
+          "ms": 95450,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        }
+      ],
+      "otherObservedMilestones": [
+        {
+          "label": "Balls Wet",
+          "time": "1:54.20",
+          "status": "legacy-label-needs-T6-event-mapping"
+        },
+        {
+          "label": "High Maintenance",
+          "time": "4:40.40",
+          "status": "legacy-label-needs-T6-event-mapping"
+        }
+      ],
+      "status": "partial",
+      "proofImage": "die-rise-richtofen-bank-twitch-frozen.png",
+      "videoSeconds": 301,
+      "note": "Twitch overlay verified: Symbols 1:35.45. GSC finish 4:40.40 differs by 50ms from ZWR 4:40.45; retain accepted ZWR finish."
+    },
+    {
+      "recordId": "102436",
+      "map": "bo2-die-rise",
+      "category": "Bank Maxis",
+      "holder": "Excosis",
+      "listedFinishMs": 368000,
+      "video": "https://youtu.be/Ha2ruAYKHpE",
+      "verifiedSplits": [
+        {
+          "name": "End",
+          "time": "6:08.5",
+          "ms": 368500,
+          "precisionMs": 100,
+          "source": "video-timer-overlay",
+          "originalName": "High Maintenance"
+        }
+      ],
+      "otherObservedMilestones": [
+        {
+          "label": "Puzzles Done",
+          "time": "1:23.9",
+          "status": "legacy-label-needs-T6-event-mapping"
+        },
+        {
+          "label": "The Spire",
+          "time": "6:05.5",
+          "status": "legacy-label-needs-T6-event-mapping"
+        }
+      ],
+      "status": "partial",
+      "proofImage": "die-rise-maxis-bank-frame440.png",
+      "videoSeconds": 440,
+      "note": "Legacy Puzzles Done label is recorded separately until its exact T6 Symbols event equivalence is checked."
+    },
+    {
+      "recordId": "133553",
+      "map": "bo2-buried",
+      "category": "No Bank Richtofen",
+      "holder": "JettLag",
+      "listedFinishMs": 651000,
+      "video": "https://www.youtube.com/watch?v=yWDEED7i4eY&t=3s",
+      "verifiedSplits": [
+        {
+          "name": "Cipher",
+          "time": "4:53.95",
+          "ms": 293950,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "Time Travel",
+          "time": "6:30.95",
+          "ms": 390950,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "End",
+          "time": "10:51.10",
+          "ms": 651100,
+          "precisionMs": 50,
+          "source": "video-timer-overlay",
+          "originalName": "Sharpshooter"
+        }
+      ],
+      "otherObservedMilestones": [],
+      "status": "partial",
+      "proofImage": "buried-richtofen-nobank-frame690-hd.png",
+      "videoSeconds": 690,
+      "note": "Older recording shows three split rows, without Boxhit or Ghosts. GSC final 10:51.10; separate LiveSplit display 10:50.71."
+    },
+    {
+      "recordId": "144983",
+      "map": "bo2-buried",
+      "category": "No Bank Maxis",
+      "holder": "JettLag",
+      "listedFinishMs": 869000,
+      "video": "https://youtu.be/heMDeAZwXSs",
+      "verifiedSplits": [
+        {
+          "name": "Cipher",
+          "time": "5:59.35",
+          "ms": 359350,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "Time Travel",
+          "time": "7:38.85",
+          "ms": 458850,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "End",
+          "time": "14:29.20",
+          "ms": 869200,
+          "precisionMs": 50,
+          "source": "video-timer-overlay",
+          "originalName": "Sharpshooter"
+        }
+      ],
+      "otherObservedMilestones": [],
+      "status": "partial",
+      "proofImage": "buried-maxis-nobank-frame882.png",
+      "videoSeconds": 882,
+      "note": "Older recording shows only three split rows; Boxhit and Ghosts are not shown."
+    },
+    {
+      "recordId": "111087",
+      "map": "bo2-buried",
+      "category": "Bank Richtofen",
+      "holder": "JettLag",
+      "listedFinishMs": 499000,
+      "video": "https://youtu.be/9S8pVikY_Ow",
+      "verifiedSplits": [
+        {
+          "name": "Boxhit",
+          "time": "0:34.10",
+          "ms": 34100,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "Ghosts",
+          "time": "1:31.25",
+          "ms": 91250,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "Cipher",
+          "time": "3:54.80",
+          "ms": 234800,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "Time Travel",
+          "time": "5:29.35",
+          "ms": 329350,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        }
+      ],
+      "otherObservedMilestones": [],
+      "status": "partial",
+      "proofImage": "buried-richtofen-bank-frame535.png",
+      "videoSeconds": 535,
+      "note": "Final GSC overlay says 8:20.00; LiveSplit shows 8:19.95 and ZWR lists 8:19. Intermediate times retained; final requires timing review."
+    },
+    {
+      "recordId": "144940",
+      "map": "bo2-buried",
+      "category": "Bank Maxis",
+      "holder": "JettLag",
+      "listedFinishMs": 730000,
+      "video": "https://youtu.be/6kPtDdOCbkw",
+      "verifiedSplits": [
+        {
+          "name": "Boxhit",
+          "time": "0:33.70",
+          "ms": 33700,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "Ghosts",
+          "time": "3:19.35",
+          "ms": 199350,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "Cipher",
+          "time": "5:30.75",
+          "ms": 330750,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "Time Travel",
+          "time": "6:46.10",
+          "ms": 406100,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "End",
+          "time": "12:10.20",
+          "ms": 730200,
+          "precisionMs": 50,
+          "source": "video-timer-overlay",
+          "originalName": "Sharpshooter"
+        }
+      ],
+      "otherObservedMilestones": [],
+      "status": "complete",
+      "proofImage": "buried-maxis-bank-frame764.png",
+      "videoSeconds": 764
+    },
+    {
+      "recordId": "111877",
+      "map": "bo2-mob-of-the-dead",
+      "category": "Standard",
+      "holder": "J Dubs",
+      "listedFinishMs": 1066000,
+      "video": "https://www.youtube.com/watch?v=2CMn_qwnrwY",
+      "verifiedSplits": [
+        {
+          "name": "Dryer",
+          "time": "0:43.00",
+          "ms": 43000,
+          "precisionMs": 50,
+          "source": "user-provided",
+          "providedOn": "2026-10-14"
+        },
+        {
+          "name": "Gondola 1",
+          "time": "3:30.90",
+          "ms": 210900,
+          "precisionMs": 50,
+          "source": "user-provided",
+          "providedOn": "2026-10-14"
+        },
+        {
+          "name": "Fly 1",
+          "time": "5:11.15",
+          "ms": 311150,
+          "precisionMs": 50,
+          "source": "user-provided",
+          "providedOn": "2026-10-14"
+        },
+        {
+          "name": "Gondola 2",
+          "time": "7:59",
+          "ms": 479000,
+          "precisionMs": 1000,
+          "source": "user-provided",
+          "providedOn": "2026-10-14"
+        },
+        {
+          "name": "Fly 2",
+          "time": "9:24.50",
+          "ms": 564500,
+          "precisionMs": 50,
+          "source": "user-provided",
+          "providedOn": "2026-10-14"
+        },
+        {
+          "name": "Gondola 3",
+          "time": "12:01.80",
+          "ms": 721800,
+          "precisionMs": 50,
+          "source": "user-provided",
+          "providedOn": "2026-10-14"
+        },
+        {
+          "name": "Fly 3",
+          "time": "13:06.20",
+          "ms": 786200,
+          "precisionMs": 50,
+          "source": "user-provided",
+          "providedOn": "2026-10-14"
+        },
+        {
+          "name": "Codes",
+          "time": "15:44.30",
+          "ms": 944300,
+          "precisionMs": 50,
+          "source": "user-provided",
+          "providedOn": "2026-10-14"
+        },
+        {
+          "name": "End",
+          "time": "17:46.15",
+          "ms": 1066150,
+          "precisionMs": 1000,
+          "source": "video-LiveSplit-table",
+          "approximate": true,
+          "originalName": "Headphones"
+        }
+      ],
+      "otherObservedMilestones": [],
+      "status": "complete",
+      "proofImage": "mob-frame1078.png",
+      "videoSeconds": 1078,
+      "note": "Dryer through Codes supplied by the user, including mappings of the two custom labels to Gondola 3 and Fly 3. End 17:46.15 retained from the video; its manual split confidence remains whole-second."
+    },
+    {
+      "recordId": "117465",
+      "map": "bo2-origins",
+      "category": "Standard",
+      "holder": "Dank Slushie",
+      "listedFinishMs": 2105000,
+      "video": "https://youtu.be/NDNFSL7kIds",
+      "verifiedSplits": [
+        {
+          "name": "Staff 1",
+          "time": "13:42",
+          "ms": 822000,
+          "precisionMs": 1000,
+          "source": "video-LiveSplit-table",
+          "approximate": true
+        },
+        {
+          "name": "Staff 2",
+          "time": "18:29",
+          "ms": 1109000,
+          "precisionMs": 1000,
+          "source": "video-LiveSplit-table",
+          "approximate": true
+        },
+        {
+          "name": "Staff 3",
+          "time": "21:34",
+          "ms": 1294000,
+          "precisionMs": 1000,
+          "source": "video-LiveSplit-table",
+          "approximate": true
+        },
+        {
+          "name": "Staff 4",
+          "time": "26:14",
+          "ms": 1574000,
+          "precisionMs": 1000,
+          "source": "video-LiveSplit-table",
+          "approximate": true
+        },
+        {
+          "name": "End",
+          "time": "35:05.80",
+          "ms": 2105800,
+          "precisionMs": 1000,
+          "source": "video-LiveSplit-table",
+          "approximate": true,
+          "originalName": "Freedom"
+        }
+      ],
+      "otherObservedMilestones": [],
+      "status": "partial",
+      "proofImage": "origins-frame2220.png",
+      "videoSeconds": 2220,
+      "note": "Craft mappings verified against visible Ice, Wind, Fire and Lightning build prompts at video seconds 828,1116,1300,1580. NML, Chests Filled, AFD and Rain Fire are not in the runner table. Accepted/listed finish stays 35:05; video final shows 35:05.80.",
+      "additionalProofImages": [
+        "origins-ice-frame828.png",
+        "origins-wind-frame1116.png",
+        "origins-fire-frame1300.png",
+        "origins-lightning-frame1580.png"
+      ]
+    }
+  ]
+}

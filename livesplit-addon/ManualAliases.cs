@@ -17,7 +17,7 @@ namespace LiveSplit.ZombiesTracker {
     if(link==null||!Detector.Maps.Any(m=>m.Enabled&&m.Id==link.Map)) throw new InvalidOperationException("Choose a supported map for each split alias.");
     var row=new SplitLink{Map=link.Map,Source=Protocol.Clean(link.Source),Target=Protocol.Clean(link.Target)};
     // Preserve saved layouts when the Revelations split labels change.
-    if(row.Map=="revelations") row.Target=SplitAliases.Known(row.Map,row.Target)??row.Target;
+    if(row.Map=="revelations" || Detector.IsBo2(row.Map)) row.Target=SplitAliases.Known(row.Map,row.Target)??row.Target;
     if(row.Map=="super-easter-egg" && row.Target.StartsWith("Revelations - ")) row.Target="Revelations - "+(SplitAliases.Known("revelations",row.Target.Substring(14))??row.Target.Substring(14));
     if(!Targets(row.Map).Contains(row.Target)) throw new InvalidOperationException("Choose a split from the dropdown.");
     if(result.Any(r=>r.Map==row.Map&&Detector.Normalize(r.Source)==Detector.Normalize(row.Source))) throw new InvalidOperationException("Each LiveSplit name can have only one mapping per map.");

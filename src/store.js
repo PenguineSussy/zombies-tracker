@@ -1,3 +1,4 @@
+import {eligibleTime,eligibleRun} from './minimum-run.js';
 import {replyProfile,duration,lastSeen,achievedDate,runTime,replyTiming as timingLabel} from './reply-format.js';
 import {recordActivity} from './activity.js';
 import {capturePacePB,paceAnswer} from './pace.js';
@@ -159,6 +160,7 @@ export class Store {
         // Alerts match the split name shown on the site (aliases resolved) or the runner's own split name.
         const resolved = resolveSplits(a.profile, a.splits, { finished: a.phase === 'Ended' && a.complete });
         for (const [i, split] of resolved.entries()) {
+          if(!eligibleTime(split.ms))continue;
           if (previousSplits.some(x => x.index === split.index && x.ms === split.ms)) continue;
           if(a.handoverSplits.some(x=>x.index===split.index&&x.ms===split.ms))continue;
           const label = split.displayName ?? split.name;
@@ -166,7 +168,7 @@ export class Store {
             if (!sub.enabled || (sub.player !== '*' && sub.player !== p.id) || profileKey(sub.profile) !== profileKey(a.profile) || (key(splitName(sub.profile,sub.split)) !== split.name && sub.split !== a.splits[i].name)) continue;
             const wr = wrSplitLookup(this, a.profile, split.name), confirmed = wr.split;
             const ref = confirmed?.ms ?? a.benchmark?.splits[split.name] ?? a.benchmark?.splits[a.splits[i].name];
-            const precision = confirmed?.precisionMs ?? 1, actual = Math.round(split.ms / precision) * precision;
+            const precision = confirmed?.precisionMs ?? 1, actual = (confirmed?.rounding==='floor'?Math.floor:Math.round)(split.ms / precision) * precision;
             const qualifies = sub.mode === 'milestone' || (sub.mode === 'under' && split.ms <= sub.thresholdMs) || (sub.mode === 'wr' && ref != null && actual < ref);
             const dedup = `${sub.id}:${split.index}`;
             if (!qualifies || a.notified.includes(dedup)) continue;
@@ -175,7 +177,7 @@ export class Store {
             const comparison = ref == null ? `WR Split unavailable: ${wr.reason}.` : `${precision === 1000 ? '~' : ''}${time(Math.abs(ref - actual))} ${actual < ref ? 'ahead of' : actual > ref ? 'behind' : 'level with'} WR Split`;
             this.put('outbox', jobId, { id: jobId, attempt: id, player: p.id, subscription: sub.id,
               split, channel: sub.channel, role: sub.role, status: 'pending', tries: 0, nextTry: now, createdAt: now,
-              content: `${p.name} | ${profileLabel(a.profile)}\n${label}: ${runTime(split.ms,split.igtMs)}\n${comparison}${!confirmed && a.benchmark ? '\nBenchmark source: ' + a.benchmark.source : ''}` });
+              content: `${p.name} | ${profileLabel(a.profile)}\n${label}: ${runTime(split.ms,split.igtMs,a.profile,a.realTime?.splits.find(v=>v.index===split.index)?.ms)}\n${comparison}${!confirmed && a.benchmark ? '\nBenchmark source: ' + a.benchmark.source : ''}` });
           }
         }
       }
@@ -196,14 +198,14 @@ export class Store {
   }
   best(p, split, scope, selectedProfile = p.profile) {
     if (!selectedProfile) return null;
-    const candidates = this.attempts(p.id).filter(a => !a.practice && profileKey(a.profile) === profileKey(selectedProfile) && (scope === 'alltime' || a.sessionId === p.sessionId));
+    const candidates = this.attempts(p.id).filter(a => eligibleRun(a) && !a.practice && profileKey(a.profile) === profileKey(selectedProfile) && (scope === 'alltime' || a.sessionId === p.sessionId));
     const requested=key(split);
     split=splitName(selectedProfile,split);
     const matches=s=>s.name===key(split)||key(s.originalName??s.displayName??s.name)===requested;
     const saved=scope==='alltime'?this.savedRecords(p,selectedProfile)?.splits.find(matches):null;
-    const rows=candidates.flatMap(a=>a.splits.filter(matches).map(s=>({...s,attemptId:a.id,at:a.updatedAt})));
+    const rows=candidates.flatMap(a=>a.splits.filter(s=>matches(s)&&eligibleTime(s.ms)).map(s=>({...s,attemptId:a.id,at:a.updatedAt})));
     const segments=[];
-    for(const a of candidates)for(const s of a.splits.filter(matches)) {
+    for(const a of candidates)for(const s of a.splits.filter(s=>matches(s)&&eligibleTime(s.ms))) {
       const previous=a.splits.find(v=>v.index===s.index-1);
       const expected=saved && this.savedRecords(p,selectedProfile).splits[saved.index-1]?.name;
       if(saved && (s.index===0)!==(saved.index===0))continue;
@@ -211,8 +213,8 @@ export class Store {
       if(s.index===0)segments.push(s.ms);
       else if(previous)segments.push(s.ms-previous.ms);
     }
-    if(saved?.bestSplitMs!=null)rows.push({...saved,ms:saved.bestSplitMs});
-    if(saved?.bestSegmentMs!=null)segments.push(saved.bestSegmentMs);
+    if(eligibleTime(saved?.bestSplitMs))rows.push({...saved,ms:saved.bestSplitMs});
+    if(saved?.bestSegmentMs!=null&&(eligibleTime(saved.bestSplitMs)||eligibleTime(saved.pbSplitMs)))segments.push(saved.bestSegmentMs);
     const best=rows.sort((a,b)=>a.ms-b.ms)[0];
     return best||saved ? {...(best??saved),ms:best?.ms??null,displayName:saved?.displayName??best?.displayName??best?.name,bestSegmentMs:segments.length?Math.min(...segments):null}:null;
   }
@@ -220,10 +222,10 @@ export class Store {
   sessionStats(p, selected=p.profile) {
     const session=this.sessionWindow(p);
     if(!session) return null;
-    const attempts=this.attempts(p.id).filter(a=>a.sessionId===session.id && a.phase!=='NotRunning');
+    const attempts=this.attempts(p.id).filter(a=>a.sessionId===session.id && a.phase!=='NotRunning' && eligibleRun(a));
     const active=p.activeAttempt&&this.get('attempts',p.activeAttempt);
     const status=this.view(p.id).status;
-    const current=session.endedAt==null && active?.sessionId===session.id && ['Running','Paused'].includes(status)?active.profile:null;
+    const current=session.endedAt==null && active?.sessionId===session.id && eligibleRun(active) && ['Running','Paused'].includes(status)?active.profile:null;
     const groups=new Map();
     for(const a of attempts) {
       const id=profileKey(a.profile);
@@ -233,7 +235,7 @@ export class Store {
       if(a.resetObserved===true)group.resets++;
       if(a.practice)continue;
       if(a.phase==='Ended' && a.complete){group.finishes++;group.fastestMs=Math.min(group.fastestMs??Infinity,a.elapsedMs);}
-      for(const split of a.splits) {
+      for(const split of a.splits.filter(s=>eligibleTime(s.ms))) {
         if(!group.furthest||split.index>group.furthest.index)group.furthest={index:split.index,name:split.displayName??split.name};
         const stats=group.splits.get(split.name)??{name:split.displayName??split.name,count:0,totalMs:0,bestMs:Infinity};
         stats.count++;stats.totalMs+=split.ms;stats.bestMs=Math.min(stats.bestMs,split.ms);group.splits.set(split.name,stats);
@@ -271,7 +273,7 @@ export class Store {
       else if(q.command==='splits'&&q.scope==='alltime')rows=this.savedRecords(p,selected)?.splits??[];
       else if(q.command==='session'||(q.command==='splits'&&q.scopeExplicit))rows=this.attempts(p.id).filter(a=>a.sessionId===this.sessionWindow(p)?.id&&profileKey(a.profile)===profileKey(selected)).flatMap(a=>a.splits);
       else if(p.status!=='offline')rows=q.command==='pace'?p.attempt?.splits.slice(-1)??[]:p.attempt?.splits??[];
-      return rows.some(r=>r.needsAlias)?'Split not recognized. Set its alias in LiveSplit → Zombies Tracker → Split aliases. | '+reply:reply;
+      return rows.filter(r=>eligibleTime(r.ms??r.pbSplitMs??r.bestSplitMs)).some(r=>r.needsAlias)?'Split not recognized. Set its alias in LiveSplit → Zombies Tracker → Split aliases. | '+reply:reply;
     } catch {return reply;}
   }
   answerCore(input) {
@@ -297,11 +299,12 @@ export class Store {
       const matches=!selected||!p.profile||profileKey(selected)===profileKey(p.profile);
       if(!matches&&['current','pace'].includes(q.command))return `${p.name} | ${replyProfile(selected)} | No current run for this map and category. Playing: ${replyProfile(p.profile)}`;
       const a = matches?p.attempt:null, label = replyProfile(selected);
-      const last = a?.splits.at(-1);
+      const last = a?.splits.filter(s=>eligibleTime(s.ms)).at(-1);
+      if(a&&!eligibleRun(a)&&['current','pace'].includes(q.command)&&p.status!=='offline'&&a.phase!=='NotRunning')return `${p.name} | ${label} | Waiting for the run to reach 5 seconds.`;
       if (q.command === 'current') {
         if (p.status === 'offline') return `${p.name}'s tracker is offline.${p.lastSeen?' Last connected '+lastSeen(p.lastSeen,this.clock())+'.':''}${activeSource(p)==='therun'?' No recent therun.gg update; playing status unknown.':''}`;
         if (!a || a.phase === 'NotRunning') return `${p.name} is connected and waiting to start a run.`;
-        return `${p.name} | ${label} | ${a.phase==='Ended'?'Finished':a.phase==='Paused'?'Paused':activeSource(p)==='therun'?'Last reported timer':'Running'}: ${runTime(a.elapsedMs,a.igtMs)}${last?' | Last split: '+(last.displayName??last.name)+' — '+runTime(last.ms,last.igtMs):''}${a.current&&a.phase!=='Ended'?' | Next: '+a.current:''} | Resets: ${this.sessionStats(p)?.groups.find(g=>g.isCurrentProfile)?.resets??0}${a.practice?' | Practice attempt':''}`;
+        return `${p.name} | ${label} | ${a.phase==='Ended'?'Finished':a.phase==='Paused'?'Paused':activeSource(p)==='therun'?'Last reported timer':'Running'}: ${runTime(a.elapsedMs,a.igtMs,a.profile,a.realTime?.elapsedMs)}${last?' | Last split: '+(last.displayName??last.name)+' — '+runTime(last.ms,last.igtMs,a.profile,a.realTime?.splits.find(v=>v.index===last.index)?.ms):''}${a.current&&a.phase!=='Ended'?' | Next: '+a.current:''} | Resets: ${this.sessionStats(p)?.groups.find(g=>g.isCurrentProfile)?.resets??0}${a.practice?' | Practice attempt':''}`;
       }
       if (q.command === 'best') {
         check(q.split, 'Specify a split, e.g. !best @player bow session.');
@@ -319,7 +322,7 @@ export class Store {
         return `${p.name} | ${label} | Session bests (split/segment): `+(group?.splits.map(s=>{const b=this.best(p,s.name,'session',selected);return `${b?.displayName??s.name} — ${time(b?.ms)} (${time(b?.bestSegmentMs)})`;}).join(' · ')||'unavailable');
       }
       if(q.command==='splits'&&!matches)return `${p.name} | ${label} | No current run for this map and category. Use !splits ${p.id} ${selected.map} alltime for saved bests.`;
-      if (q.command === 'splits') return `${p.name} | ${label} | Current run: ${a?.splits.length ? a.splits.map(s => (s.displayName??s.name) + ' — ' + runTime(s.ms,s.igtMs)).join(' · ') : 'No splits recorded.'}${a && !a.complete ? ' Partial history.' : ''}`;
+      if (q.command === 'splits') return `${p.name} | ${label} | Current run: ${a?.splits.some(s=>eligibleTime(s.ms)) ? a.splits.filter(s=>eligibleTime(s.ms)).map(s => (s.displayName??s.name) + ' — ' + runTime(s.ms,s.igtMs,a.profile,a.realTime?.splits.find(v=>v.index===s.index)?.ms)).join(' · ') : 'No splits recorded.'}${a && !a.complete ? ' Partial history.' : ''}`;
       if (q.command === 'pace') return paceAnswer(this,p);
       if (q.command === 'session') {
         return this.sessionAnswer(p,false,q.profile?selected:null);
@@ -332,10 +335,10 @@ export class Store {
         const selected=q.profile?profile(q.profile):p.profile;
         if(q.profile)requireEnabledMap(selected.map);
         if(!selected)return `${p.name}: PB unavailable; no run profile selected. Use !pb @${p.id} DE.`;
-        const best = this.attempts(p.id).filter(a => a.phase === 'Ended' && a.complete && !a.practice && profileKey(a.profile) === profileKey(selected)).sort((a,b) => a.elapsedMs - b.elapsedMs)[0];
-        const savedRecords=this.savedRecords(p,selected),saved=savedRecords?.pbMs;
+        const best = this.attempts(p.id).filter(a => eligibleRun(a) && a.phase === 'Ended' && a.complete && !a.practice && profileKey(a.profile) === profileKey(selected)).sort((a,b) => a.elapsedMs - b.elapsedMs)[0];
+        const savedRecords=this.savedRecords(p,selected),saved=eligibleTime(savedRecords?.pbMs)?savedRecords.pbMs:null;
         const fromSaved=saved!=null && (!best || saved<=best.elapsedMs);
-        return `${p.name} | ${replyProfile(selected)} | PB: ${fromSaved?runTime(saved,savedRecords.pbIgtMs):best?runTime(best.elapsedMs,best.igtMs):'unavailable'}`;
+        return `${p.name} | ${replyProfile(selected)} | PB: ${fromSaved?runTime(saved,savedRecords.pbIgtMs,selected,savedRecords.pbRealTimeMs):best?runTime(best.elapsedMs,best.igtMs,best.profile,best.realTime?.elapsedMs):'unavailable'}`;
       }
       return 'Unknown command.';
     } catch (error) { if (error.status) return error.message; throw error; }

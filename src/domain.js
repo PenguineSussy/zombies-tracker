@@ -11,9 +11,15 @@ export const MAPS = [
   'nacht-der-untoten', 'verruckt', 'shi-no-numa', 'kino-der-toten',
 ].includes(id) }));
 
+export const BO2_CATEGORIES = ['No Bank Richtofen','No Bank Maxis','Bank Richtofen','Bank Maxis'];
+MAPS.forEach(m=>m.game='bo3');
+MAPS.push(...[['tranzit','TranZit'],['die-rise','Die Rise'],['buried','Buried'],['mob-of-the-dead','Mob of the Dead'],['origins','Origins']].map(([id,name])=>({id:'bo2-'+id,name,game:'bo2',enabled:true})));
+export const gameForMap = map => MAPS.find(m=>m.id===map)?.game??'bo3';
+export const timingLabel = p => p?.timing==='GameTime'?'IGT':'RTA';
 export const ENABLED_MAPS = MAPS.filter(map => map.enabled);
 export const CATEGORIES = ['No Gums', 'Classic Gums', 'Mega Gums', 'Any%'];
 export function categoriesForMap(map) {
+  if (gameForMap(map)==='bo2') return ['bo2-origins','bo2-mob-of-the-dead'].includes(map)?['Standard']:[...BO2_CATEGORIES];
   if (['ascension', 'shangri-la'].includes(map)) return ['Any%'];
   return ['zetsubou-no-shima','super-easter-egg'].includes(map) ? CATEGORIES.filter(c => c !== 'No Gums') : [...CATEGORIES];
 }
@@ -42,18 +48,21 @@ export function clean(value, max = 80) {
 export function key(value) { return clean(value).normalize('NFKC').toLowerCase().replace(/\s+/g, ' '); }
 export function profile(input) {
   check(input && typeof input === 'object', 'Choose a run profile.');
-  check(MAPS.some(m => m.id === input.map), 'Choose an official BO3 map.');
+  check(MAPS.some(m => m.id === input.map), 'Choose a supported game/map.');
   check(input.players === undefined || input.players === 1, 'This tracker supports Solo Easter Egg runs only.');
-  const category = CATEGORIES.find(c => c.toLowerCase() === String(input.category).trim().toLowerCase());
-  check(category, 'Choose No Gums, Classic Gums, Mega Gums, or Any%. Update older companion configurations in Runner setup.');
+  const game=gameForMap(input.map);
+  check(input.game==null||input.game===game,'Game and map do not match.');
+  const category = (game==='bo2'?categoriesForMap(input.map):CATEGORIES).find(c => c.toLowerCase() === String(input.category??(categoriesForMap(input.map).length===1?'Standard':'')).trim().toLowerCase());
+  check(category, game==='bo2'?'Choose '+categoriesForMap(input.map).join(', ')+'.':'Choose No Gums, Classic Gums, Mega Gums, or Any%. Update older companion configurations in Runner setup.');
   check(categoriesForMap(input.map).includes(category), `This map allows only: ${categoriesForMap(input.map).join(', ')}.`);
-  check(input.timing === undefined || input.timing === 'RealTime', 'This tracker uses RTA (Real Time) only.');
-  return { map: input.map, category, players: 1, timing: 'RealTime' };
+  const timing=game==='bo2'?'GameTime':'RealTime';
+  check(input.timing === undefined || input.timing === timing, 'BO2 uses IGT (Game Time); BO3 uses RTA (Real Time).');
+  return { map: input.map, category, players: 1, timing, ...(game==='bo2'?{game}: {}) };
 }
 // Retain historical categories without silently assigning old records to a gum category.
-export function profileKey(p) { return p.category ? JSON.stringify({map:p.map,category:p.category,players:p.players??1,timing:p.timing??'RealTime'}) : JSON.stringify({map:p.map,objective:p.objective,players:p.players,rules:p.rules,route:p.route,timing:p.timing}); }
+export function profileKey(p) { return p.category ? JSON.stringify({map:p.map,category:p.category,players:p.players??1,timing:p.timing??(gameForMap(p.map)==='bo2'?'GameTime':'RealTime'),...(gameForMap(p.map)==='bo2'?{game:'bo2'}:{})}) : JSON.stringify({map:p.map,objective:p.objective,players:p.players,rules:p.rules,route:p.route,timing:p.timing}); }
 export function profileLabel(p) {
-  return `${MAPS.find(m => m.id === p.map)?.name ?? p.map} · ${p.category ? 'Solo · Easter Egg · '+p.category : 'Legacy · '+p.players+'P · '+p.objective+' · '+p.rules+' · '+p.route} · ${p.timing === 'RealTime' ? 'RTA' : p.timing}`;
+  return `${gameForMap(p.map)==='bo2'?'BO2 · ':''}${MAPS.find(m => m.id === p.map)?.name ?? p.map} · ${p.category ? 'Solo · Easter Egg'+(p.category==='Standard'?'':' · '+p.category) : 'Legacy · '+p.players+'P · '+p.objective+' · '+p.rules+' · '+p.route} · ${timingLabel(p)}`;
 }
 export function milliseconds(value) {
   if (value == null || value === '-' || value === '') return null;
@@ -101,6 +110,12 @@ export function snapshot(input) {
     current: input.current && input.current !== '-' ? clean(input.current) : null,
     splits, practice: input.practice === true, complete: input.complete === true, suppressAlerts: input.suppressAlerts === true,
     observedAt: Number.isSafeInteger(input.observedAt) ? input.observedAt : Date.now() };
+  if(input.realTime!=null){
+    check(result.profile.timing==='GameTime','Secondary RTA is supported only for IGT profiles.');
+    check(Array.isArray(input.realTime.splits)&&input.realTime.splits.every(s=>splits.some(p=>p.index===s.index&&p.name===key(s.name))),'Secondary RTA splits must match primary split indices and names.');
+    const secondary=snapshot({...input,igtMs:null,autosplitNames:undefined,manualNames:undefined,realTime:undefined,records:input.realTime.records??undefined,elapsedMs:input.realTime.elapsedMs,splits:input.realTime.splits});
+    result.realTime={elapsedMs:secondary.elapsedMs,splits:secondary.splits,records:secondary.records??null};
+  }
   if(input.addonVersion!=null){check(validAddonVersion(input.addonVersion),'Invalid addon version.');result.addonVersion=input.addonVersion;}
   if (result.phase === 'NotRunning') check(splits.length === 0, 'Idle snapshots cannot contain splits.');
   result.complete = result.complete && result.index >= 0 && result.splits.length === result.index;
@@ -114,7 +129,7 @@ export function snapshot(input) {
     const validTime=v=>{check(v==null || (Number.isSafeInteger(v)&&v>=0&&v<=604800000),'Invalid saved time.');return v??null;};
     const saved=input.records.splits.map((s,i)=>{check(s.index===i,'Saved splits must be in order.');return {index:i,name:key(s.name),displayName:clean(s.name),pbSplitMs:validTime(s.pbSplitMs),bestSplitMs:validTime(s.bestSplitMs),bestSegmentMs:validTime(s.bestSegmentMs)};});
     check(new Set(saved.map(s=>s.name)).size===saved.length,'Saved split names must be unique.');
-    result.records={pbMs:validTime(input.records.pbMs),pbIgtMs:validTime(input.records.pbIgtMs),splits:saved};
+    result.records={pbMs:validTime(input.records.pbMs),pbIgtMs:validTime(input.records.pbIgtMs),...(result.profile.timing==='GameTime'?{pbRealTimeMs:validTime(input.records.pbRealTimeMs)}:{}),splits:saved};
   }
   if(input.autosplitNames!=null) {
     check(Array.isArray(input.autosplitNames)&&input.autosplitNames.length>0&&input.autosplitNames.length<=500,'Invalid autosplitter layout.');
@@ -164,13 +179,15 @@ function legacyCommand(text, defaultPlayer) {
     return {command:'pb',player,...(selected.error?{error:selected.error.replace('!wr <map>','!pb [@runner] <map>').replace('!wr Der Eisendrache','!pb @Penguine Der Eisendrache')}:{profile:selected.profile})};
   }
   if (command === '!wr') {
+    const requestedGame=/^bo[23]$/i.test(words[0]??'')?words.shift().toLowerCase():null;
     const text=stageWords(words.join(' '));
-    const candidates=ENABLED_MAPS.flatMap(m=>[m.name,m.id,...(CORE_MAP_ALIASES[m.id]??[]),...(m.id==='super-easter-egg'?['super easter egg','super ee']:[])].map(alias=>({map:m.id,alias:stageWords(alias)}))).sort((a,b)=>b.alias.length-a.alias.length);
+    const candidates=ENABLED_MAPS.filter(m=>!requestedGame||m.game===requestedGame).flatMap(m=>[m.name,m.id,...(CORE_MAP_ALIASES[m.id]??[]),...(m.id==='super-easter-egg'?['super easter egg','super ee']:[])].map(alias=>({map:m.id,alias:stageWords(alias)}))).sort((a,b)=>b.alias.length-a.alias.length);
     const match=candidates.find(m=>text===m.alias||text.startsWith(m.alias+' '));
     if(!match) return {command:'wr',error:'Use !wr <map> [category], e.g. !wr Der Eisendrache Any%. Mega Gums is the default.'};
     const suffix=text.slice(match.alias.length).trim();
-    const category=suffix ? CATEGORIES.find(c=>stageWords(c)===suffix) : 'Mega Gums';
-    if(!category) return {command:'wr',error:'Choose No Gums, Classic Gums, Mega Gums, or Any%.'};
+    const allowed=categoriesForMap(match.map);
+    const category=suffix ? allowed.find(c=>stageWords(c)===suffix) : gameForMap(match.map)==='bo2'?(allowed.length===1?allowed[0]:null):'Mega Gums';
+    if(!category) return {command:'wr',error:(CATEGORIES.some(c=>stageWords(c)===suffix)?'This map allows only: ':'Choose ')+allowed.join(', ')+'.'};
     return {command:'wr',profile:{map:match.map,category}};
   }
   const player = defaultPlayer!==undefined&&!words[0]?.startsWith('@')?(defaultPlayer??undefined):words.shift()?.replace(/^@/, '').toLowerCase();

@@ -1,6 +1,8 @@
+import {eligibleTime} from './minimum-run.js';
+import {bo2Splits} from './bo2-splits.js';
 import {verifiedLiveStreams} from './streams.js';
 import { createPublicKey, verify, createHash } from 'node:crypto';
-import { check, milliseconds, ENABLED_MAPS, CATEGORIES, categoriesForMap, profile, profileLabel } from './domain.js';
+import { check, milliseconds, ENABLED_MAPS, CATEGORIES, BO2_CATEGORIES, categoriesForMap, profile, profileLabel } from './domain.js';
 import { SPLIT_RULES, splitName } from './split-rules.js';
 
 export function verifyDiscord(publicKey, timestamp, signature, raw, now = Date.now()) {
@@ -19,8 +21,8 @@ export const discordCommands = [
       {name:'role',description:'Role to ping',type:8,required:false},
       { ...stringOption('mode','When to notify (default: every time the split is reached)',false), choices:[{name:'Every time the split is reached',value:'milestone'},{name:'At or under a time',value:'under'},{name:'Ahead of WR split',value:'wr'}] },
       stringOption('threshold','Required for under: e.g. 7:35',false),
-      { ...stringOption('map','Map (default: the runner’s current map)',false), choices:ENABLED_MAPS.map(m=>({name:m.name,value:m.id})) },
-      { ...stringOption('category','Category (default: the runner’s current category, or Mega Gums)',false), choices:CATEGORIES.map(c=>({name:c,value:c})) }] },
+      { ...stringOption('map','Map (default: the runner’s current map)',false), choices:ENABLED_MAPS.map(m=>({name:(m.game==='bo2'?'BO2 · ':'')+m.name,value:m.id})) },
+      { ...stringOption('category','Category (default: the runner’s current category, or Mega Gums)',false), choices:[...CATEGORIES,...BO2_CATEGORIES,'Standard'].map(c=>({name:c,value:c})) }] },
   { name: 'track-alerts', description: 'List this server’s alert subscription IDs', default_member_permissions: '32', dm_permission: false },
   { name: 'track-unalert', description: 'Remove an alert', default_member_permissions: '32', dm_permission: false, options:[stringOption('id','Subscription ID from /track-alerts')] }
 ];
@@ -43,7 +45,7 @@ export function discordInteraction(store, interaction) {
         const selected = profile({ map, category }), mode = options.mode ?? 'milestone';
         check(mode !== 'under' || options.threshold, 'Add a threshold for an under alert, e.g. 7:35.');
         const sub = store.subscribe({ split:options.split, role:options.role, mode, player:anyone ? '*' : player.id, guild:interaction.guild_id, channel:interaction.channel_id, profile:selected, thresholdMs: options.threshold ? milliseconds(options.threshold) : null });
-        const rules = SPLIT_RULES[selected.map] ?? [], label = splitName(selected, options.split);
+        const rules = selected.map.startsWith('bo2-')?bo2Splits(selected):SPLIT_RULES[selected.map] ?? [], label = splitName(selected, options.split);
         content = `Alert created (${sub.id}): ${anyone ? 'any public runner' : player.name} / ${label} / ${profileLabel(selected)}${sub.role ? ` / pings <@&${sub.role}>` : ''}.`
           + (rules.length && !rules.some(r => r.name === label) ? `\nNote: "${label}" is not a standard split for this map, so it only matches a LiveSplit split with exactly that name. Standard: ${rules.map(r => r.name).join(', ')}.` : '')
           + (sub.role ? '\nThe bot needs Send Messages here, and the role must be mentionable (or the bot needs Mention All Roles).' : '');
@@ -62,7 +64,7 @@ export async function deliverAlerts(store, token, fetcher = fetch) {
   const now = store.clock();
   for (const job of store.list('outbox').filter(j => j.status === 'pending' && j.nextTry <= now).slice(0,10)) {
     const p = store.get('players',job.player), sub = store.get('subscriptions',job.subscription);
-    if (!p?.public || !sub?.enabled || p.activeAttempt !== job.attempt || now - job.createdAt > 120000) { job.status='cancelled'; store.put('outbox',job.id,job); continue; }
+    if (!eligibleTime(job.split?.ms) || !p?.public || !sub?.enabled || p.activeAttempt !== job.attempt || now - job.createdAt > 120000) { job.status='cancelled'; store.put('outbox',job.id,job); continue; }
     const live=verifiedLiveStreams(store,p,now)[0];
     const streamLine=live?'\nWatch live: '+live.url:'\nCurrently Offline';
     const nonce = BigInt('0x' + createHash('sha256').update(job.id).digest('hex').slice(0,15)).toString();

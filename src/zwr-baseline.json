@@ -610,5 +610,299 @@
     "achievedDate": "2025-11-07",
     "dateSource": "zwr-added",
     "recordId": "105374"
+  },
+  {
+    "id": "zwr:{\"map\":\"bo2-tranzit\",\"category\":\"No Bank Richtofen\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"bo2\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "bo2-tranzit",
+      "category": "No Bank Richtofen",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 710000,
+    "holder": "SecondaryColors",
+    "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/tranzit/",
+    "checkedAt": 1792037374502,
+    "achievedDate": "2024-08-28",
+    "dateSource": "zwr-added",
+    "recordId": "124897",
+    "video": "https://youtu.be/V9xNCvFmDEQ?si=Q68hrw9P0fpvO3xq",
+    "recordNote": null,
+    "otherLinks": []
+  },
+  {
+    "id": "zwr:{\"map\":\"bo2-tranzit\",\"category\":\"No Bank Maxis\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"bo2\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "bo2-tranzit",
+      "category": "No Bank Maxis",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 333000,
+    "holder": "Excosis",
+    "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/tranzit/",
+    "checkedAt": 1792037374502,
+    "achievedDate": "2023-01-20",
+    "dateSource": "zwr-added",
+    "recordId": "98199",
+    "video": "https://youtu.be/I0PBQ6wv0k8",
+    "recordNote": null,
+    "otherLinks": []
+  },
+  {
+    "id": "zwr:{\"map\":\"bo2-tranzit\",\"category\":\"Bank Richtofen\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"bo2\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "bo2-tranzit",
+      "category": "Bank Richtofen",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 656150,
+    "holder": "Frothy Milkshake",
+    "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/tranzit/",
+    "checkedAt": 1792037374502,
+    "achievedDate": "2023-09-10",
+    "dateSource": "zwr-added",
+    "recordId": "102437",
+    "video": "https://www.youtube.com/watch?v=aU1s0QyXJQg",
+    "recordNote": null,
+    "otherLinks": []
+  },
+  {
+    "id": "zwr:{\"map\":\"bo2-tranzit\",\"category\":\"Bank Maxis\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"bo2\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "bo2-tranzit",
+      "category": "Bank Maxis",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 366000,
+    "holder": "Hatcher",
+    "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/tranzit/",
+    "checkedAt": 1792037374502,
+    "achievedDate": "2024-04-18",
+    "dateSource": "zwr-added",
+    "recordId": "118264",
+    "video": "https://youtu.be/B1WSKEgi9qQ",
+    "recordNote": "Resets: https://www.youtube.com/watch?v=CE54mOwcleM&ab_channel=HelamanHatcher",
+    "otherLinks": []
+  },
+  {
+    "id": "zwr:{\"map\":\"bo2-die-rise\",\"category\":\"No Bank Richtofen\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"bo2\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "bo2-die-rise",
+      "category": "No Bank Richtofen",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 382000,
+    "holder": "sable",
+    "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/die-rise/",
+    "checkedAt": 1792037374502,
+    "achievedDate": "2023-08-24",
+    "dateSource": "zwr-added",
+    "recordId": "110227",
+    "video": "https://youtu.be/3-wwJClc8Vo",
+    "recordNote": null,
+    "otherLinks": []
+  },
+  {
+    "id": "zwr:{\"map\":\"bo2-die-rise\",\"category\":\"No Bank Maxis\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"bo2\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "bo2-die-rise",
+      "category": "No Bank Maxis",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 414000,
+    "holder": "Excosis",
+    "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/die-rise/",
+    "checkedAt": 1792037374502,
+    "achievedDate": "2023-08-13",
+    "dateSource": "zwr-added",
+    "recordId": "102444",
+    "video": "https://youtu.be/oO-cQ6_gSe0",
+    "recordNote": null,
+    "otherLinks": []
+  },
+  {
+    "id": "zwr:{\"map\":\"bo2-die-rise\",\"category\":\"Bank Richtofen\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"bo2\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "bo2-die-rise",
+      "category": "Bank Richtofen",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 280450,
+    "holder": "JettLag",
+    "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/die-rise/",
+    "checkedAt": 1792037374502,
+    "achievedDate": "2026-01-12",
+    "dateSource": "zwr-added",
+    "recordId": "117598",
+    "video": "https://www.twitch.tv/videos/2667814897",
+    "recordNote": null,
+    "otherLinks": [
+      "https://www.twitch.tv/videos/2667815205"
+    ]
+  },
+  {
+    "id": "zwr:{\"map\":\"bo2-die-rise\",\"category\":\"Bank Maxis\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"bo2\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "bo2-die-rise",
+      "category": "Bank Maxis",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 368000,
+    "holder": "Excosis",
+    "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/die-rise/",
+    "checkedAt": 1792037374502,
+    "achievedDate": "2023-08-21",
+    "dateSource": "zwr-added",
+    "recordId": "102436",
+    "video": "https://youtu.be/Ha2ruAYKHpE",
+    "recordNote": null,
+    "otherLinks": []
+  },
+  {
+    "id": "zwr:{\"map\":\"bo2-buried\",\"category\":\"No Bank Richtofen\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"bo2\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "bo2-buried",
+      "category": "No Bank Richtofen",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 651000,
+    "holder": "JettLag",
+    "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/buried/",
+    "checkedAt": 1792037374502,
+    "achievedDate": "2025-02-15",
+    "dateSource": "zwr-added",
+    "recordId": "133553",
+    "video": "https://www.youtube.com/watch?v=yWDEED7i4eY&t=3s",
+    "recordNote": null,
+    "otherLinks": [
+      "https://youtu.be/cOo3lKOc730"
+    ]
+  },
+  {
+    "id": "zwr:{\"map\":\"bo2-buried\",\"category\":\"No Bank Maxis\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"bo2\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "bo2-buried",
+      "category": "No Bank Maxis",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 869000,
+    "holder": "JettLag",
+    "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/buried/",
+    "checkedAt": 1792037374502,
+    "achievedDate": "2026-01-14",
+    "dateSource": "zwr-added",
+    "recordId": "144983",
+    "video": "https://youtu.be/heMDeAZwXSs",
+    "recordNote": null,
+    "otherLinks": [
+      "https://www.twitch.tv/videos/2670077022"
+    ]
+  },
+  {
+    "id": "zwr:{\"map\":\"bo2-buried\",\"category\":\"Bank Richtofen\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"bo2\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "bo2-buried",
+      "category": "Bank Richtofen",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 499000,
+    "holder": "JettLag",
+    "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/buried/",
+    "checkedAt": 1792037374502,
+    "achievedDate": "2026-01-10",
+    "dateSource": "zwr-added",
+    "recordId": "111087",
+    "video": "https://youtu.be/9S8pVikY_Ow",
+    "recordNote": null,
+    "otherLinks": [
+      "https://www.twitch.tv/videos/2665702022"
+    ]
+  },
+  {
+    "id": "zwr:{\"map\":\"bo2-buried\",\"category\":\"Bank Maxis\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"bo2\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "bo2-buried",
+      "category": "Bank Maxis",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 730000,
+    "holder": "JettLag",
+    "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/buried/",
+    "checkedAt": 1792037374502,
+    "achievedDate": "2026-01-13",
+    "dateSource": "zwr-added",
+    "recordId": "144940",
+    "video": "https://youtu.be/6kPtDdOCbkw",
+    "recordNote": null,
+    "otherLinks": [
+      "https://www.twitch.tv/videos/2669143911"
+    ]
+  },
+  {
+    "id": "zwr:{\"map\":\"bo2-mob-of-the-dead\",\"category\":\"Standard\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"bo2\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "bo2-mob-of-the-dead",
+      "category": "Standard",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 1066000,
+    "holder": "J Dubs",
+    "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/mob-of-the-dead/",
+    "checkedAt": 1792037374502,
+    "achievedDate": "2026-09-28",
+    "dateSource": "zwr-added",
+    "recordId": "111877",
+    "video": "https://www.youtube.com/watch?v=2CMn_qwnrwY",
+    "recordNote": "",
+    "otherLinks": [
+      "https://www.youtube.com/watch?v=u1t-SxFlw74"
+    ]
+  },
+  {
+    "id": "zwr:{\"map\":\"bo2-origins\",\"category\":\"Standard\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"bo2\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "bo2-origins",
+      "category": "Standard",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 2105000,
+    "holder": "Dank Slushie",
+    "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/origins/",
+    "checkedAt": 1792037374502,
+    "achievedDate": "2026-10-05",
+    "dateSource": "zwr-added",
+    "recordId": "117465",
+    "video": "https://youtu.be/NDNFSL7kIds",
+    "recordNote": "retimed to 35:34",
+    "otherLinks": [
+      "https://www.twitch.tv/videos/2892267500"
+    ]
   }
 ]

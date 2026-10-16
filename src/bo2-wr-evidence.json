@@ -1,0 +1,609 @@
+{
+  "checkedAt": 1792037374502,
+  "records": [
+    {
+      "profile": {
+        "map": "bo2-tranzit",
+        "category": "No Bank Richtofen",
+        "players": 1,
+        "timing": "GameTime"
+      },
+      "recordId": "124897",
+      "holder": "SecondaryColors",
+      "listedFinishMs": 710000,
+      "recordAddedDate": "2024-08-28",
+      "dateSource": "zwr-added",
+      "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/tranzit/",
+      "video": "https://youtu.be/V9xNCvFmDEQ?si=Q68hrw9P0fpvO3xq",
+      "recordNote": null,
+      "otherLinks": [],
+      "expectedSplits": [
+        "Jetgun",
+        "Tower",
+        "End"
+      ],
+      "verifiedIntermediateSplits": [
+        {
+          "name": "Jetgun",
+          "time": "8:36.65",
+          "ms": 516650,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "Tower",
+          "time": "9:16.35",
+          "ms": 556350,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        }
+      ],
+      "splitReviewStatus": "complete",
+      "splitReviewNote": null
+    },
+    {
+      "profile": {
+        "map": "bo2-tranzit",
+        "category": "No Bank Maxis",
+        "players": 1,
+        "timing": "GameTime"
+      },
+      "recordId": "98199",
+      "holder": "Excosis",
+      "listedFinishMs": 333000,
+      "recordAddedDate": "2023-01-20",
+      "dateSource": "zwr-added",
+      "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/tranzit/",
+      "video": "https://youtu.be/I0PBQ6wv0k8",
+      "recordNote": null,
+      "otherLinks": [],
+      "expectedSplits": [
+        "Power off",
+        "End"
+      ],
+      "verifiedIntermediateSplits": [],
+      "splitReviewStatus": "partial",
+      "splitReviewNote": null
+    },
+    {
+      "profile": {
+        "map": "bo2-tranzit",
+        "category": "Bank Richtofen",
+        "players": 1,
+        "timing": "GameTime"
+      },
+      "recordId": "102437",
+      "holder": "Frothy Milkshake",
+      "listedFinishMs": 656150,
+      "recordAddedDate": "2023-09-10",
+      "dateSource": "zwr-added",
+      "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/tranzit/",
+      "video": "https://www.youtube.com/watch?v=aU1s0QyXJQg",
+      "recordNote": null,
+      "otherLinks": [],
+      "expectedSplits": [
+        "Jetgun",
+        "Tower",
+        "End"
+      ],
+      "verifiedIntermediateSplits": [
+        {
+          "name": "Jetgun",
+          "time": "8:10.25",
+          "ms": 490250,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "Tower",
+          "time": "8:48.80",
+          "ms": 528800,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        }
+      ],
+      "splitReviewStatus": "complete",
+      "splitReviewNote": null
+    },
+    {
+      "profile": {
+        "map": "bo2-tranzit",
+        "category": "Bank Maxis",
+        "players": 1,
+        "timing": "GameTime"
+      },
+      "recordId": "118264",
+      "holder": "Hatcher",
+      "listedFinishMs": 366000,
+      "recordAddedDate": "2024-04-18",
+      "dateSource": "zwr-added",
+      "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/tranzit/",
+      "video": "https://youtu.be/B1WSKEgi9qQ",
+      "recordNote": "Resets: https://www.youtube.com/watch?v=CE54mOwcleM&ab_channel=HelamanHatcher",
+      "otherLinks": [],
+      "expectedSplits": [
+        "Power off",
+        "End"
+      ],
+      "verifiedIntermediateSplits": [],
+      "splitReviewStatus": "partial",
+      "splitReviewNote": null
+    },
+    {
+      "profile": {
+        "map": "bo2-die-rise",
+        "category": "No Bank Richtofen",
+        "players": 1,
+        "timing": "GameTime"
+      },
+      "recordId": "110227",
+      "holder": "sable",
+      "listedFinishMs": 382000,
+      "recordAddedDate": "2023-08-24",
+      "dateSource": "zwr-added",
+      "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/die-rise/",
+      "video": "https://youtu.be/3-wwJClc8Vo",
+      "recordNote": null,
+      "otherLinks": [],
+      "expectedSplits": [
+        "Symbols",
+        "End"
+      ],
+      "verifiedIntermediateSplits": [],
+      "splitReviewStatus": "partial",
+      "splitReviewNote": "Completion near the video end is obscured; listed finish stays 6:22."
+    },
+    {
+      "profile": {
+        "map": "bo2-die-rise",
+        "category": "No Bank Maxis",
+        "players": 1,
+        "timing": "GameTime"
+      },
+      "recordId": "102444",
+      "holder": "Excosis",
+      "listedFinishMs": 414000,
+      "recordAddedDate": "2023-08-13",
+      "dateSource": "zwr-added",
+      "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/die-rise/",
+      "video": "https://youtu.be/oO-cQ6_gSe0",
+      "recordNote": null,
+      "otherLinks": [],
+      "expectedSplits": [
+        "Symbols",
+        "End"
+      ],
+      "verifiedIntermediateSplits": [],
+      "splitReviewStatus": "partial",
+      "splitReviewNote": "Legacy labels preserved separately."
+    },
+    {
+      "profile": {
+        "map": "bo2-die-rise",
+        "category": "Bank Richtofen",
+        "players": 1,
+        "timing": "GameTime"
+      },
+      "recordId": "117598",
+      "holder": "JettLag",
+      "listedFinishMs": 280450,
+      "recordAddedDate": "2026-01-12",
+      "dateSource": "zwr-added",
+      "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/die-rise/",
+      "video": "https://www.twitch.tv/videos/2667814897",
+      "recordNote": null,
+      "otherLinks": [
+        "https://www.twitch.tv/videos/2667815205"
+      ],
+      "expectedSplits": [
+        "Symbols",
+        "End"
+      ],
+      "verifiedIntermediateSplits": [
+        {
+          "name": "Symbols",
+          "time": "1:35.45",
+          "ms": 95450,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        }
+      ],
+      "splitReviewStatus": "partial",
+      "splitReviewNote": "Twitch overlay verified: Symbols 1:35.45. GSC finish 4:40.40 differs by 50ms from ZWR 4:40.45; retain accepted ZWR finish."
+    },
+    {
+      "profile": {
+        "map": "bo2-die-rise",
+        "category": "Bank Maxis",
+        "players": 1,
+        "timing": "GameTime"
+      },
+      "recordId": "102436",
+      "holder": "Excosis",
+      "listedFinishMs": 368000,
+      "recordAddedDate": "2023-08-21",
+      "dateSource": "zwr-added",
+      "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/die-rise/",
+      "video": "https://youtu.be/Ha2ruAYKHpE",
+      "recordNote": null,
+      "otherLinks": [],
+      "expectedSplits": [
+        "Symbols",
+        "End"
+      ],
+      "verifiedIntermediateSplits": [],
+      "splitReviewStatus": "partial",
+      "splitReviewNote": "Legacy Puzzles Done label is recorded separately until its exact T6 Symbols event equivalence is checked."
+    },
+    {
+      "profile": {
+        "map": "bo2-buried",
+        "category": "No Bank Richtofen",
+        "players": 1,
+        "timing": "GameTime"
+      },
+      "recordId": "133553",
+      "holder": "JettLag",
+      "listedFinishMs": 651000,
+      "recordAddedDate": "2025-02-15",
+      "dateSource": "zwr-added",
+      "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/buried/",
+      "video": "https://www.youtube.com/watch?v=yWDEED7i4eY&t=3s",
+      "recordNote": null,
+      "otherLinks": [
+        "https://youtu.be/cOo3lKOc730"
+      ],
+      "expectedSplits": [
+        "Boxhit",
+        "Ghosts",
+        "Cipher",
+        "Time Travel",
+        "End"
+      ],
+      "verifiedIntermediateSplits": [
+        {
+          "name": "Cipher",
+          "time": "4:53.95",
+          "ms": 293950,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "Time Travel",
+          "time": "6:30.95",
+          "ms": 390950,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        }
+      ],
+      "splitReviewStatus": "partial",
+      "splitReviewNote": "Older recording shows three split rows, without Boxhit or Ghosts. GSC final 10:51.10; separate LiveSplit display 10:50.71."
+    },
+    {
+      "profile": {
+        "map": "bo2-buried",
+        "category": "No Bank Maxis",
+        "players": 1,
+        "timing": "GameTime"
+      },
+      "recordId": "144983",
+      "holder": "JettLag",
+      "listedFinishMs": 869000,
+      "recordAddedDate": "2026-01-14",
+      "dateSource": "zwr-added",
+      "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/buried/",
+      "video": "https://youtu.be/heMDeAZwXSs",
+      "recordNote": null,
+      "otherLinks": [
+        "https://www.twitch.tv/videos/2670077022"
+      ],
+      "expectedSplits": [
+        "Boxhit",
+        "Ghosts",
+        "Cipher",
+        "Time Travel",
+        "End"
+      ],
+      "verifiedIntermediateSplits": [
+        {
+          "name": "Cipher",
+          "time": "5:59.35",
+          "ms": 359350,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "Time Travel",
+          "time": "7:38.85",
+          "ms": 458850,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        }
+      ],
+      "splitReviewStatus": "partial",
+      "splitReviewNote": "Older recording shows only three split rows; Boxhit and Ghosts are not shown."
+    },
+    {
+      "profile": {
+        "map": "bo2-buried",
+        "category": "Bank Richtofen",
+        "players": 1,
+        "timing": "GameTime"
+      },
+      "recordId": "111087",
+      "holder": "JettLag",
+      "listedFinishMs": 499000,
+      "recordAddedDate": "2026-01-10",
+      "dateSource": "zwr-added",
+      "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/buried/",
+      "video": "https://youtu.be/9S8pVikY_Ow",
+      "recordNote": null,
+      "otherLinks": [
+        "https://www.twitch.tv/videos/2665702022"
+      ],
+      "expectedSplits": [
+        "Boxhit",
+        "Ghosts",
+        "Cipher",
+        "Time Travel",
+        "End"
+      ],
+      "verifiedIntermediateSplits": [
+        {
+          "name": "Boxhit",
+          "time": "0:34.10",
+          "ms": 34100,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "Ghosts",
+          "time": "1:31.25",
+          "ms": 91250,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "Cipher",
+          "time": "3:54.80",
+          "ms": 234800,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "Time Travel",
+          "time": "5:29.35",
+          "ms": 329350,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        }
+      ],
+      "splitReviewStatus": "partial",
+      "splitReviewNote": "Final GSC overlay says 8:20.00; LiveSplit shows 8:19.95 and ZWR lists 8:19. Intermediate times retained; final requires timing review."
+    },
+    {
+      "profile": {
+        "map": "bo2-buried",
+        "category": "Bank Maxis",
+        "players": 1,
+        "timing": "GameTime"
+      },
+      "recordId": "144940",
+      "holder": "JettLag",
+      "listedFinishMs": 730000,
+      "recordAddedDate": "2026-01-13",
+      "dateSource": "zwr-added",
+      "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/buried/",
+      "video": "https://youtu.be/6kPtDdOCbkw",
+      "recordNote": null,
+      "otherLinks": [
+        "https://www.twitch.tv/videos/2669143911"
+      ],
+      "expectedSplits": [
+        "Boxhit",
+        "Ghosts",
+        "Cipher",
+        "Time Travel",
+        "End"
+      ],
+      "verifiedIntermediateSplits": [
+        {
+          "name": "Boxhit",
+          "time": "0:33.70",
+          "ms": 33700,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "Ghosts",
+          "time": "3:19.35",
+          "ms": 199350,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "Cipher",
+          "time": "5:30.75",
+          "ms": 330750,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        },
+        {
+          "name": "Time Travel",
+          "time": "6:46.10",
+          "ms": 406100,
+          "precisionMs": 50,
+          "source": "video-timer-overlay"
+        }
+      ],
+      "splitReviewStatus": "complete",
+      "splitReviewNote": null
+    },
+    {
+      "profile": {
+        "map": "bo2-mob-of-the-dead",
+        "category": "Standard",
+        "players": 1,
+        "timing": "GameTime"
+      },
+      "recordId": "111877",
+      "holder": "J Dubs",
+      "listedFinishMs": 1066000,
+      "recordAddedDate": "2026-09-28",
+      "dateSource": "zwr-added",
+      "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/mob-of-the-dead/",
+      "video": "https://www.youtube.com/watch?v=2CMn_qwnrwY",
+      "recordNote": "",
+      "otherLinks": [
+        "https://www.youtube.com/watch?v=u1t-SxFlw74"
+      ],
+      "expectedSplits": [
+        "Dryer",
+        "Gondola 1",
+        "Fly 1",
+        "Gondola 2",
+        "Fly 2",
+        "Gondola 3",
+        "Fly 3",
+        "Codes",
+        "End"
+      ],
+      "verifiedIntermediateSplits": [
+        {
+          "name": "Dryer",
+          "time": "0:43.00",
+          "ms": 43000,
+          "precisionMs": 50,
+          "source": "user-provided",
+          "providedOn": "2026-10-14"
+        },
+        {
+          "name": "Gondola 1",
+          "time": "3:30.90",
+          "ms": 210900,
+          "precisionMs": 50,
+          "source": "user-provided",
+          "providedOn": "2026-10-14"
+        },
+        {
+          "name": "Fly 1",
+          "time": "5:11.15",
+          "ms": 311150,
+          "precisionMs": 50,
+          "source": "user-provided",
+          "providedOn": "2026-10-14"
+        },
+        {
+          "name": "Gondola 2",
+          "time": "7:59",
+          "ms": 479000,
+          "precisionMs": 1000,
+          "source": "user-provided",
+          "providedOn": "2026-10-14"
+        },
+        {
+          "name": "Fly 2",
+          "time": "9:24.50",
+          "ms": 564500,
+          "precisionMs": 50,
+          "source": "user-provided",
+          "providedOn": "2026-10-14"
+        },
+        {
+          "name": "Gondola 3",
+          "time": "12:01.80",
+          "ms": 721800,
+          "precisionMs": 50,
+          "source": "user-provided",
+          "providedOn": "2026-10-14"
+        },
+        {
+          "name": "Fly 3",
+          "time": "13:06.20",
+          "ms": 786200,
+          "precisionMs": 50,
+          "source": "user-provided",
+          "providedOn": "2026-10-14"
+        },
+        {
+          "name": "Codes",
+          "time": "15:44.30",
+          "ms": 944300,
+          "precisionMs": 50,
+          "source": "user-provided",
+          "providedOn": "2026-10-14"
+        }
+      ],
+      "splitReviewStatus": "complete",
+      "splitReviewNote": "Dryer through Codes supplied by the user, including mappings of the two custom labels to Gondola 3 and Fly 3. End 17:46.15 retained from the video; its manual split confidence remains whole-second."
+    },
+    {
+      "profile": {
+        "map": "bo2-origins",
+        "category": "Standard",
+        "players": 1,
+        "timing": "GameTime"
+      },
+      "recordId": "117465",
+      "holder": "Dank Slushie",
+      "listedFinishMs": 2105000,
+      "recordAddedDate": "2026-10-05",
+      "dateSource": "zwr-added",
+      "source": "https://zwr.gg/leaderboards/bo2/ee-speedrun/origins/",
+      "video": "https://youtu.be/NDNFSL7kIds",
+      "recordNote": "retimed to 35:34",
+      "otherLinks": [
+        "https://www.twitch.tv/videos/2892267500"
+      ],
+      "expectedSplits": [
+        "No Man's Land",
+        "Chests Filled",
+        "Staff 1",
+        "Staff 2",
+        "Staff 3",
+        "Staff 4",
+        "Ascend from Darkness",
+        "Rain Fire",
+        "End"
+      ],
+      "verifiedIntermediateSplits": [
+        {
+          "name": "Staff 1",
+          "time": "13:42",
+          "ms": 822000,
+          "precisionMs": 1000,
+          "source": "video-LiveSplit-table",
+          "approximate": true
+        },
+        {
+          "name": "Staff 2",
+          "time": "18:29",
+          "ms": 1109000,
+          "precisionMs": 1000,
+          "source": "video-LiveSplit-table",
+          "approximate": true
+        },
+        {
+          "name": "Staff 3",
+          "time": "21:34",
+          "ms": 1294000,
+          "precisionMs": 1000,
+          "source": "video-LiveSplit-table",
+          "approximate": true
+        },
+        {
+          "name": "Staff 4",
+          "time": "26:14",
+          "ms": 1574000,
+          "precisionMs": 1000,
+          "source": "video-LiveSplit-table",
+          "approximate": true
+        }
+      ],
+      "splitReviewStatus": "partial",
+      "userConfirmedFinish": "35:05",
+      "retimingNoteStatus": "conflicting source note retained; do not override listed time",
+      "splitReviewNote": "Craft mappings verified against visible Ice, Wind, Fire and Lightning build prompts at video seconds 828,1116,1300,1580. NML, Chests Filled, AFD and Rain Fire are not in the runner table. Accepted/listed finish stays 35:05; video final shows 35:05.80."
+    }
+  ]
+}

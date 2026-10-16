@@ -1,3 +1,4 @@
+import {BO2_WR_SPLITS} from './bo2-wr-splits.js';
 import {milliseconds,profileKey,superStage} from './domain.js';
 import {splitName} from './split-rules.js';
 
@@ -133,7 +134,7 @@ export const WR_CHECKPOINTS=Object.entries(reviewed).map(([map,splits])=>{
  const record=baseline.find(r=>r.profile.map===map&&r.profile.category===category);
  return {profile:record.profile,recordId:record.recordId,holder:record.holder,listedMs:record.ms,
   splits:Object.entries(splits).map(([name,value])=>({name,ms:Math.round(milliseconds(value)/50)*50,precisionMs:value.includes('.')?50:1000}))};
-});
+}).concat(BO2_WR_SPLITS);
 export function wrCheckpoint(store,profile,name){
  return wrSplitLookup(store,profile,name).split;
 }

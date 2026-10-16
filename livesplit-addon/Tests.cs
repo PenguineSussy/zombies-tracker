@@ -38,9 +38,10 @@ class Tests
         {
             var factory = new Factory();
             Check(factory.Version == new Version(AddonUpdates.InstalledVersion), "factory and upload versions agree");
-            Check(factory.XMLURL == factory.UpdateURL + "update.LiveSplit.ZombiesTracker.xml", "updater manifest URL");
+            Check(factory.XMLURL == factory.UpdateURL + "update.LiveSplit.ZombiesTracker.xml", "production updater manifest URL");
+            Check(AddonUpdates.DownloadUrl=="https://doctormonty.beer/downloads/Zombies-Tracker-LiveSplit.zip","production addon download URL");
             var manifest = new XmlDocument();
-            manifest.Load(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "../update/update.LiveSplit.ZombiesTracker.xml"));
+            manifest.Load(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "release.xml"));
             var release = UpdateManager.Update.Parse(manifest.DocumentElement.FirstChild);
             Check(release.Version == factory.Version, "LiveSplit parses release manifest version");
             Check(release.FileChanges.Count == 1 && release.FileChanges[0].Path == "Components/LiveSplit.ZombiesTracker.dll" && release.FileChanges[0].Status == UpdateManager.ChangeStatus.Changed, "updater replaces only tracker DLL");
@@ -60,7 +61,7 @@ class Tests
             Check(AddonUpdates.Describe("0.2.6","0.2.9","0.2.7").Contains("Important update"),"important update notice");
             Check(AddonUpdates.Describe("0.2.10","0.2.9","0.2.7").Contains("up to date"),"numeric version ordering");
             bool invalidRelease=false;try{AddonUpdates.Describe("0.2.8","bad","0.2.7");}catch{invalidRelease=true;}Check(invalidRelease,"invalid manifest rejected");
-            foreach(var map in Detector.Maps.Where(m=>m.Enabled&&m.Id!="super-easter-egg"))
+            foreach(var map in Detector.Maps.Where(m=>m.Enabled&&!Detector.IsBo2(m.Id)&&m.Id!="super-easter-egg"))
                 Check(Detector.Detect(map.Name,"","",new Dictionary<string,string>(),new string[0],"").Map==map.Id,"map-only title "+map.Id);
             Check(Detector.RunCategory("","","der-eisendrache")=="Mega Gums","empty category defaults Mega");
             Check(Detector.RunCategory("","","ascension")=="Any%","Any only category default");
@@ -81,7 +82,7 @@ class Tests
             Check(AutosplitBridge.Select(order,settings.DocumentElement,"zm_zod",2)==null,"other map cannot borrow settings");
             Check(AutosplitBridge.Compatible("der-eisendrache",new[]{"Penguine Eats Bread","TP"},new[]{"Rocket Test TP","First TP"}),"custom names with consistent anchors");
             Check(!AutosplitBridge.Compatible("der-eisendrache",new[]{"Bow","TP"},new[]{"Rocket Test TP","First TP"}),"contradictory named anchor rejected");
-            foreach (var map in Detector.Maps.Where(m => m.Enabled && m.Id != "super-easter-egg")) Check(Detect(map.Name + " Any% Solo").Map == map.Id, "map " + map.Name);
+            foreach (var map in Detector.Maps.Where(m => m.Enabled && !Detector.IsBo2(m.Id) && m.Id != "super-easter-egg")) Check(Detect(map.Name + " Any% Solo").Map == map.Id, "map " + map.Name);
             Check(!Detector.CategoriesForMap("zetsubou-no-shima").Contains("No Gums"), "ZNS category restriction");
             Check(!Detector.CategoriesForMap("super-easter-egg").Contains("No Gums"), "Super EE category restriction");
             Check(Detector.CategoriesForMap("ascension").SequenceEqual(new[]{"Any%"}) && Detector.CategoriesForMap("shangri-la").SequenceEqual(new[]{"Any%"}), "Any percent only maps");
@@ -99,7 +100,15 @@ class Tests
             Check(!Detect("Easter Egg", "Lightning Bow", "Wisps", "KT4", "Masamune").Success, "signature conflict");
             Check(Detect("Der Eisendrache Solo 2P").NonSolo, "contradictory multiplayer");
             Check(Detect("Der Eisendrache Co-op").NonSolo, "coop");
-            Check(!Detector.Detect("Call of Duty Black Ops II", "Origins", "", new Dictionary<string,string>(), new string[0], "").Success, "wrong game");
+            Check(Detector.Detect("Call of Duty Black Ops II", "Origins", "", new Dictionary<string,string>(), new string[0], "").Map=="bo2-origins", "BO2 Origins isolated");
+            foreach(var title in new[]{"Black Ops II Zombies","Call of Duty: Black Ops II Zombies","Black Ops 2 Zombies","BO2 Zombies","BOII Zombies"})Check(Detector.Detect(title,"Origins","",new Dictionary<string,string>(),new string[0],"").Map=="bo2-origins","BO2 title variant "+title);
+            Check(Detector.Detect("Origins","Standard","",new Dictionary<string,string>(),new string[0],"",null,"bo2").Map=="bo2-origins","BO2 selector with shared map title");
+            Check(Detector.Detect("TranZit","Bank Maxis","",new Dictionary<string,string>(),new string[0],"").Map=="bo2-tranzit","unique BO2 map title");
+            Check(!Detector.Detect("BO2","Nuketown","",new Dictionary<string,string>(),new[]{"Power"},"").Success,"Nuketown is unsupported");
+            foreach(var map in Detector.Maps.Where(m=>Detector.IsBo2(m.Id))) Check(Detector.Detect("BO2",map.Name,"",new Dictionary<string,string>(),new string[0],"").Map==map.Id,"BO2 map "+map.Id);
+            foreach(var category in Detector.Bo2Categories) Check(Detector.Bo2Category(new[]{category},"","bo2-tranzit")==category,"BO2 category "+category);
+            Check(Detector.Bo2Category(new[]{"No Bank Maxis","Bank Maxis"},"","bo2-buried")==null,"conflicting bank metadata rejected");
+            Check(Detector.Bo2Category(new[]{"Bank Maxis Richtofen"},"","bo2-buried")==null,"ambiguous BO2 category");
             foreach (var game in new[]{"", "Call of Duty: Black Ops 4", "Call of Duty: Black Ops II", "Minecraft", "BO3 custom game"})
                 foreach (var selected in new[]{"", "der-eisendrache"})
                     Check(!Detector.Detect(game, "Der Eisendrache Mega Gums", "DE", new Dictionary<string,string>(), new[]{"Lightning Bow", "Wisps"}, selected).Success, "reject unsupported game despite BO3 map hints/override: " + game);
@@ -185,12 +194,21 @@ class Tests
             Check(historyRun[0].PersonalBestSplitTime.RealTime.Value.TotalSeconds == 355 && historyRun[0].BestSegmentTime.RealTime.Value.TotalSeconds == 334, "record reading does not mutate comparisons");
             model.Start();
             Check(Protocol.Capture(state, profile, "test-attempt", 1, false, false).igtMs == null,"uninitialized game time stays absent");
+            var bo2Profile=new RunProfile {game="bo2",map="bo2-origins",category="Standard",players=1,timing="GameTime"};
+            bool missingIgt=false;try{Protocol.Capture(state,bo2Profile,"bo2-missing",1,false,false);}catch(InvalidOperationException){missingIgt=true;}Check(missingIgt,"missing IGT never falls back to RTA");
             model.InitializeGameTime(); state.IsGameTimePaused = true; state.SetGameTime(TimeSpan.FromSeconds(7));
             Pump(40); model.Split();
             state.CurrentTimingMethod = TimingMethod.GameTime;
             var sample = Protocol.Capture(state, profile, "test-attempt", 1, false, false);
             Check(sample.splits.Count == 1 && sample.splits[0].name == "Bow Done" && sample.splits[0].ms > 0, "original split name / RTA despite GameTime display");
             Check(sample.igtMs == 7000 && sample.splits[0].igtMs == 7000,"live and checkpoint IGT captured separately from RTA");
+            var bo2Sample=Protocol.Capture(state,bo2Profile,"bo2-test",1,false,false);
+            Check(bo2Sample.elapsedMs==7000 && bo2Sample.splits[0].ms==7000,"BO2 primary and split use Game Time");
+            Check(bo2Sample.realTime!=null && bo2Sample.realTime.splits[0].ms==sample.splits[0].ms,"BO2 retains paired RTA");
+            Check(Protocol.ReadRecords(historyRun,TimingMethod.GameTime).pbMs==1500000 && Protocol.ReadRecords(historyRun,TimingMethod.GameTime).pbRealTimeMs==1625000,"BO2 PB primary IGT paired RTA");
+            Check(SplitAliases.Known("bo2-mob-of-the-dead","Flight 3")=="Fly 3" && SplitAliases.Known("bo2-origins","Freedom")=="End","BO2 aliases use Fly and End");
+            Check(Detector.Detect("", "Origins", "", new Dictionary<string,string>(),new string[0],"",null,"bo2").Map=="bo2-origins","explicit BO2 selector");
+            Check(!Detector.Detect("BO3", "Origins", "", new Dictionary<string,string>(),new string[0],"",null,"bo2").Success,"BO2 selector cannot relabel BO3 Origins");
             model.Pause();
             sample = Protocol.Capture(state, profile, "test-attempt", 2, false, false);
             Check(sample.elapsedMs == (long)Math.Round(state.CurrentTime.RealTime.Value.TotalMilliseconds), "paused elapsed equals LiveSplit RTA exactly");
@@ -288,6 +306,23 @@ class Tests
                 {
                     Check(recovered.Count == 1, "pending event recovered from disk");
                     recovered.Flush(); Pump(500); Check(recovered.Count == 0, "recovered event acknowledged");
+                }
+            }
+            if(args.Length==2) {
+                var bo2Run=new Run(new LiveSplit.Model.Comparisons.StandardComparisonGeneratorsFactory());
+                bo2Run.GameName="Black Ops II Zombies";bo2Run.CategoryName="Mob of the Dead Solo";bo2Run.Add(new Segment("Dryer"));bo2Run.Add(new Segment("End"));
+                state.Run=bo2Run;
+                using(var component=new TrackerComponent(state)) {
+                    var doc=new XmlDocument();doc.LoadXml("<Settings><Enabled>True</Enabled><Server>"+args[0]+"</Server><ProtectedToken>"+Convert.ToBase64String(Protection.Protect(Encoding.UTF8.GetBytes(args[1])))+"</ProtectedToken></Settings>");component.SetSettings(doc.DocumentElement);
+                    UseLayout(state,component);component.Update(null,state,0,0,LiveSplit.UI.LayoutMode.Vertical);
+                    model.Start();model.InitializeGameTime();state.IsGameTimePaused=true;state.SetGameTime(TimeSpan.FromSeconds(10));Pump(100);model.Split();Pump(200);
+                    model.Pause();Pump(100);model.Pause();state.SetGameTime(TimeSpan.FromSeconds(20));model.Split();Pump(1200);
+                    var bo2Queue=(UploadQueue)typeof(TrackerComponent).GetField("uploader",BindingFlags.NonPublic|BindingFlags.Instance).GetValue(component);
+                    for(int wait=0;wait<80 && bo2Queue!=null && bo2Queue.Count>0;wait++){bo2Queue.Flush();Pump(100);}
+                    Check(bo2Queue!=null && bo2Queue.Count==0,"BO2 queue delivered: "+(bo2Queue==null?"missing uploader":bo2Queue.Status));
+                    var debugPanel=typeof(TrackerComponent).GetField("panel",BindingFlags.NonPublic|BindingFlags.Instance).GetValue(component);
+                    Console.WriteLine("BO2 native status: "+((Label)debugPanel.GetType().GetField("detection",BindingFlags.NonPublic|BindingFlags.Instance).GetValue(debugPanel)).Text+" | "+((Label)debugPanel.GetType().GetField("status",BindingFlags.NonPublic|BindingFlags.Instance).GetValue(debugPanel)).Text);
+                    Check(state.CurrentPhase==TimerPhase.Ended,"native BO2 run finished without tracker changing timer");
                 }
             }
             Console.WriteLine("PASS " + assertions + " addon assertions"); return 0;

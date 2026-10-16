@@ -41,8 +41,8 @@ test('records and WR splits do not cross gum categories',()=>{
     const {player}=store.register('SoloTest');
     const base={sequence:1,phase:'Running',index:1,elapsedMs:10000,current:'boss',splits:[{index:0,name:'bow',ms:5000}],observedAt:Date.now(),complete:true};
     store.ingest(player.id,{...base,attemptId:'solo-attempt-1',profile:{map:'der-eisendrache',category:'No Gums'}});
-    store.ingest(player.id,{...base,attemptId:'solo-attempt-2',profile:{map:'der-eisendrache',category:'Mega Gums'},splits:[{index:0,name:'bow',ms:3000}]});
+    store.ingest(player.id,{...base,attemptId:'solo-attempt-2',profile:{map:'der-eisendrache',category:'Mega Gums'},splits:[{index:0,name:'bow',ms:6000}]});
     assert.equal(store.best(store.get('players',player.id),'bow','alltime',{map:'der-eisendrache',category:'No Gums'}).ms,5000);
-    assert.equal(store.best(store.get('players',player.id),'bow','alltime').ms,3000);
+    assert.equal(store.best(store.get('players',player.id),'bow','alltime').ms,6000);
   }finally{store.close();}
 });

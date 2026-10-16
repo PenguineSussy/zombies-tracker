@@ -8,6 +8,7 @@ namespace LiveSplit.ZombiesTracker
 {
     public sealed class RunProfile
     {
+        public string game { get; set; }
         public string map { get; set; }
         public string category { get; set; }
         public int players { get; set; }
@@ -20,11 +21,13 @@ namespace LiveSplit.ZombiesTracker
         public long ms { get; set; }
         public long? igtMs { get; set; }
     }
+    public sealed class SecondaryTime { public long elapsedMs { get; set; } public List<Checkpoint> splits { get; set; } public SavedRecords records { get; set; } }
     public sealed class Snapshot
     {
         public string[] manualNames { get; set; }
         public string[] autosplitNames { get; set; }
         public string addonVersion { get; set; }
+        public SecondaryTime realTime { get; set; }
         public string attemptId { get; set; }
         public int attemptCount { get; set; }
         public bool resetEvent { get; set; }
@@ -54,6 +57,7 @@ namespace LiveSplit.ZombiesTracker
     {
         public long? pbMs { get; set; }
         public long? pbIgtMs { get; set; }
+        public long? pbRealTimeMs { get; set; }
         public List<SavedSplit> splits { get; set; }
     }
     public static class Protocol
@@ -68,7 +72,7 @@ namespace LiveSplit.ZombiesTracker
         public static Snapshot Capture(LiveSplitState state, RunProfile profile, string id, long sequence, bool practice, bool suppress)
         {
             bool idle = state.CurrentPhase == TimerPhase.NotRunning;
-            var timing = TimingMethod.RealTime;
+            var timing = profile.timing=="GameTime"?TimingMethod.GameTime:TimingMethod.RealTime;
             var elapsed = state.CurrentTime[timing];
             if (!idle && !elapsed.HasValue) throw new InvalidOperationException("LiveSplit has no time for the selected timing method.");
             int index = idle ? -1 : state.CurrentSplitIndex;
@@ -92,6 +96,11 @@ namespace LiveSplit.ZombiesTracker
                 if (time.HasValue) snapshot.splits.Add(new Checkpoint { index = i, name = name, ms = (long)Math.Round(time.Value.TotalMilliseconds), igtMs = state.IsGameTimeInitialized ? Milliseconds(state.Run[i].SplitTime.GameTime) : null });
                 else snapshot.complete = false;
             }
+            if(timing==TimingMethod.GameTime && state.CurrentTime.RealTime.HasValue) {
+                var secondary=new SecondaryTime { elapsedMs=idle?0:(long)Math.Round(state.CurrentTime.RealTime.Value.TotalMilliseconds), splits=new List<Checkpoint>() };
+                for(int i=0;i<index;i++) if(state.Run[i].SplitTime.RealTime.HasValue) secondary.splits.Add(new Checkpoint {index=i,name=Clean(state.Run[i].Name),ms=(long)Math.Round(state.Run[i].SplitTime.RealTime.Value.TotalMilliseconds)});
+                snapshot.realTime=secondary;
+            }
             return snapshot;
         }
         static long? Milliseconds(TimeSpan? value)
@@ -101,21 +110,21 @@ namespace LiveSplit.ZombiesTracker
         }
         // Read-only equivalent of LiveSplit's Best Split Times history calculation.
         // Never run a comparison generator against the user's live Run: it writes comparisons.
-        public static SavedRecords ReadRecords(IRun run)
+        public static SavedRecords ReadRecords(IRun run, TimingMethod timing = TimingMethod.RealTime)
         {
-            var result = new SavedRecords { splits = new List<SavedSplit>(), pbMs = run.Count == 0 ? null : Milliseconds(run[run.Count - 1].PersonalBestSplitTime.RealTime), pbIgtMs = run.Count == 0 ? null : Milliseconds(run[run.Count - 1].PersonalBestSplitTime.GameTime) };
+            var result = new SavedRecords { splits = new List<SavedSplit>(), pbMs = run.Count == 0 ? null : Milliseconds(run[run.Count - 1].PersonalBestSplitTime[timing]), pbRealTimeMs = timing!=TimingMethod.GameTime || run.Count == 0 ? null : Milliseconds(run[run.Count - 1].PersonalBestSplitTime.RealTime), pbIgtMs = timing==TimingMethod.GameTime || run.Count == 0 ? null : Milliseconds(run[run.Count - 1].PersonalBestSplitTime.GameTime) };
             var totals = new Dictionary<int, TimeSpan>();
             for (int i = 0; i < run.Count; i++)
             {
                 var segment = run[i];
-                long? best = Milliseconds(i == 0 ? segment.BestSegmentTime.RealTime : segment.PersonalBestSplitTime.RealTime);
+                long? best = Milliseconds(i == 0 ? segment.BestSegmentTime[timing] : segment.PersonalBestSplitTime[timing]);
                 var next = new Dictionary<int, TimeSpan>();
                 foreach (var entry in segment.SegmentHistory)
                 {
                     TimeSpan total;
                     if (i == 0) total = TimeSpan.Zero;
                     else if (!totals.TryGetValue(entry.Key, out total)) continue;
-                    var duration = entry.Value.RealTime;
+                    var duration = entry.Value[timing];
                     if (duration.HasValue)
                     {
                         total += duration.Value;
@@ -125,7 +134,7 @@ namespace LiveSplit.ZombiesTracker
                     next[entry.Key] = total;
                 }
                 totals = next;
-                result.splits.Add(new SavedSplit { index = i, name = Clean(segment.Name), pbSplitMs = Milliseconds(segment.PersonalBestSplitTime.RealTime), bestSplitMs = best, bestSegmentMs = Milliseconds(segment.BestSegmentTime.RealTime) });
+                result.splits.Add(new SavedSplit { index = i, name = Clean(segment.Name), pbSplitMs = Milliseconds(segment.PersonalBestSplitTime[timing]), bestSplitMs = best, bestSegmentMs = Milliseconds(segment.BestSegmentTime[timing]) });
             }
             return result;
         }

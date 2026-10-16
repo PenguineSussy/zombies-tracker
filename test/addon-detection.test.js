@@ -8,7 +8,7 @@ test('custom Rocket name is shared by records, commands, current split and site'
  const s=new Store();t.after(()=>s.close());const {player}=s.register('Runner');
  const names=['Penguine Eats Bread','R7'];
  const records={pbMs:451000,splits:names.map((name,index)=>({index,name,pbSplitMs:[346000,451000][index],bestSplitMs:[334000,440000][index],bestSegmentMs:[334000,94000][index]}))};
- s.ingest(player.id,{attemptId:'custom-name-001',sequence:1,profile,phase:'Running',index:0,elapsedMs:100,current:names[0],splits:[],records});
+ s.ingest(player.id,{attemptId:'custom-name-001',sequence:1,profile,phase:'Running',index:0,elapsedMs:5000,current:names[0],splits:[],records});
  assert.match(s.answer('!current Runner'),/Next: Rocket/);
  assert.match(s.answer('!best Runner Rocket alltime'),/Rocket: 5:34/);
  assert.match(s.answer('!best Runner "Penguine Eats Bread" alltime'),/Rocket: 5:34/);
@@ -59,7 +59,7 @@ test('Super EE manual map completion aliases retain cumulative timing and comple
 
 test('alias setup guidance is only a last resort',t=>{
  const s=new Store();t.after(()=>s.close());const {player}=s.register('UnknownRunner');
- const base={attemptId:'unknown-alias-001',sequence:1,profile,phase:'Running',index:1,elapsedMs:1000,splits:[{index:0,name:'Joke split',ms:1000}]};
+ const base={attemptId:'unknown-alias-001',sequence:1,profile,phase:'Running',index:1,elapsedMs:5000,splits:[{index:0,name:'Joke split',ms:5000}]};
  s.ingest(player.id,base);assert.match(s.answer('!best UnknownRunner "Joke split" session'),/Set its alias/);
  s.ingest(player.id,{...base,sequence:2,manualNames:['Rocket']});assert.doesNotMatch(s.answer('!best UnknownRunner Rocket session'),/Set its alias/);
 });

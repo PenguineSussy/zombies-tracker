@@ -63,7 +63,7 @@ test('connected YouTube alternates discover active broadcasts without requiring 
 test('Discord role alert uses confirmed live link or exact Currently Offline fallback',async t=>{
  const {store,player}=fixture(t);player.activeAttempt='attempt';store.savePlayer(player);store.streams(player,{twitchAccounts:['https://twitch.tv/mainrunner','https://twitch.tv/altrunner'],live:false});
  store.put('subscriptions','sub',{enabled:true});
- async function send(id){store.put('outbox',id,{id,player:player.id,attempt:'attempt',subscription:'sub',channel:'channel',role:'123',content:'Runner reached Rocket',createdAt:store.clock(),status:'pending',nextTry:0,tries:0});let body;await deliverAlerts(store,'fake-token',async(url,opts)=>{body=JSON.parse(opts.body);return {ok:true};});return body;}
+ async function send(id){store.put('outbox',id,{id,player:player.id,attempt:'attempt',subscription:'sub',channel:'channel',role:'123',split:{index:0,name:'Rocket',ms:334000},content:'Runner reached Rocket',createdAt:store.clock(),status:'pending',nextTry:0,tries:0});let body;await deliverAlerts(store,'fake-token',async(url,opts)=>{body=JSON.parse(opts.body);return {ok:true};});return body;}
  assert.match((await send('offline')).content,/\nCurrently Offline$/);
  await checkTwitchStreams(store,{request:async()=>json({data:[{type:'live',user_login:'altrunner'}]})},'client');
  const msg=await send('live');assert.match(msg.content,/Watch live: https:\/\/www.twitch.tv\/altrunner$/);assert.deepEqual(msg.allowed_mentions,{parse:[],roles:['123']});assert.doesNotMatch(msg.content,/mainrunner/);
