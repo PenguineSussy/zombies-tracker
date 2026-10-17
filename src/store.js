@@ -1,4 +1,5 @@
 import {eligibleTime,eligibleRun} from './minimum-run.js';
+import {queueDiscordReset} from './discord-resets.js';
 import {replyProfile,duration,lastSeen,achievedDate,runTime,replyTiming as timingLabel} from './reply-format.js';
 import {recordActivity} from './activity.js';
 import {capturePacePB,paceAnswer} from './pace.js';
@@ -144,6 +145,7 @@ export class Store {
       if(s.addonVersion && provider==='direct' && s.observedAt >= (p.addon?.reportedAt??0)) p.addon={version:s.addonVersion,reportedAt:Math.min(now,s.observedAt)};
       queueAnnouncements(this,p,a,previousAttempt);
       recordActivity(this,p,a,previousAttempt,old);
+      queueDiscordReset(this,p,a,old);
       if(s.records && !s.practice) {
         const recordId=`saved-records:${p.id}:${profileKey(s.profile)}`;
         const previous=this.get('metadata',recordId);

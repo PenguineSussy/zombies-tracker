@@ -186,7 +186,7 @@ function legacyCommand(text, defaultPlayer) {
     if(!match) return {command:'wr',error:'Use !wr <map> [category], e.g. !wr Der Eisendrache Any%. Mega Gums is the default.'};
     const suffix=text.slice(match.alias.length).trim();
     const allowed=categoriesForMap(match.map);
-    const category=suffix ? allowed.find(c=>stageWords(c)===suffix) : gameForMap(match.map)==='bo2'?(allowed.length===1?allowed[0]:null):'Mega Gums';
+    const category=suffix ? allowed.find(c=>stageWords(c)===suffix) : gameForMap(match.map)==='bo2'?(allowed.includes('Bank Richtofen')?'Bank Richtofen':allowed[0]):'Mega Gums';
     if(!category) return {command:'wr',error:(CATEGORIES.some(c=>stageWords(c)===suffix)?'This map allows only: ':'Choose ')+allowed.join(', ')+'.'};
     return {command:'wr',profile:{map:match.map,category}};
   }

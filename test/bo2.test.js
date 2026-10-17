@@ -16,7 +16,14 @@ test('BO2 categories and Origins remain separate from BO3',()=>{
  assert.throws(()=>profile({...p,game:'bo3'}));
  assert.equal(parseCommand('!wr BO2 Origins').profile.map,'bo2-origins');
  assert.equal(parseCommand('!wr TranZit No Bank Maxis').profile.category,'No Bank Maxis');
- assert.ok(parseCommand('!wr TranZit').error);
+ assert.equal(parseCommand('!wr TranZit').profile.category,'Bank Richtofen');
+});
+
+test('Victis command map selections default to Bank Richtofen and preserve explicit categories',()=>{
+ for(const map of ['TranZit','Die Rise','Buried']){
+  for(const command of [`!wr ${map}`,`!pb @runner ${map}`,`!splits @runner ${map}`,`!best @runner End ${map}`])assert.equal(parseCommand(command).profile.category,'Bank Richtofen',command);
+  assert.equal(parseCommand(`!wr ${map} No Bank Maxis`).profile.category,'No Bank Maxis');
+ }
 });
 test('BO2 primary IGT and secondary RTA are validated and persisted separately',t=>{
  const store=new Store();t.after(()=>store.close());const {player}=store.register('Bo2Runner');

@@ -41,7 +41,7 @@ export function discordInteraction(store, interaction) {
         check(anyone || !player.private, 'That runner is not sharing tracking data.');
         const map = options.map ?? player?.profile?.map;
         check(map, anyone ? 'Choose a map for an alert covering every runner.' : 'Choose a map, or have the runner connect LiveSplit once first.');
-        const category = options.category ?? (player?.profile?.map === map ? player.profile.category : categoriesForMap(map).includes('Mega Gums') ? 'Mega Gums' : categoriesForMap(map)[0]);
+        const category = options.category ?? (categoriesForMap(map).includes('Bank Richtofen') ? 'Bank Richtofen' : player?.profile?.map === map ? player.profile.category : categoriesForMap(map).includes('Mega Gums') ? 'Mega Gums' : categoriesForMap(map)[0]);
         const selected = profile({ map, category }), mode = options.mode ?? 'milestone';
         check(mode !== 'under' || options.threshold, 'Add a threshold for an under alert, e.g. 7:35.');
         const sub = store.subscribe({ split:options.split, role:options.role, mode, player:anyone ? '*' : player.id, guild:interaction.guild_id, channel:interaction.channel_id, profile:selected, thresholdMs: options.threshold ? milliseconds(options.threshold) : null });
@@ -64,14 +64,35 @@ export async function deliverAlerts(store, token, fetcher = fetch) {
   const now = store.clock();
   for (const job of store.list('outbox').filter(j => j.status === 'pending' && j.nextTry <= now).slice(0,10)) {
     const p = store.get('players',job.player), sub = store.get('subscriptions',job.subscription);
-    if (!eligibleTime(job.split?.ms) || !p?.public || !sub?.enabled || p.activeAttempt !== job.attempt || now - job.createdAt > 120000) { job.status='cancelled'; store.put('outbox',job.id,job); continue; }
+    const resetAttempt=job.type==='reset'?store.get('attempts',job.attempt):null;
+    const validAttempt=job.type==='reset'?resetAttempt?.resetObserved===true:p?.activeAttempt===job.attempt;
+    if (!eligibleTime(job.split?.ms) || !p?.public || !sub?.enabled || !validAttempt || now - job.createdAt > 120000) { job.status='cancelled'; store.put('outbox',job.id,job); continue; }
     const live=verifiedLiveStreams(store,p,now)[0];
     const streamLine=live?'\nWatch live: '+live.url:'\nCurrently Offline';
     const nonce = BigInt('0x' + createHash('sha256').update(job.id).digest('hex').slice(0,15)).toString();
     try {
+      let emoji='';
+      if(job.type==='reset'){
+        const cacheId=`discord-emoji:${sub.guild}`;
+        let cache=store.get('metadata',cacheId);
+        if(!cache||now-cache.at>3600000){
+          cache={at:now,emojis:[]};
+          try{
+            const r=await fetcher(`https://discord.com/api/v10/guilds/${sub.guild}/emojis`,{headers:{Authorization:`Bot ${token}`},signal:AbortSignal.timeout(3000)});
+            if(r.ok){const rows=await r.json();cache.emojis=Array.isArray(rows)?rows.filter(e=>/^\d+$/.test(e.id)&&/^\w+$/.test(e.name)&&e.available!==false&&!(e.roles?.length)).map(e=>`<${e.animated?'a':''}:${e.name}:${e.id}>`):[];}
+          }catch{}
+          store.put('metadata',cacheId,cache);
+        }
+        if(cache.emojis.length)emoji=' '+cache.emojis[Math.floor(Math.random()*cache.emojis.length)];
+      }
       const response = await fetcher(`https://discord.com/api/v10/channels/${job.channel}/messages`, { method:'POST', headers:{Authorization:`Bot ${token}`,'Content-Type':'application/json'},
-        body:JSON.stringify({content:`${job.role ? '<@&'+job.role+'>\n' : ''}${job.content}`.slice(0,1900-streamLine.length)+streamLine, allowed_mentions:{parse:[],roles:job.role?[job.role]:[]}, nonce, enforce_nonce:true}), signal:AbortSignal.timeout(8000) });
-      if (response.ok) job.status='sent';
+        body:JSON.stringify({content:`${job.role ? '<@&'+job.role+'>\n' : ''}${job.content}`.slice(0,1900-streamLine.length-emoji.length)+streamLine+emoji, allowed_mentions:{parse:[],roles:job.role?[job.role]:[],...(job.type==='reset'?{replied_user:false}:{})}, ...(job.type==='reset'?{message_reference:{message_id:job.replyTo,channel_id:job.channel,fail_if_not_exists:true}}:{}), nonce, enforce_nonce:true}), signal:AbortSignal.timeout(8000) });
+      if (response.ok) {
+        // Persist the exact Discord message so reset follow-ups reply to the
+        // correct run in its original channel, including after a restart.
+        try { const message=await response.json(); if(/^\d+$/.test(message.id??''))job.messageId=message.id; } catch {}
+        job.status='sent';
+      }
       else if (response.status === 429) {
         const data = await response.json(); job.nextTry = now + Math.max(1000, Number(data.retry_after ?? 5)*1000);
         store.put('outbox',job.id,job); break;

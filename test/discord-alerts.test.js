@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {Store} from '../src/store.js';
-import {discordCommands,discordInteraction} from '../src/discord.js';
+import {discordCommands,discordInteraction,deliverAlerts} from '../src/discord.js';
 import {WR_CHECKPOINTS} from '../src/wr-checkpoints.js';
 import {profileKey} from '../src/domain.js';
 
@@ -10,6 +10,43 @@ const NOW=1791170000000;
 function fixture(t){const store=new Store(':memory:',()=>NOW);t.after(()=>store.close());const {player}=store.register('Player1');return {store,player};}
 function event(overrides={}){return {attemptId:'attempt-001',sequence:1,profile:P,phase:'Running',index:1,elapsedMs:285000,current:'Rocket',splits:[{index:0,name:'Bow',ms:283000}],observedAt:NOW,...overrides};}
 const command=(options,permissions='32')=>({type:2,data:{name:'track-alert',options:Object.entries(options).map(([name,value])=>({name,value}))},guild_id:'123456',channel_id:'234567',member:{permissions}});
+
+test('Victis Discord alerts default to Bank Richtofen and honor explicit categories',t=>{
+ const {store}=fixture(t);
+ for(const map of ['bo2-tranzit','bo2-die-rise','bo2-buried']){
+  discordInteraction(store,command({player:'*',split:'End',map}));
+  discordInteraction(store,command({player:'*',split:'End',map,category:'No Bank Maxis'}));
+ }
+ assert.deepEqual(store.list('subscriptions').map(s=>s.profile.category),['Bank Richtofen','No Bank Maxis','Bank Richtofen','No Bank Maxis','Bank Richtofen','No Bank Maxis']);
+});
+
+test('delivered split alert gets one reset reply without mentions, with timing and server emoji',async t=>{
+ const {store,player}=fixture(t);
+ store.subscribe({guild:'123456',channel:'234567',role:'345678',player:player.id,profile:P,split:'Bow',mode:'milestone'});
+ const messages=[];
+ const fetcher=async(url,options)=>{if(url.endsWith('/emojis'))return {ok:true,json:async()=>[{id:'123456789',name:'rip',available:true,roles:[]}]};messages.push(JSON.parse(options.body));return {ok:true,json:async()=>({id:String(100000000+messages.length)})};};
+ store.ingest(player.id,event());await deliverAlerts(store,'test',fetcher);
+ store.ingest(player.id,event({attemptId:'idle-001',phase:'NotRunning',index:0,elapsedMs:0,splits:[],resetEvent:true}));
+ await deliverAlerts(store,'test',fetcher);
+ assert.equal(messages.length,2);assert.match(messages[1].content,/^Player1.*\nReset at 4:45 RTA after Bow\./s);
+ assert.doesNotMatch(messages[1].content,/<@/);
+ assert.ok(messages[1].content.endsWith('<:rip:123456789>'));assert.deepEqual(messages[1].allowed_mentions,{parse:[],roles:[],replied_user:false});
+ assert.deepEqual(messages[1].message_reference,{message_id:'100000001',channel_id:'234567',fail_if_not_exists:true});
+ store.ingest(player.id,event({attemptId:'idle-001',sequence:2,phase:'NotRunning',index:0,elapsedMs:0,splits:[]}));await deliverAlerts(store,'test',fetcher);assert.equal(messages.length,2);
+});
+
+test('reset follow-ups exclude unsent alerts, later splits, unconfirmed ends, undo and private runners',async t=>{
+ for(const variant of ['unsent','next','unconfirmed','undo','private','stale']){
+ const {store,player}=fixture(t);store.subscribe({guild:'123456',channel:'234567',player:player.id,profile:P,split:'Bow',mode:'milestone'});
+ store.ingest(player.id,event());
+ if(variant!=='unsent')await deliverAlerts(store,'test',async()=>({ok:true,json:async()=>({id:'100000001'})}));
+ if(variant==='next')store.ingest(player.id,event({sequence:2,index:2,elapsedMs:350000,splits:[{index:0,name:'Bow',ms:283000},{index:1,name:'Rocket',ms:345000}]}));
+ if(variant==='undo')store.ingest(player.id,event({sequence:2,index:0,splits:[]}));
+ if(variant==='private')store.privacy(store.get('players',player.id),false);
+ store.ingest(player.id,event({attemptId:'idle-001',phase:'NotRunning',index:0,elapsedMs:0,splits:[],resetEvent:variant!=='unconfirmed',observedAt:variant==='stale'?NOW-31000:NOW}));
+ assert.equal(store.list('outbox').filter(j=>j.type==='reset').length,0,variant);
+ }
+});
 test('WR alerts use resolved autosplitter and timing names instead of custom names',t=>{
  for(const hint of [true,false]){
   const {store,player}=fixture(t),r=WR_CHECKPOINTS.find(r=>profileKey(r.profile)===profileKey(P));
