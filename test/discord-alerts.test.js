@@ -30,6 +30,8 @@ test('delivered split alert gets one reset reply without mentions, with timing a
  await deliverAlerts(store,'test',fetcher);
  assert.equal(messages.length,2);assert.match(messages[1].content,/^Player1.*\nReset at 4:45 RTA after Bow\./s);
  assert.doesNotMatch(messages[1].content,/<@/);
+ assert.doesNotMatch(messages[1].content,/Watch live:|Currently Offline/);
+ assert.match(messages[0].content,/Currently Offline/);
  assert.ok(messages[1].content.endsWith('<:rip:123456789>'));assert.deepEqual(messages[1].allowed_mentions,{parse:[],roles:[],replied_user:false});
  assert.deepEqual(messages[1].message_reference,{message_id:'100000001',channel_id:'234567',fail_if_not_exists:true});
  store.ingest(player.id,event({attemptId:'idle-001',sequence:2,phase:'NotRunning',index:0,elapsedMs:0,splits:[]}));await deliverAlerts(store,'test',fetcher);assert.equal(messages.length,2);

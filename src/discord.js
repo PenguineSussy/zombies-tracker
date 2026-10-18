@@ -68,7 +68,7 @@ export async function deliverAlerts(store, token, fetcher = fetch) {
     const validAttempt=job.type==='reset'?resetAttempt?.resetObserved===true:p?.activeAttempt===job.attempt;
     if (!eligibleTime(job.split?.ms) || !p?.public || !sub?.enabled || !validAttempt || now - job.createdAt > 120000) { job.status='cancelled'; store.put('outbox',job.id,job); continue; }
     const live=verifiedLiveStreams(store,p,now)[0];
-    const streamLine=live?'\nWatch live: '+live.url:'\nCurrently Offline';
+    const streamLine=job.type==='reset'?'':live?'\nWatch live: '+live.url:'\nCurrently Offline';
     const nonce = BigInt('0x' + createHash('sha256').update(job.id).digest('hex').slice(0,15)).toString();
     try {
       let emoji='';
