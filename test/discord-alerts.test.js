@@ -35,12 +35,38 @@ test('delivered split alert gets one reset reply without mentions, with timing a
  store.ingest(player.id,event({attemptId:'idle-001',sequence:2,phase:'NotRunning',index:0,elapsedMs:0,splits:[]}));await deliverAlerts(store,'test',fetcher);assert.equal(messages.length,2);
 });
 
-test('reset follow-ups exclude unsent alerts, later splits, unconfirmed ends, undo and private runners',async t=>{
- for(const variant of ['unsent','next','unconfirmed','undo','private','stale']){
+test('reset after an unannounced later split replies to the first alert with latest checkpoint',async t=>{
+ const {store,player}=fixture(t),profile={...P,map:'origins'};
+ store.subscribe({guild:'123456',channel:'234567',role:'345678',player:player.id,profile,split:'Fire Enter',mode:'milestone'});
+ store.subscribe({guild:'123456',channel:'234567',player:player.id,profile,split:'Ice Leave',mode:'under',thresholdMs:1140000});
+ const messages=[];
+ const fetcher=async(url,options)=>{
+  if(url.endsWith('/emojis'))return {ok:true,json:async()=>[]};
+  messages.push(JSON.parse(options.body));return {ok:true,json:async()=>({id:String(100000000+messages.length)})};
+ };
+ const first={index:0,name:'Fire Enter',ms:682000};
+ store.ingest(player.id,event({profile,elapsedMs:682000,splits:[first]}));
+ await deliverAlerts(store,'test',fetcher);
+ assert.equal(messages.length,1);
+ store.ingest(player.id,event({profile,sequence:2,index:2,elapsedMs:1145000,splits:[first,{index:1,name:'Ice Leave',ms:1141000}]}));
+ await deliverAlerts(store,'test',fetcher);
+ assert.equal(messages.length,1,'Ice Leave misses threshold, but the run remains eligible for a reset reply');
+ store.ingest(player.id,event({profile,attemptId:'idle-001',phase:'NotRunning',index:0,elapsedMs:0,splits:[],resetEvent:true}));
+ await deliverAlerts(store,'test',fetcher);
+ assert.equal(messages.length,2);
+ assert.match(messages[1].content,/Reset at 19:05 RTA after Ice Leave\./);
+ assert.deepEqual(messages[1].message_reference,{message_id:'100000001',channel_id:'234567',fail_if_not_exists:true});
+ assert.deepEqual(messages[1].allowed_mentions,{parse:[],roles:[],replied_user:false});
+ store.ingest(player.id,event({profile,attemptId:'idle-001',sequence:2,phase:'NotRunning',index:0,elapsedMs:0,splits:[]}));
+ await deliverAlerts(store,'test',fetcher);
+ assert.equal(messages.length,2,'idle heartbeats do not repeat the reset');
+});
+
+test('reset follow-ups exclude unsent alerts, unconfirmed ends, undo and private runners',async t=>{
+ for(const variant of ['unsent','unconfirmed','undo','private','stale']){
  const {store,player}=fixture(t);store.subscribe({guild:'123456',channel:'234567',player:player.id,profile:P,split:'Bow',mode:'milestone'});
  store.ingest(player.id,event());
  if(variant!=='unsent')await deliverAlerts(store,'test',async()=>({ok:true,json:async()=>({id:'100000001'})}));
- if(variant==='next')store.ingest(player.id,event({sequence:2,index:2,elapsedMs:350000,splits:[{index:0,name:'Bow',ms:283000},{index:1,name:'Rocket',ms:345000}]}));
  if(variant==='undo')store.ingest(player.id,event({sequence:2,index:0,splits:[]}));
  if(variant==='private')store.privacy(store.get('players',player.id),false);
  store.ingest(player.id,event({attemptId:'idle-001',phase:'NotRunning',index:0,elapsedMs:0,splits:[],resetEvent:variant!=='unconfirmed',observedAt:variant==='stale'?NOW-31000:NOW}));
