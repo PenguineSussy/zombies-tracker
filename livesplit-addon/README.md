@@ -1,4 +1,4 @@
-# Dr Monty Bot — LiveSplit addon 1.0.7
+# Dr Monty Bot — LiveSplit addon 1.0.8
 
 Tracks Solo Easter Egg runs in BO2 and BO3. BO2 uses LiveSplit Game Time (IGT) as the primary timer and shows Real Time (RTA) alongside it when available. BO3 keeps RTA primary with optional IGT.
 
@@ -16,7 +16,9 @@ BO2 requires initialized IGT. Missing Game Time pauses capture rather than subst
 
 ## Split names and aliases
 
-BO2 uses Fly 1–3 and End. Flight/Plane and legacy final names (such as Freedom or Headphones) remain aliases. Custom names can be mapped in the component Split aliases tab. Choose the correct map, map the exact LiveSplit name to a tracker split, finish or reset, Apply and save the layout. Saved aliases take priority over automatic hints. Super Easter Egg remains BO3-only and requires all six core maps with Revelations last; use map-prefixed aliases and Map - Complete markers.
+BO2 uses Fly 1–3 and End. Flight/Plane and legacy final names (such as Freedom or Headphones) remain aliases. Custom names can be mapped in the component Split aliases table. The editor automatically follows the map detected from your loaded LiveSplit splits, even with uploading disabled. Switching from DE Mega Gums to SOE Any% shows SOE's saved aliases, or a blank table if none exist; returning to DE restores its aliases. Aliases are shared across categories of the same map. Existing saved mappings are retained, and incomplete edits must be finished or deleted before the editor switches maps. Unrecognized runs show an empty, disabled table without deleting saved aliases. Categories are filtered to the selected or detected game/map.
+
+Map the exact LiveSplit name to a tracker split, finish or reset, Apply and save the layout to retain edits after restarting LiveSplit. Saved aliases take priority over automatic hints. Super Easter Egg remains BO3-only and requires all six core maps with Revelations last; use map-prefixed aliases and Map - Complete markers.
 
 ## Tracking and updates
 

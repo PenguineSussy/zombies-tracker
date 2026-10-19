@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <updates>
-  <update version="1.0.7">
+  <update version="1.0.8">
     <changelog>
-      <change>Use split terminology throughout addon settings.</change>
-      <change>Preserve saved Revelations and Super Easter Egg aliases during the update.</change>
+      <change>Automatically follow the loaded LiveSplit map in the split alias editor.</change>
+      <change>Preserve existing aliases and edits separately for each map.</change>
+      <change>Only show categories for the selected or detected game and map.</change>
     </changelog>
     <files>
       <file path="Components/LiveSplit.ZombiesTracker.dll" status="changed" />

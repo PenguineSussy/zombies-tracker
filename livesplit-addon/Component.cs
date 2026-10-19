@@ -14,7 +14,7 @@ using LiveSplit.Model;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;
 
-[assembly: AssemblyVersion("1.0.7.0")]
+[assembly: AssemblyVersion("1.0.8.0")]
 [assembly: ComponentFactory(typeof(LiveSplit.ZombiesTracker.Factory))]
 
 namespace LiveSplit.ZombiesTracker
@@ -71,6 +71,7 @@ namespace LiveSplit.ZombiesTracker
             observedRun = state.Run;
             runtime = continuity.GetValue(state, s => new Continuity());
             panel = new SettingsPanel(Apply, ClearQueue);
+            RefreshRunContext();
             panel.LoadOptions(options);
             state.OnStart += Started;
             state.OnSplit += Changed;
@@ -90,6 +91,7 @@ namespace LiveSplit.ZombiesTracker
         void Tick(object sender, EventArgs e)
         {
             if (disposed) return;
+            RefreshRunContext();
             if (activated && !InCurrentLayout()) { Deactivate(); return; }
             // Rendering can be suspended or omit a logic-only component. The UI
             // timer may activate it too, but only in the currently installed layout.
@@ -109,6 +111,20 @@ namespace LiveSplit.ZombiesTracker
                 foreach (var v in state.Run.Metadata.CustomVariables) variables[v.Key] = v.Value.Value;
             }
             return variables;
+        }
+        void RefreshRunContext()
+        {
+            try {
+                var detected = Detector.Detect(state.Run.GameName, state.Run.CategoryName,
+                    Path.GetFileNameWithoutExtension(state.Run.FilePath ?? ""), Variables(),
+                    state.Run.Select(s => s.Name), "", options.Aliases);
+                var name = Detector.Normalize(state.Run.GameName);
+                if(name.EndsWith(" zombies")) name=name.Substring(0,name.Length-8);
+                var detectedGame = detected.Success ? (Detector.IsBo2(detected.Map)?"bo2":"bo3") :
+                    new[]{"bo2","boii","black ops 2","black ops ii","call of duty black ops 2","call of duty black ops ii"}.Contains(name)?"bo2":
+                    new[]{"bo3","boiii","black ops 3","black ops iii","call of duty black ops 3","call of duty black ops iii"}.Contains(name)?"bo3":"";
+                panel.FollowRun(detected.Map, detectedGame);
+            } catch(Exception ex) { panel.StatusText="Finish or delete the incomplete alias row before switching maps: "+ex.Message; }
         }
         void Capture(bool transition, bool resetEvent = false)
         {
@@ -193,7 +209,7 @@ namespace LiveSplit.ZombiesTracker
             if (uploader != null) uploader.Clear();
             forceNew = true;
         }
-        public override Control GetSettingsControl(LayoutMode mode) { return panel; }
+        public override Control GetSettingsControl(LayoutMode mode) { RefreshRunContext(); return panel; }
         // LiveSplit polls this during rendering. Do not apply UI edits, encrypt a
         // key, or change runtime state from its layout-change detection path.
         public int GetSettingsHashCode() { return (json.Serialize(options) + "|" + panel.AliasMap).GetHashCode(); }
@@ -237,6 +253,7 @@ namespace LiveSplit.ZombiesTracker
                 Configure(value);
             }
             catch (Exception ex) { value.Enabled = false; options = value; panel.StatusText = "Settings need attention: " + ex.Message; }
+            RefreshRunContext();
             panel.LoadOptions(value);
             panel.RestoreAliasMap(read("AliasEditorMap", ""));
         }
@@ -292,6 +309,8 @@ namespace LiveSplit.ZombiesTracker
         readonly ComboBox game = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
         readonly ComboBox category = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
         readonly AliasEditor aliasEditor = new AliasEditor();
+        string detectedMap, detectedGame = "";
+        bool loadingOptions, refreshingMaps, hasRunContext;
         public string AliasMap { get { return aliasEditor.SelectedMap; } }
         public void RestoreAliasMap(string map) { aliasEditor.RestoreMap(map); }
         readonly CheckBox practice = new CheckBox { Text = "Practice (excluded from records and alerts)", AutoSize = true };
@@ -316,8 +335,9 @@ namespace LiveSplit.ZombiesTracker
             add(new Label { Text = "Private runner key (encrypted for this Windows account)", AutoSize = true }); add(token);
             add(new Label { Text = "Game", AutoSize = true }); game.Items.AddRange(new[]{"Automatic detection", "Black Ops III Zombies", "Black Ops II Zombies"}); game.SelectedIndex = 0; add(game);
             add(new Label { Text = "Map", AutoSize = true }); map.Items.Add("Automatic detection"); foreach (var m in Detector.Maps.Where(m => m.Enabled)) map.Items.Add(m); map.SelectedIndex = 0; add(map);
-            add(new Label { Text = "Category", AutoSize = true }); category.Items.Add("Automatic detection"); category.Items.AddRange(Detector.Categories.Concat(Detector.Bo2Categories).ToArray()); category.SelectedIndex = 0; add(category);
-            map.SelectedIndexChanged += delegate { RefreshCategories(); };
+            add(new Label { Text = "Category", AutoSize = true }); category.Items.Add("Automatic detection"); category.SelectedIndex = 0; add(category);
+            map.SelectedIndexChanged += delegate { if(!refreshingMaps)RefreshCategories(); };
+            game.SelectedIndexChanged += delegate { if(!loadingOptions)RefreshMaps(); };
             add(practice);
             add(aliasEditor);
             add(new Label {Text="Aliases change tracker labels only. Finish or reset, Apply, then save your layout. For Super EE choose map-prefixed splits and a Complete marker for each map.",AutoSize=true,MaximumSize=new Size(450,0)});
@@ -344,12 +364,32 @@ namespace LiveSplit.ZombiesTracker
             add(new Label { Text = "Save your LiveSplit layout after Apply. Add this component only once. Never run the old companion at the same time.", AutoSize = true, MaximumSize = new Size(450, 0) });
         }
         void Try(Action action) { try { action(); } catch (Exception ex) { status.Text = ex.Message; } }
+        public void FollowRun(string mapId, string gameId)
+        {
+            if(hasRunContext && detectedMap==mapId && detectedGame==gameId)return;
+            aliasEditor.FollowMap(mapId);
+            detectedMap=mapId; detectedGame=gameId; hasRunContext=true;
+            RefreshMaps();
+        }
+        string SelectedGame { get { return game.SelectedIndex==1?"bo3":game.SelectedIndex==2?"bo2":detectedGame; } }
+        void RefreshMaps()
+        {
+            string previous=map.SelectedItem is MapInfo?((MapInfo)map.SelectedItem).Id:"";
+            refreshingMaps=true;
+            map.Items.Clear();map.Items.Add("Automatic detection");
+            foreach(var m in Detector.Maps.Where(m=>m.Enabled && (SelectedGame=="" || Detector.IsBo2(m.Id)==(SelectedGame=="bo2"))))map.Items.Add(m);
+            map.SelectedIndex=0;
+            foreach(var item in map.Items)if(item is MapInfo && ((MapInfo)item).Id==previous)map.SelectedItem=item;
+            refreshingMaps=false;
+            RefreshCategories();
+        }
         void RefreshCategories()
         {
             string previous = category.SelectedItem as string;
-            string selectedMap = map.SelectedItem is MapInfo ? ((MapInfo)map.SelectedItem).Id : "";
+            string selectedMap = map.SelectedItem is MapInfo ? ((MapInfo)map.SelectedItem).Id : detectedMap;
+            if(!string.IsNullOrEmpty(selectedMap) && SelectedGame!="" && Detector.IsBo2(selectedMap)!=(SelectedGame=="bo2"))selectedMap=null;
             category.Items.Clear(); category.Items.Add("Automatic detection");
-            category.Items.AddRange(string.IsNullOrEmpty(selectedMap)?Detector.Categories.Concat(Detector.Bo2Categories).ToArray():Detector.CategoriesForMap(selectedMap));
+            category.Items.AddRange(!string.IsNullOrEmpty(selectedMap)?Detector.CategoriesForMap(selectedMap):SelectedGame=="bo2"?Detector.Bo2Categories:SelectedGame=="bo3"?Detector.Categories:new string[0]);
             category.SelectedIndex = Math.Max(0, category.Items.IndexOf(previous ?? ""));
         }
         public AddonOptions ReadOptions()
@@ -361,8 +401,12 @@ namespace LiveSplit.ZombiesTracker
         }
         public void LoadOptions(AddonOptions value)
         {
+            hasRunContext=false;
             aliasEditor.LoadLinks(value.Aliases);
+            loadingOptions=true;
             game.SelectedIndex = value.Game == "bo3" ? 1 : value.Game == "bo2" ? 2 : 0;
+            loadingOptions=false;
+            RefreshMaps();
             enabled.Checked = value.Enabled; server.Text = value.Server; token.Text = value.Token; practice.Checked = value.Practice;
             map.SelectedIndex = 0; foreach (var item in map.Items) if (item is MapInfo && ((MapInfo)item).Id == value.Map) map.SelectedItem = item;
             category.SelectedIndex = Math.Max(0, category.Items.IndexOf(value.Category));

@@ -28,6 +28,7 @@ class Tests
         if(component!=null)state.Layout.LayoutComponents.Add(new LiveSplit.UI.Components.LayoutComponent("LiveSplit.ZombiesTracker.dll",component));
     }
     static int assertions;
+    static T Field<T>(object instance,string name) { return (T)instance.GetType().GetField(name,BindingFlags.Instance|BindingFlags.NonPublic).GetValue(instance); }
     static void Check(bool condition, string name) { assertions++; if (!condition) throw new Exception("FAIL: " + name); }
     static Detection Detect(string title, params string[] names)
     { return Detector.Detect("Call of Duty: Black Ops III", title, "", new Dictionary<string,string>(), names, ""); }
@@ -57,6 +58,44 @@ class Tests
             Check(Detector.Detect("Super Easter Egg","","",new Dictionary<string,string>(),superLinks.Select(r=>r.Source),"",superLinks).Success,"custom Super EE completion aliases pass detection");
             bool collision=false;try{ManualAliases.Resolve(aliasRows,"der-eisendrache",new[]{"My split","Rocket"},null);}catch{collision=true;}Check(collision,"duplicate mapped checkpoints blocked");
             using(var editor=new AliasEditor()){editor.LoadLinks(aliasRows);Check(editor.Read().Count==2,"alias editor roundtrip retains every map");}
+            using(var panel=new SettingsPanel(o=>{},()=>{})) {
+                panel.LoadOptions(new AddonOptions{Aliases=ManualAliases.Validate(aliasRows)});
+                panel.FollowRun("der-eisendrache","bo3");
+                var editor=Field<AliasEditor>(panel,"aliasEditor");var grid=Field<DataGridView>(editor,"grid");
+                var categories=Field<ComboBox>(panel,"category");var games=Field<ComboBox>(panel,"game");
+                Check(panel.AliasMap=="der-eisendrache" && Convert.ToString(grid.Rows[0].Cells[1].Value)=="Rocket","detected DE shows existing aliases");
+                grid.Rows.Add("New DE split","Bow");
+                panel.FollowRun("shadows-of-evil","bo3");
+                Check(grid.Rows.Cast<DataGridViewRow>().All(r=>r.IsNewRow),"new SOE map has blank aliases");
+                grid.Rows.Add("My split",ManualAliases.Targets("shadows-of-evil")[0]);
+                panel.FollowRun("der-eisendrache","bo3");
+                Check(grid.Rows.Count==3 && panel.ReadOptions().Aliases.Count==4,"switching back saves edits without replacing other maps");
+                panel.FollowRun("bo2-tranzit","bo2");
+                Check(!categories.Items.Contains("Mega Gums") && categories.Items.Contains("Bank Richtofen"),"automatic BO2 excludes BO3 categories");
+                panel.FollowRun("bo2-origins","bo2");
+                Check(categories.Items.Count==2 && categories.Items.Contains("Standard"),"automatic BO2 map filters categories");
+                panel.FollowRun("shadows-of-evil","bo3");
+                Check(grid.Rows.Count==2 && !categories.Items.Contains("Bank Richtofen"),"SOE aliases restored and BO2 categories removed");
+                panel.FollowRun(null,"");
+                Check(!grid.Enabled && panel.ReadOptions().Aliases.Count==4,"unknown run hides aliases without deleting them");
+                games.SelectedIndex=2;
+                Check(categories.Items.Contains("Bank Richtofen") && !categories.Items.Contains("Mega Gums"),"explicit game filters automatic-map categories");
+                panel.FollowRun("der-eisendrache","bo3");
+                grid.Rows.Add("Unfinished",null);
+                bool blocked=false;try{panel.FollowRun("revelations","bo3");}catch(InvalidOperationException){blocked=true;}
+                Check(blocked && panel.AliasMap=="der-eisendrache" && grid.Rows.Count==4,"unfinished edits are retained on automatic switch");
+            }
+            var followState=new LiveSplitState(new Run(new LiveSplit.Model.Comparisons.StandardComparisonGeneratorsFactory()){GameName="Call of Duty: Black Ops III",CategoryName="DE Mega Gums"},null,null,null,null);
+            using(var component=new TrackerComponent(followState)) {
+                var panel=(SettingsPanel)component.GetSettingsControl(LiveSplit.UI.LayoutMode.Vertical);
+                Check(panel.AliasMap=="der-eisendrache","settings detects loaded DE splits with upload disabled");
+                followState.Run=new Run(new LiveSplit.Model.Comparisons.StandardComparisonGeneratorsFactory()){GameName="Call of Duty: Black Ops III",CategoryName="SOE Any%"};
+                Pump(1200);
+                Check(panel.AliasMap=="shadows-of-evil","timer automatically follows replacement splits without reopening settings");
+                followState.Run=new Run(new LiveSplit.Model.Comparisons.StandardComparisonGeneratorsFactory()){GameName="Call of Duty: Black Ops II",CategoryName="Origins"};
+                Pump(1200);
+                Check(panel.AliasMap=="bo2-origins" && Field<ComboBox>(panel,"category").Items.Contains("Standard"),"timer follows game and category changes");
+            }
             Check(AddonUpdates.Describe("0.2.8","0.2.9","0.2.7").Contains("is available"),"optional update notice");
             Check(AddonUpdates.Describe("0.2.6","0.2.9","0.2.7").Contains("Important update"),"important update notice");
             Check(AddonUpdates.Describe("0.2.10","0.2.9","0.2.7").Contains("up to date"),"numeric version ordering");

@@ -39,7 +39,7 @@ namespace LiveSplit.ZombiesTracker {
   List<SplitLink> saved=new List<SplitLink>(); string selected; bool loading;
   public AliasEditor() {
    Height=245;
-   var label=new Label{Text="Split aliases - select a map; leave unused rows blank.",Dock=DockStyle.Top,Height=22};
+   var label=new Label{Text="Split aliases - follows loaded splits; saved separately per map.",Dock=DockStyle.Top,Height=22};
    Controls.Add(grid);Controls.Add(maps);Controls.Add(label);
    grid.Columns.Add(new DataGridViewTextBoxColumn{HeaderText="Your LiveSplit name",Name="source"});
    grid.Columns.Add(new DataGridViewComboBoxColumn{HeaderText="Tracker split",Name="target",FlatStyle=FlatStyle.Flat});
@@ -60,7 +60,15 @@ namespace LiveSplit.ZombiesTracker {
    }
    saved=ManualAliases.Validate(saved.Where(r=>r.Map!=selected).Concat(rows));
   }
-  void ShowMap(string id) { selected=id;grid.Rows.Clear();var col=(DataGridViewComboBoxColumn)grid.Columns[1];col.Items.Clear();col.Items.AddRange(ManualAliases.Targets(id));foreach(var r in saved.Where(r=>r.Map==id))grid.Rows.Add(r.Source,r.Target); }
+  void ShowMap(string id) { selected=id;grid.Rows.Clear();grid.Enabled=id!=null;var col=(DataGridViewComboBoxColumn)grid.Columns[1];col.Items.Clear();if(id==null)return;col.Items.AddRange(ManualAliases.Targets(id));foreach(var r in saved.Where(r=>r.Map==id))grid.Rows.Add(r.Source,r.Target); }
+  public void FollowMap(string id) {
+   id=Detector.Maps.Any(m=>m.Enabled&&m.Id==id)?id:null;
+   if(selected==id)return;
+   SaveRows(); // Validate before switching; never discard an unfinished edit.
+   loading=true;
+   try { maps.SelectedItem=Detector.Maps.FirstOrDefault(m=>m.Id==id);ShowMap(id); }
+   finally { loading=false; }
+  }
   public List<SplitLink> Read() {SaveRows();return ManualAliases.Validate(saved);}
   public string SelectedMap { get { return selected ?? ""; } }
   public void RestoreMap(string id) {
@@ -70,6 +78,6 @@ namespace LiveSplit.ZombiesTracker {
    try { maps.SelectedItem=map;ShowMap(map.Id); }
    finally { loading=false; }
   }
-  public void LoadLinks(IEnumerable<SplitLink> links) {saved=ManualAliases.Validate(links);ShowMap(selected??((MapInfo)maps.SelectedItem).Id);}
+  public void LoadLinks(IEnumerable<SplitLink> links) {saved=ManualAliases.Validate(links);ShowMap(selected);}
  }
 }
