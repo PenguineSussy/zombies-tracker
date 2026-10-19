@@ -175,3 +175,32 @@ test('delayed confirmed reset closes a delivered ping once, including delayed de
  store.ingest(player.id,{...reset,sequence:2});await deliverAlerts(store,'test',fetcher);
  assert.equal(messages.length,2);
 });
+
+test('one reset per run and channel replies to latest ping, isolating players and attempts',async t=>{
+ const {store,player}=fixture(t),other=store.register('Player2').player;
+ for(const channel of ['234567','234568'])for(const split of ['Bow','Rocket'])store.subscribe({guild:'123456',channel,player:'*',profile:P,split,mode:'milestone'});
+ const messages=[];
+ const fetcher=async(url,options)=>{
+  if(url.endsWith('/emojis'))return {ok:true,json:async()=>[]};
+  const id=String(100000001+messages.length);messages.push({id,url,...JSON.parse(options.body)});return {ok:true,json:async()=>({id})};
+ };
+ for(const runner of [player,other]){
+  store.ingest(runner.id,event());await deliverAlerts(store,'test',fetcher);
+  store.ingest(runner.id,event({sequence:2,index:2,elapsedMs:345000,splits:[{index:0,name:'Bow',ms:283000},{index:1,name:'Rocket',ms:344000}]}));await deliverAlerts(store,'test',fetcher);
+ }
+ for(const runner of [player,other]){
+  const attempt=store.get('players',runner.id).activeAttempt;
+  const latest=store.list('outbox').filter(j=>j.attempt===attempt&&j.split.index===1);
+  store.ingest(runner.id,event({attemptId:'idle-001',phase:'NotRunning',index:0,elapsedMs:0,splits:[],resetEvent:true}));
+  const resets=store.list('outbox').filter(j=>j.type==='reset'&&j.attempt===attempt);
+  assert.equal(resets.length,2);
+  for(const reset of resets)assert.equal(reset.replyTo,latest.find(j=>j.channel===reset.channel).messageId);
+  await deliverAlerts(store,'test',fetcher);
+ }
+ assert.equal(messages.filter(m=>m.message_reference).length,4,'both players get one reply in each channel');
+ store.ingest(player.id,event({attemptId:'attempt-002'}));await deliverAlerts(store,'test',fetcher);
+ store.ingest(player.id,event({attemptId:'idle-002',phase:'NotRunning',index:0,elapsedMs:0,splits:[],resetEvent:true}));await deliverAlerts(store,'test',fetcher);
+ assert.equal(messages.filter(m=>m.message_reference).length,6,'another attempt on the same map gets its own replies');
+ store.ingest(player.id,event({attemptId:'idle-002',sequence:2,phase:'NotRunning',index:0,elapsedMs:0,splits:[]}));await deliverAlerts(store,'test',fetcher);
+ assert.equal(messages.filter(m=>m.message_reference).length,6);
+});
