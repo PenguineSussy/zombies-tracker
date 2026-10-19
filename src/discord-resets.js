@@ -5,7 +5,9 @@ import {resolveSplits} from './split-rules.js';
 
 export function queueDiscordReset(store,p,a,old){
  const now=store.clock();
- if(!old||old.id===a.id||!old.resetObserved||a.phase!=='NotRunning'||a.resetEvent===false||old.practice||!p.public||a.suppressAlerts||now-a.observedAt>30000||now-old.observedAt>30000||!eligibleTime(old.elapsedMs))return;
+ // Confirmed resets close delivered alerts even after delayed telemetry.
+ // Freshness suppression still applies to new milestone pings.
+ if(!old||old.id===a.id||!old.resetObserved||a.phase!=='NotRunning'||a.resetEvent===false||old.practice||!p.public||!eligibleTime(old.elapsedMs))return;
  const lastSplit=resolveSplits(old.profile,old.splits).reduce((last,split)=>!last||split.index>last.index?split:last,null);
  for(const sent of store.list('outbox')){
   if(sent.type==='reset'||sent.status!=='sent'||!/^\d+$/.test(sent.messageId??'')||sent.attempt!==old.id)continue;

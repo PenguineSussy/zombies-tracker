@@ -65,13 +65,13 @@ test('reset after an unannounced later split replies to the first alert with lat
 });
 
 test('reset follow-ups exclude unsent alerts, unconfirmed ends, undo and private runners',async t=>{
- for(const variant of ['unsent','unconfirmed','undo','private','stale']){
+ for(const variant of ['unsent','unconfirmed','undo','private']){
  const {store,player}=fixture(t);store.subscribe({guild:'123456',channel:'234567',player:player.id,profile:P,split:'Bow',mode:'milestone'});
  store.ingest(player.id,event());
  if(variant!=='unsent')await deliverAlerts(store,'test',async()=>({ok:true,json:async()=>({id:'100000001'})}));
  if(variant==='undo')store.ingest(player.id,event({sequence:2,index:0,splits:[]}));
  if(variant==='private')store.privacy(store.get('players',player.id),false);
- store.ingest(player.id,event({attemptId:'idle-001',phase:'NotRunning',index:0,elapsedMs:0,splits:[],resetEvent:variant!=='unconfirmed',observedAt:variant==='stale'?NOW-31000:NOW}));
+ store.ingest(player.id,event({attemptId:'idle-001',phase:'NotRunning',index:0,elapsedMs:0,splits:[],resetEvent:variant!=='unconfirmed',observedAt:NOW}));
  assert.equal(store.list('outbox').filter(j=>j.type==='reset').length,0,variant);
  }
 });
@@ -150,4 +150,28 @@ test('new Rocket and Beast Enter WR splits drive Discord alerts and pace',t=>{
  assert.match(store.list('outbox')[0].content,/~0:01 ahead of WR Split/);
  assert.match(store.answer('!pace @Player1'),/1 second ahead of WR split/);
  }
+});
+
+
+test('delayed confirmed reset closes a delivered ping once, including delayed delivery',async t=>{
+ const {store,player}=fixture(t);let now=NOW;store.clock=()=>now;
+ store.subscribe({guild:'123456',channel:'234567',player:player.id,profile:P,split:'Bow',mode:'milestone'});
+ const messages=[];
+ const fetcher=async(url,options)=>{
+  if(url.endsWith('/emojis'))return {ok:true,json:async()=>[]};
+  messages.push(JSON.parse(options.body));return {ok:true,json:async()=>({id:String(100000000+messages.length)})};
+ };
+ store.ingest(player.id,event());await deliverAlerts(store,'test',fetcher);
+ now+=33*60000;
+ store.ingest(player.id,event({sequence:2,elapsedMs:1980000,observedAt:now-120000,suppressAlerts:true}));
+ const reset=event({attemptId:'idle-delayed',phase:'NotRunning',index:0,elapsedMs:0,splits:[],resetEvent:true,observedAt:now-90000,suppressAlerts:true});
+ store.ingest(player.id,reset);
+ assert.equal(store.list('outbox').filter(j=>j.type==='reset').length,1);
+ now+=180000;await deliverAlerts(store,'test',fetcher);
+ assert.equal(messages.length,2);
+ assert.match(messages[1].content,/Reset at 33:00 RTA after Bow/);
+ assert.equal(messages[1].message_reference.message_id,'100000001');
+ assert.doesNotMatch(messages[1].content,/<@|Watch live:|Currently Offline/);
+ store.ingest(player.id,{...reset,sequence:2});await deliverAlerts(store,'test',fetcher);
+ assert.equal(messages.length,2);
 });
