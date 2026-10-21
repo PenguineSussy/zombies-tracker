@@ -81,6 +81,9 @@ class Tests
                 games.SelectedIndex=2;
                 Check(categories.Items.Contains("Bank Richtofen") && !categories.Items.Contains("Mega Gums"),"explicit game filters automatic-map categories");
                 panel.FollowRun("der-eisendrache","bo3");
+                Check(panel.AliasMap=="","conflicting game hides split aliases");
+                games.SelectedIndex=0;
+                panel.FollowRun("der-eisendrache","bo3");
                 grid.Rows.Add("Unfinished",null);
                 bool blocked=false;try{panel.FollowRun("revelations","bo3");}catch(InvalidOperationException){blocked=true;}
                 Check(blocked && panel.AliasMap=="der-eisendrache" && grid.Rows.Count==4,"unfinished edits are retained on automatic switch");
@@ -105,13 +108,23 @@ class Tests
             Check(Detector.RunCategory("","","der-eisendrache")=="Mega Gums","empty category defaults Mega");
             Check(Detector.RunCategory("","","ascension")=="Any%","Any only category default");
             Check(Detector.RunCategory("No Gums Mega Gums","","der-eisendrache")==null,"conflict not defaulted");
-            Check(Detector.RunCategory("Typo","","der-eisendrache")==null,"nonempty unknown category not defaulted");
+            Check(Detector.RunCategory("Zetsubou no Shima","","zetsubou-no-shima")=="Mega Gums","map-only category defaults Mega");
             foreach (var game in new[]{"Black Ops III Zombies","Call of Duty: Black Ops III Zombies","BO3 Zombies"})
                 Check(Detector.Detect(game,"DE","",new Dictionary<string,string>(),new string[0],"").Success,"Zombies game title " + game);
             Check(Detector.Detect("","DE","",new Dictionary<string,string>(),new string[0],"",null,"bo3").Success,"explicit BO3 permits blank game title");
             Check(!Detector.Detect("Black Ops II Zombies","Origins","",new Dictionary<string,string>(),new string[0],"",null,"bo3").Success,"explicit BO3 cannot relabel BO2");
             Check(!Detector.Detect("BO3","DE","",new Dictionary<string,string>{{"Speedrun Type","High Round"}},new string[0],"").Success,"unsupported speedrun type blocked");
             Check(Detector.Detect("BO3","","",new Dictionary<string,string>{{"Map","DE"},{"Speedrun Type","Easter Egg"}},new string[0],"").Success,"map and speedrun metadata");
+            foreach(var map in Detector.Maps.Where(m=>m.Enabled&&!Detector.IsBo2(m.Id))) {
+                var defaultCategory=Detector.CategoriesForMap(map.Id).Contains("Mega Gums")?"Mega Gums":"Any%";
+                Check(Detector.RunCategory(map.Name,"",map.Id)==defaultCategory,"map-only default "+map.Id);
+                Check(Detector.MetadataCategory(map.Name,new Dictionary<string,string>{{"Category","Easter Egg"},{"Gobblegum Loadout",""}},"",map.Id)==defaultCategory,"EE blank loadout "+map.Id);
+                foreach(var loadout in new[]{"","Megas","Classics","No Gums"})
+                    Check(Detector.MetadataCategory(map.Name,new Dictionary<string,string>{{"Category","Any%"},{"Gobblegum Loadout",loadout}},"",map.Id)=="Any%","Any overrides loadout "+map.Id+loadout);
+            }
+            Check(Detector.MetadataCategory("Zetsubou No Shima",new Dictionary<string,string>{{"Category","Easter Egg"},{"Gobblegum Loadout","Megas"}},"","zetsubou-no-shima")=="Mega Gums","screenshot EE Megas");
+            Check(Detector.MetadataCategory("Der Eisendrache",new Dictionary<string,string>{{"Category","EE"},{"Gobblegum Loadout","Classics"}},"","der-eisendrache")=="Classic Gums","EE uses Classics");
+            Check(Detector.MetadataCategory("Der Eisendrache",new Dictionary<string,string>{{"Category","Easter Egg"},{"Gobblegum Loadout","No Gums"}},"","der-eisendrache")=="No Gums","EE uses No Gums");
             Check(Detector.MetadataCategory("DE",new Dictionary<string,string>{{"Gum Category","Classic Gums"}},"","der-eisendrache")=="Classic Gums","gum metadata used");
             Check(Detector.MetadataCategory("Mega Gums",new Dictionary<string,string>{{"Gum Category","Classic Gums"}},"","der-eisendrache")==null,"conflicting metadata blocked");
             var settings=new XmlDocument();settings.LoadXml("<Settings><Split>True</Split><CustomSettings><Setting id='zm_castle'>True</Setting><Setting id='Bow'>False</Setting><Setting id='Rocket Test TP'>True</Setting><Setting id='First TP'>True</Setting></CustomSettings></Settings>");
@@ -145,6 +158,17 @@ class Tests
             Check(Detector.Detect("TranZit","Bank Maxis","",new Dictionary<string,string>(),new string[0],"").Map=="bo2-tranzit","unique BO2 map title");
             Check(!Detector.Detect("BO2","Nuketown","",new Dictionary<string,string>(),new[]{"Power"},"").Success,"Nuketown is unsupported");
             foreach(var map in Detector.Maps.Where(m=>Detector.IsBo2(m.Id))) Check(Detector.Detect("BO2",map.Name,"",new Dictionary<string,string>(),new string[0],"").Map==map.Id,"BO2 map "+map.Id);
+            Check(Detector.Bo2Category(new[]{"TranZit"},"","bo2-tranzit")=="Bank Richtofen","map-only BO2 default");
+            Check(Detector.Bo2Category(new[]{"No Bank"},"","bo2-tranzit")=="No Bank Richtofen","explicit no bank preserved");
+            Check(Detector.Bo2Category(new[]{"Maxis"},"","bo2-buried")=="Bank Maxis","explicit Maxis preserved");
+            foreach(var map in new[]{"bo2-tranzit","bo2-die-rise","bo2-buried"}) {
+                Check(Detector.Bo2Category(new[]{map,"Easter Egg","",""},"",map)=="Bank Richtofen","BO2 blank Additional Info default "+map);
+                Check(Detector.Bo2Category(new[]{map,"Easter Egg","Richtofen","Bank"},"",map)=="Bank Richtofen","BO2 separate bank/side metadata "+map);
+                Check(Detector.Bo2Category(new[]{"Richtofen Bank"},"",map)=="Bank Richtofen","BO2 reversed category wording "+map);
+                Check(Detector.Bo2Category(new[]{map,"Easter Egg","Maxis","No Bank"},"",map)=="No Bank Maxis","BO2 explicit metadata preserved "+map);
+            }
+            foreach(var map in new[]{"bo2-origins","bo2-mob-of-the-dead"})
+                Check(Detector.Bo2Category(new[]{map},"",map)=="Standard","BO2 non-Victis stays Standard "+map);
             foreach(var category in Detector.Bo2Categories) Check(Detector.Bo2Category(new[]{category},"","bo2-tranzit")==category,"BO2 category "+category);
             Check(Detector.Bo2Category(new[]{"No Bank Maxis","Bank Maxis"},"","bo2-buried")==null,"conflicting bank metadata rejected");
             Check(Detector.Bo2Category(new[]{"Bank Maxis Richtofen"},"","bo2-buried")==null,"ambiguous BO2 category");

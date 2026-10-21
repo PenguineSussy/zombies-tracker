@@ -14,7 +14,7 @@ using LiveSplit.Model;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;
 
-[assembly: AssemblyVersion("1.0.8.0")]
+[assembly: AssemblyVersion("1.0.9.0")]
 [assembly: ComponentFactory(typeof(LiveSplit.ZombiesTracker.Factory))]
 
 namespace LiveSplit.ZombiesTracker
@@ -367,9 +367,11 @@ namespace LiveSplit.ZombiesTracker
         public void FollowRun(string mapId, string gameId)
         {
             if(hasRunContext && detectedMap==mapId && detectedGame==gameId)return;
-            aliasEditor.FollowMap(mapId);
+
+            aliasEditor.Read();
             detectedMap=mapId; detectedGame=gameId; hasRunContext=true;
             RefreshMaps();
+            aliasEditor.FollowMap(!string.IsNullOrEmpty(mapId) && Detector.IsBo2(mapId)==(SelectedGame=="bo2")?mapId:null);
         }
         string SelectedGame { get { return game.SelectedIndex==1?"bo3":game.SelectedIndex==2?"bo2":detectedGame; } }
         void RefreshMaps()
@@ -381,6 +383,7 @@ namespace LiveSplit.ZombiesTracker
             map.SelectedIndex=0;
             foreach(var item in map.Items)if(item is MapInfo && ((MapInfo)item).Id==previous)map.SelectedItem=item;
             refreshingMaps=false;
+            aliasEditor.FilterGame(SelectedGame);
             RefreshCategories();
         }
         void RefreshCategories()
@@ -391,6 +394,7 @@ namespace LiveSplit.ZombiesTracker
             category.Items.Clear(); category.Items.Add("Automatic detection");
             category.Items.AddRange(!string.IsNullOrEmpty(selectedMap)?Detector.CategoriesForMap(selectedMap):SelectedGame=="bo2"?Detector.Bo2Categories:SelectedGame=="bo3"?Detector.Categories:new string[0]);
             category.SelectedIndex = Math.Max(0, category.Items.IndexOf(previous ?? ""));
+            aliasEditor.FollowMap(selectedMap);
         }
         public AddonOptions ReadOptions()
         {

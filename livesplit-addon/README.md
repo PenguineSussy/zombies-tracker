@@ -1,4 +1,4 @@
-# Dr Monty Bot — LiveSplit addon 1.0.8
+# Dr Monty Bot — LiveSplit addon 1.0.9
 
 Tracks Solo Easter Egg runs in BO2 and BO3. BO2 uses LiveSplit Game Time (IGT) as the primary timer and shows Real Time (RTA) alongside it when available. BO3 keeps RTA primary with optional IGT.
 
@@ -25,3 +25,7 @@ Map the exact LiveSplit name to a tracker split, finish or reset, Apply and save
 Bot results, statistics and live activity ignore runs/splits below 5.000 seconds of the primary timer. Resets count once the run reaches five seconds. Raw snapshots remain available internally for reconnect and undo integrity. LiveSplit uploads have priority; optional therun.gg fallback waits for a safe new-run/reset boundary. Never share your runner key or configured layouts. The key and persistent queue use Windows encryption.
 
 Update notices use the official server and repository manifest. The distributable includes only the tracker component; LiveSplit supplies its own dependencies. Real T6 gameplay checks are scheduled after this release.
+
+## Automatic categories in 1.0.9
+
+Automatic BO3 categories use Additional Info: Easter Egg follows Gobblegum Loadout (blank defaults to Mega Gums), while Any% ignores it. Map-only BO2 Victis runs default to Bank Richtofen. Category and alias dropdowns stay separated by game, preserving saved mappings. Explicit No Bank/Maxis choices and conflicting-category checks are retained. BO2 Origins and Mob of the Dead remain Standard; BO3 Ascension and Shangri-La remain Any%-only. Manual category overrides take priority.

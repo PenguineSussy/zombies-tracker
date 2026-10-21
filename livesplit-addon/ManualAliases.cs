@@ -45,7 +45,7 @@ namespace LiveSplit.ZombiesTracker {
    grid.Columns.Add(new DataGridViewComboBoxColumn{HeaderText="Tracker split",Name="target",FlatStyle=FlatStyle.Flat});
    grid.DataError+=(s,e)=>{e.ThrowException=false;};
    foreach(var map in Detector.Maps.Where(m=>m.Enabled))maps.Items.Add(map);
-   maps.SelectedIndexChanged+=delegate { if(loading)return; try{SaveRows();ShowMap(((MapInfo)maps.SelectedItem).Id);}catch(Exception ex){MessageBox.Show(ex.Message,"Split aliases");loading=true;maps.SelectedItem=Detector.Maps.First(m=>m.Id==selected);loading=false;} };
+   maps.SelectedIndexChanged+=delegate { if(loading)return; try{SaveRows();ShowMap(maps.SelectedItem is MapInfo?((MapInfo)maps.SelectedItem).Id:null);}catch(Exception ex){MessageBox.Show(ex.Message,"Split aliases");loading=true;maps.SelectedItem=Detector.Maps.First(m=>m.Id==selected);loading=false;} };
    maps.SelectedIndex=0;
   }
   void SaveRows() {
@@ -61,6 +61,15 @@ namespace LiveSplit.ZombiesTracker {
    saved=ManualAliases.Validate(saved.Where(r=>r.Map!=selected).Concat(rows));
   }
   void ShowMap(string id) { selected=id;grid.Rows.Clear();grid.Enabled=id!=null;var col=(DataGridViewComboBoxColumn)grid.Columns[1];col.Items.Clear();if(id==null)return;col.Items.AddRange(ManualAliases.Targets(id));foreach(var r in saved.Where(r=>r.Map==id))grid.Rows.Add(r.Source,r.Target); }
+  public void FilterGame(string game) {
+   SaveRows();loading=true;
+   try {
+    maps.Items.Clear();
+    foreach(var map in Detector.Maps.Where(m=>m.Enabled && (game=="bo2" || game=="bo3") && Detector.IsBo2(m.Id)==(game=="bo2")))maps.Items.Add(map);
+    var current=maps.Items.Cast<MapInfo>().FirstOrDefault(m=>m.Id==selected);
+    maps.SelectedItem=current;ShowMap(current==null?null:current.Id);
+   } finally {loading=false;}
+  }
   public void FollowMap(string id) {
    id=Detector.Maps.Any(m=>m.Enabled&&m.Id==id)?id:null;
    if(selected==id)return;

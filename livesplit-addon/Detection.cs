@@ -34,8 +34,8 @@ namespace LiveSplit.ZombiesTracker
             var values=texts.ToArray(); var all=string.Join(" ",values); bool no=Has(all,"no bank"), bank=Has(all,"bank");
             if(no && values.Any(t=>Has(Regex.Replace(Normalize(t),@"\bno bank\b",""),"bank"))) return null;
             bool richtofen=Has(all,"richtofen"),maxis=Has(all,"maxis");
-            if(!bank || richtofen==maxis) return null;
-            return (no?"No Bank ":"Bank ")+(richtofen?"Richtofen":"Maxis");
+            if(richtofen && maxis) return null;
+            return (no?"No Bank ":"Bank ")+(maxis?"Maxis":"Richtofen");
         }
         public static string[] CategoriesForMap(string map)
         {
@@ -60,14 +60,23 @@ namespace LiveSplit.ZombiesTracker
         {
             if (!string.IsNullOrWhiteSpace(manual)) return Category(new string[0], manual);
             if (string.IsNullOrWhiteSpace(category)) return CategoriesForMap(map).Contains("Mega Gums") ? "Mega Gums" : "Any%";
-            return Category(new[]{category}, "");
+            var found = Category(new[]{category}, "");
+            if(found != null) return found;
+            if(Regex.IsMatch(Normalize(category), @"\b(mega|megas|classic|classics|gum|gums|gobblegum|gobblegums|any)\b")) return null;
+            return CategoriesForMap(map).Contains("Mega Gums") ? "Mega Gums" : "Any%";
         }
         public static string MetadataCategory(string category, IDictionary<string,string> variables, string manual, string map)
         {
             if (!string.IsNullOrWhiteSpace(manual)) return Category(new string[0], manual);
-            var values = variables.Where(v => Has(v.Key,"gum") || Normalize(v.Key).Contains("gum") || Has(v.Key,"category")).Select(v => v.Value).Where(v => !string.IsNullOrWhiteSpace(v)).ToList();
+            // Additional Info Category describes the objective, not a gum loadout.
+            // Any% wins over a saved loadout that LiveSplit leaves selected.
+            var objectives = variables.Where(v => Normalize(v.Key)=="category" || new[]{"speedrun type","run type","objective"}.Contains(Normalize(v.Key))).Select(v=>v.Value).Where(v=>!string.IsNullOrWhiteSpace(v)).ToArray();
+            if(objectives.Any(v=>Regex.IsMatch(v, @"\bany\s*%", RegexOptions.IgnoreCase))) return "Any%";
+            var values = variables.Where(v => Normalize(v.Key).Contains("gum") || Has(v.Key,"category"))
+                .Where(v => !(Normalize(v.Key)=="category" && new[]{"ee","easter egg","easter eggs","main easter egg"}.Contains(Normalize(v.Value))))
+                .Select(v => v.Value).Where(v => !string.IsNullOrWhiteSpace(v)).ToList();
             if (values.Count == 0) return RunCategory(category, manual, map);
-            // Conflicting explicit categories must not silently fall back to Mega Gums.
+            // Explicit unknown or conflicting gum choices remain blocked.
             if (values.Any(v => Category(new[]{v}, "") == null)) return null;
             values.Add(category);
             return Category(values, "");
