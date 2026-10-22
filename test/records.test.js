@@ -1,7 +1,8 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {Store} from '../src/store.js';
-import {parseZwr} from '../src/zwr.js';
+import {parseZwr,startZwr} from '../src/zwr.js';
+import {wrCheckpoint} from '../src/wr-checkpoints.js';
 const profile={map:'der-eisendrache',category:'Mega Gums',players:1,timing:'RealTime'};
 const records={pbMs:1625000,splits:[{index:0,name:'Rocket',bestSplitMs:334000,bestSegmentMs:334000},{index:1,name:'R7',bestSplitMs:405000,bestSegmentMs:60000}]};
 function fixture(t){const store=new Store();t.after(()=>store.close());const {player}=store.register('Runner');const send=extra=>store.ingest(player.id,{attemptId:'records-001',sequence:1,profile,phase:'NotRunning',index:-1,elapsedMs:0,splits:[],observedAt:Date.now(),records,...extra});return {store,player,send};}
@@ -30,6 +31,20 @@ test('skipped splits never create a segment best and imported records survive he
  assert.match(store.answer('!best @runner R7 session'),/6:40 \(unavailable segment\)/);
 });
 const board=(id,time,holder='Example')=>`<div class="Board active" data-players="1" data-json="${id}"><div class="Row TopRank"><div class="Rank">1</div><div class="Name">${holder}</div><a class="Achieved">${time}</a></div></div>`;
+
+test('DE owner selection replaces cached record and survives refresh without borrowing checkpoints',t=>{
+ const store=new Store();t.after(()=>store.close());
+ const id='zwr:'+JSON.stringify(profile);
+ store.put('metadata',id,{id,kind:'zwr',profile,holder:'Seqn',ms:1542000,checkedAt:Date.now()+10000,recordId:'129362'});
+ const stop=startZwr(store,async()=>({ok:false,status:403}),()=>{});stop();
+ assert.match(store.answer('!wr DE'),/25:48 RTA.*Freckleston/);
+ assert.equal(wrCheckpoint(store,profile,'Rocket'),null);
+ const html=board('bo3-der-eisendrache-ee-speedrun-all-gobblegum-1-board','25:42','Seqn').replace('</a></div></div>','</a></div><div class="Row"><div class="Rank">2</div><div class="Name">Freckleston</div><a class="Achieved">25:48</a></div></div>');
+ const result=parseZwr(html,'der-eisendrache')[0];
+ assert.equal(result.holder,'Freckleston');assert.equal(result.ms,1548000);
+ assert.equal(parseZwr(board('bo3-der-eisendrache-ee-speedrun-classic-gobblegum-1-board','30:00','Seqn'),'der-eisendrache')[0].holder,'Seqn');
+ assert.equal(parseZwr(board('bo3-der-eisendrache-ee-speedrun-all-gobblegum-1-board','25:40','NewRunner'),'der-eisendrache')[0].holder,'NewRunner');
+});
 test('ZWR selects exact Solo gum board; does not borrow co-op or reversed records',()=>{
  const html=board('bo3-der-eisendrache-ee-speedrun-all-gobblegum-2-board','1:00')+board('bo3-der-eisendrache-ee-speedrun-all-gobblegum-1-board','25:42')+board('bo3-der-eisendrache-ee-speedrun-classic-gobblegum-1-board','30:00');
  const r=parseZwr(html,'der-eisendrache',123);assert.equal(r.length,2);assert.equal(r.find(x=>x.profile.category==='Mega Gums').ms,1542000);assert.equal(r.find(x=>x.profile.category==='Classic Gums').ms,1800000);

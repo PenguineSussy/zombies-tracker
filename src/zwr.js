@@ -7,6 +7,11 @@ export function zwrUrl(map) {
 }
 const categories={'Mega Gums':'all-gobblegum','Classic Gums':'classic-gobblegum','No Gums':'no-gobblegum','Any%':'any-gobblegum','Bank Richtofen':'richtofen','No Bank Richtofen':'richtofen-nobank','Bank Maxis':'maxis','No Bank Maxis':'maxis-nobank'};
 const text=s=>s.replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&#39;|&apos;/g,"'").replace(/&quot;/g,'"').replace(/&#(\d+);/g,(_,n)=>String.fromCodePoint(Number(n))).trim();
+// Site-owner selection, scoped to this Solo map/category only.
+function excludedRecord(record) {
+  return record.profile.map==='der-eisendrache' && record.profile.category==='Mega Gums'
+    && record.profile.players===1 && record.holder.toLowerCase()==='seqn';
+}
 function recordDate(value) {
   const match=String(value??'').match(/^(\d{1,2})(?:st|nd|rd|th)?,?\s+([A-Za-z]+)\s+(\d{4})$/);
   if(!match)return null;
@@ -26,8 +31,9 @@ export function parseZwr(html,map,checkedAt=Date.now()) {
     if(start<0)continue;
     const rest=html.slice(start);const end=rest.slice(1).search(/<div class="Board\b|<div class="SubBoard\b/);
     const section=end<0?rest:rest.slice(0,end+1);
-    const row=section.match(/<div class="Row TopRank"[^>]*>([\s\S]*?)(?=<div class="Row\b|$)/)?.[1];
-    if(!row || !/<div class="Rank">\s*1\s*<\/div>/.test(row))continue;
+    const row=[...section.matchAll(/<div class="Row(?: [^"]*)?"[^>]*>([\s\S]*?)(?=<div class="Row\b|$)/g)]
+      .map(m=>m[1]).find(value=>!excludedRecord({profile:{map,category,players:1},holder:text(value.match(/<div class="Name">([\s\S]*?)<\/div>/)?.[1]??'')}));
+    if(!row || !/<div class="Rank">\s*\d+\s*<\/div>/.test(row))continue;
     const holder=text(row.match(/<div class="Name">([\s\S]*?)<\/div>/)?.[1]??'');
     const clock=text(row.match(/<a\b[^>]*class="Achieved"[^>]*>([\s\S]*?)<\/a>/)?.[1]??'');
     if(!holder||holder.length>100||!/^\d+(?::\d{2}){1,2}(?:\.\d+)?$/.test(clock))continue;
@@ -51,7 +57,7 @@ export function startZwr(store,fetcher=fetch,log=console.log) {
   const baseline=JSON.parse(readFileSync(new URL('./zwr-baseline.json',import.meta.url),'utf8'));
   for(const record of baseline) {
     const current=store.get('metadata',record.id);
-    if(!current || record.checkedAt>current.checkedAt)store.put('metadata',record.id,record);
+    if(!current || excludedRecord(current) || record.checkedAt>current.checkedAt)store.put('metadata',record.id,record);
     else if(!current.achievedDate&&record.achievedDate&&current.ms===record.ms&&current.holder===record.holder)
       store.put('metadata',record.id,{...current,achievedDate:record.achievedDate,dateSource:record.dateSource,recordId:record.recordId});
   }
