@@ -11,6 +11,23 @@ function fixture(t){const store=new Store(':memory:',()=>NOW);t.after(()=>store.
 function event(overrides={}){return {attemptId:'attempt-001',sequence:1,profile:P,phase:'Running',index:1,elapsedMs:285000,current:'Rocket',splits:[{index:0,name:'Bow',ms:283000}],observedAt:NOW,...overrides};}
 const command=(options,permissions='32')=>({type:2,data:{name:'track-alert',options:Object.entries(options).map(([name,value])=>({name,value}))},guild_id:'123456',channel_id:'234567',member:{permissions}});
 
+test('Origins Staves Ultimated resolves to Upgrade in split alerts, commands and reset replies',async t=>{
+ for(const hint of [{},{autosplitNames:['Staves Ultimated','End']},{manualNames:['Upgrade','End']}]){
+  const {store,player}=fixture(t),profile={...P,map:'origins'};
+  store.subscribe({guild:'123456',channel:'234567',player:player.id,profile,split:'Upgrade',mode:'milestone'});
+  const messages=[];
+  const fetcher=async(url,options)=>{if(url.endsWith('/emojis'))return {ok:true,json:async()=>[]};messages.push(JSON.parse(options.body));return {ok:true,json:async()=>({id:String(100000000+messages.length)})};};
+  store.ingest(player.id,event({profile,elapsedMs:1600000,current:'End',splits:[{index:0,name:'Staves Ultimated',ms:1590000}],...hint}));
+  await deliverAlerts(store,'test',fetcher);
+  assert.equal(messages.length,1);assert.match(messages[0].content,/\nUpgrade: 26:30 RTA/);
+  assert.match(store.answer('!splits @Player1'),/Upgrade/);
+  store.ingest(player.id,event({profile,attemptId:'idle-001',phase:'NotRunning',index:0,elapsedMs:0,splits:[],resetEvent:true}));
+  await deliverAlerts(store,'test',fetcher);
+  assert.equal(messages.length,2);assert.match(messages[1].content,/after Upgrade\./);
+  assert.doesNotMatch(messages.map(m=>m.content).join('\n'),/Staves Ultimated/);
+ }
+});
+
 test('Victis Discord alerts default to Bank Richtofen and honor explicit categories',t=>{
  const {store}=fixture(t);
  for(const map of ['bo2-tranzit','bo2-die-rise','bo2-buried']){

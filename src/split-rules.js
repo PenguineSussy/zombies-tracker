@@ -23,7 +23,7 @@ export const SPLIT_RULES={
  moon:[rule('Power',30,90),rule('Samantha Says',91,300),rule('Terminals',300,480,['Hack Complete']),rule('Vril Sphere',481,640,['Ball']),rule('Canister 1',641,840),rule('Canister 2',841,1079),rule('End',1191,null,['Moon Egg End'])],
  origins:[rule('Ice Staff',370,525,['Ice Craft']),rule('Fire Enter',630,840,[],{'Ice Staff':240}),
  rule('Lightning Enter',870,1080,[],{'Fire Enter':170}),rule('Ice Leave',1070,1280,[],{'Lightning Enter':180}),
- rule('Upgrade',1200,1440,['All Upgrade','Wind Exit'],{'Ice Leave':150}),rule('End',1740,null,['Origins Egg End'],{Upgrade:540})]
+ rule('Upgrade',1200,1440,['All Upgrade','Wind Exit','Staves Ultimated'],{'Ice Leave':150}),rule('End',1740,null,['Origins Egg End'],{Upgrade:540})]
 };
 export function splitName(profile,name){
  if(profile?.map==='super-easter-egg'){

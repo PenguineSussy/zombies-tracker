@@ -104,6 +104,7 @@ static readonly Dictionary<string,string> Names = new Dictionary<string,string> 
 {"origins|upgrade","Upgrade"},
 {"origins|all upgrade","Upgrade"},
 {"origins|wind exit","Upgrade"},
+{"origins|staves ultimated","Upgrade"},
 {"origins|end","End"},
 {"origins|origins egg end","End"},
 {"bo2-tranzit|jetgun","Jetgun"},

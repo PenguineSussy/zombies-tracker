@@ -8,7 +8,8 @@ export function setupDiscord({api,notice,player,catalog}){
  function rememberChannel(){if(!player()||!details)return;try{const choices=savedChoices();choices.guild=loadedGuild;choices[loadedGuild]={channel:$('channel').value,role:$('role').value};localStorage.setItem(selectionKey(),JSON.stringify(choices));}catch{}}
  const required=()=>{if(!player())throw Error('Sign in with your runner key first.');};
  function customCheckpoint(){const custom=$('split').value==='__custom';$('custom-label').hidden=!custom;$('custom').required=custom;}
- function categories(){const values=catalog()?.categoriesByMap?.[$('map').value]??[];$('category').replaceChildren(...values.map(v=>option(v,v)));if(values.includes('Mega Gums'))$('category').value='Mega Gums';splits();}
+ function maps(){const game=$('game').value||'bo3';$('map').replaceChildren(...catalog().maps.filter(m=>m.game===game).map(m=>option(m.id,m.name)));categories();}
+ function categories(){const values=catalog()?.categoriesByMap?.[$('map').value]??[];$('category').replaceChildren(...values.map(v=>option(v,v)));if(values.includes('Mega Gums'))$('category').value='Mega Gums';else if(values.includes('Bank Richtofen'))$('category').value='Bank Richtofen';splits();}
  function splits(){const cat=catalog();const names=cat?.checkpointsByProfile?.[$('map').value]?.[$('category').value]??cat?.checkpointsByMap?.[$('map').value]??[];$('split').replaceChildren(...names.map(n=>option(n,n)),option('__custom','Custom split…'));$('custom').value='';customCheckpoint();}
  function roles(preferred=$('role').value){const ids=details?.channels.find(c=>c.id===$('channel').value)?.roleIds??[];$('role').replaceChildren(option('','No role ping'),...(details?.roles??[]).filter(r=>ids.includes(r.id)).map(r=>option(r.id,r.name)));if(ids.includes(preferred))$('role').value=preferred;}
  async function loadServer(){
@@ -22,7 +23,7 @@ export function setupDiscord({api,notice,player,catalog}){
   const nodes=data.alerts.map(a=>{
    const box=document.createElement('p'),text=document.createElement('span'),button=document.createElement('button');
    const channel=data.channels.find(c=>c.id===a.channel),role=data.roles.find(r=>r.id===a.role),map=catalog()?.maps.find(m=>m.id===a.profile.map);
-   text.textContent=`${a.player==='*'?'All public runners':a.player} · ${map?.name??a.profile.map} · ${a.profile.category} · ${a.split} · #${channel?.name??a.channel}${role?' · @'+role.name:''} · ${a.mode==='wr'?'Faster than WR':a.mode==='under'?'At or under '+Math.floor(a.thresholdMs/60000)+':'+String(Math.floor(a.thresholdMs/1000)%60).padStart(2,'0'):'Every split completion'} `;
+   text.textContent=`${a.player==='*'?'All public runners':a.player} · ${map?.game==='bo2'?'Black Ops II':'Black Ops III'} · ${map?.name??a.profile.map} · ${a.profile.category} · ${a.split} · #${channel?.name??a.channel}${role?' · @'+role.name:''} · ${a.mode==='wr'?'Faster than WR':a.mode==='under'?'At or under '+Math.floor(a.thresholdMs/60000)+':'+String(Math.floor(a.thresholdMs/1000)%60).padStart(2,'0'):'Every split completion'} `;
    button.type='button';button.className='secondary';button.textContent='Remove';button.setAttribute('aria-label','Remove alert for '+a.player+' '+a.split+' in '+(channel?.name??a.channel));
    button.addEventListener('click',async()=>{button.disabled=true;try{await api('/api/me/discord/guilds/'+id+'/alerts/'+a.id,{method:'DELETE'});if($('guild').value===id)await loadServer();}catch(e){notice(e.message,true);button.disabled=false;}});
    box.append(text,button);return box;
@@ -37,14 +38,14 @@ export function setupDiscord({api,notice,player,catalog}){
   $('connect').disabled=!owner||!config.available;$('disconnect').hidden=!config.connected;$('controls').hidden=!config.connected;
   $('status').textContent=!owner?'Sign in under LiveSplit to manage server alerts.':!config.available?'Website server controls are awaiting Discord app setup. You can still invite the bot and use /track-alert in Discord.':config.connected?'Connected as '+config.name:'Connect Discord to choose servers and channels.';
   if(!config.connected){guilds=[];details=null;$('guild').replaceChildren(option('','Choose a server'));$('server-controls').hidden=true;return;}
-  if(!$('map').options.length){$('map').replaceChildren(...catalog().maps.map(m=>option(m.id,(m.game==='bo2'?'BO2 · ':'')+m.name)));categories();}
+  if(!$('map').options.length)maps();
   if(!$('runner').value)$('runner').value='*';
   await servers();
  }
  on('recovery-disable',async()=>{if(!confirm('Disable Discord key recovery? Keep your runner key before continuing.'))return;await api('/api/me/discord/recovery',{method:'DELETE'});await refresh();notice('Discord key recovery disabled.');});
  on('connect',async()=>{required();location.assign((await api('/api/me/discord/connect',{method:'POST',body:{}})).url);});
  on('disconnect',async()=>{await api('/api/me/discord',{method:'DELETE'});await refresh();notice('Discord management disconnected. Saved server alerts remain active.');});
- on('refresh',servers);on('guild',loadServer,'change');on('channel',()=>{roles();rememberChannel();},'change');on('role',rememberChannel,'change');on('map',categories,'change');on('category',splits,'change');on('split',customCheckpoint,'change');
+ on('refresh',servers);on('guild',loadServer,'change');on('channel',()=>{roles();rememberChannel();},'change');on('role',rememberChannel,'change');on('game',maps,'change');on('map',categories,'change');on('category',splits,'change');on('split',customCheckpoint,'change');
  on('mode',()=>{const show=$('mode').value==='under';$('threshold-label').hidden=!show;$('threshold').required=show;},'change');
  on('alert-form',async()=>{required();const id=$('guild').value;await api('/api/me/discord/guilds/'+id+'/alerts',{method:'POST',body:{channel:$('channel').value,role:$('role').value,player:$('runner').value,split:$('split').value==='__custom'?$('custom').value:$('split').value,profile:{map:$('map').value,category:$('category').value},mode:$('mode').value,threshold:$('threshold').value}});if($('guild').value===id)await loadServer();notice('Discord alert saved.');},'submit');
  return {refresh};
