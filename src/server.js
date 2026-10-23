@@ -138,6 +138,7 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
       }
       if(req.method==='GET'&&path==='/api/me')return send({...p,loginExpiresAt,addonUpdate:addonStatus(p)});
       if(req.method==='POST'&&path==='/api/me/streams')return send(store.streams(p,data));
+      if(req.method==='POST'&&path==='/api/me/import-pb')return send(store.importPB(p,data));
       if(req.method==='POST'&&path==='/api/ingest')return send(store.ingest(p.id,data));
       if(req.method==='POST'&&path==='/api/me/privacy')return send(store.privacy(p,data.public));
       if(req.method==='POST'&&path==='/api/me/session')return send(store.session(p,data.action));

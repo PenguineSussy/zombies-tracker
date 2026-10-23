@@ -1,4 +1,4 @@
-# Dr Monty Bot — LiveSplit addon 1.0.9
+# Dr Monty Bot — LiveSplit addon 1.0.10
 
 Tracks Solo Easter Egg runs in BO2 and BO3. BO2 uses LiveSplit Game Time (IGT) as the primary timer and shows Real Time (RTA) alongside it when available. BO3 keeps RTA primary with optional IGT.
 
@@ -26,6 +26,14 @@ Bot results, statistics and live activity ignore runs/splits below 5.000 seconds
 
 Update notices use the official server and repository manifest. The distributable includes only the tracker component; LiveSplit supplies its own dependencies. Real T6 gameplay checks are scheduled after this release.
 
-## Automatic categories in 1.0.9
+## Automatic categories in 1.0.10
 
 Automatic BO3 categories use Additional Info: Easter Egg follows Gobblegum Loadout (blank defaults to Mega Gums), while Any% ignores it. Map-only BO2 Victis runs default to Bank Richtofen. Category and alias dropdowns stay separated by game, preserving saved mappings. Explicit No Bank/Maxis choices and conflicting-category checks are retained. BO2 Origins and Mob of the Dead remain Standard; BO3 Ascension and Shangri-La remain Any%-only. Manual category overrides take priority.
+
+## Automatic saved PB sync
+
+Choose your splits folder in Zombies Tracker settings, click Apply, close settings with OK, and save the layout. While enabled, the addon scans saved `.lss` files and subfolders every minute. Save changes in LiveSplit before syncing. Folder sync pauses in Practice mode.
+
+Use a folder containing only your own real runs; practice or someone else’s saved files cannot reliably be identified from `.lss` data. Supported solo map/category profiles are detected per file, independently of the loaded run. BO2 requires a saved IGT PB; BO3 requires RTA. Super EE uses your saved aliases. Missing, unsupported or ambiguous files are skipped, with details in the settings panel.
+
+The fastest imported PB is kept per profile and appears through `!pb` on the site and chats. Imports never create sessions, change online status, or send announcements. They do not import split histories or segment records. Clear the folder setting to stop syncing; previously imported PBs remain.

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <updates>
-  <update version="1.0.9">
-    <changelog><change>Read Easter Egg and Any% from Additional Info with Gobblegum Loadout support.</change><change>Default map-only runs to Mega Gums or BO2 Bank Richtofen.</change><change>Filter split aliases and categories by game without deleting saved mappings.</change></changelog>
+  <update version="1.0.10">
+    <changelog><change>Automatically sync supported PBs from a chosen splits folder and subfolders.</change><change>Keep the fastest PB per game/map/category without live activity or alerts.</change><change>Show skipped files and retry failed uploads; preserve saved aliases and settings.</change></changelog>
     <files>
       <file path="Components/LiveSplit.ZombiesTracker.dll" status="changed" />
     </files>

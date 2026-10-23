@@ -9,7 +9,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { check, clean, key, snapshot, profile, profileKey, profileLabel, time, parseCommand, requireEnabledMap } from './domain.js';
+import { categoriesForMap, check, clean, key, snapshot, profile, profileKey, profileLabel, time, parseCommand, requireEnabledMap } from './domain.js';
 import {streamLink} from './streams.js';
 import {wrSplitLookup} from './wr-checkpoints.js';
 import {routeSource,activeSource} from './source-routing.js';
@@ -28,6 +28,16 @@ export class Store {
       CREATE TABLE IF NOT EXISTS subscriptions (id TEXT PRIMARY KEY, body TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS outbox (id TEXT PRIMARY KEY, body TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS metadata (id TEXT PRIMARY KEY, body TEXT NOT NULL);`);
+  }
+  importPB(p,input) {
+    const selected=profile(input.profile);requireEnabledMap(selected.map);
+    check(categoriesForMap(selected.map).includes(selected.category),'Unsupported map/category.');
+    const valid=v=>v==null?null:(check(Number.isSafeInteger(v)&&eligibleTime(v)&&v<604800000,'Invalid PB time.'),v);
+    const pbMs=valid(input.pbMs);check(pbMs!=null,'Missing PB.');
+    const pbIgtMs=valid(input.pbIgtMs),pbRealTimeMs=valid(input.pbRealTimeMs);
+    const id='folder-pb:'+p.id+':'+profileKey(selected),old=this.get('metadata',id);
+    if(!old || pbMs<old.pbMs)this.put('metadata',id,{id,kind:'folder-pb',player:p.id,profile:selected,pbMs,pbIgtMs,pbRealTimeMs,observedAt:this.clock()});
+    return {synced:true};
   }
   close() { this.db.close(); }
   transaction(fn) {
@@ -338,7 +348,8 @@ export class Store {
         if(q.profile)requireEnabledMap(selected.map);
         if(!selected)return `${p.name}: PB unavailable; no run profile selected. Use !pb @${p.id} DE.`;
         const best = this.attempts(p.id).filter(a => eligibleRun(a) && a.phase === 'Ended' && a.complete && !a.practice && profileKey(a.profile) === profileKey(selected)).sort((a,b) => a.elapsedMs - b.elapsedMs)[0];
-        const savedRecords=this.savedRecords(p,selected),saved=eligibleTime(savedRecords?.pbMs)?savedRecords.pbMs:null;
+        const loaded=this.savedRecords(p,selected),imported=this.get('metadata','folder-pb:'+p.id+':'+profileKey(selected));
+        const savedRecords=imported&&(!eligibleTime(loaded?.pbMs)||imported.pbMs<loaded.pbMs)?imported:loaded,saved=eligibleTime(savedRecords?.pbMs)?savedRecords.pbMs:null;
         const fromSaved=saved!=null && (!best || saved<=best.elapsedMs);
         return `${p.name} | ${replyProfile(selected)} | PB: ${fromSaved?runTime(saved,savedRecords.pbIgtMs,selected,savedRecords.pbRealTimeMs):best?runTime(best.elapsedMs,best.igtMs,best.profile,best.realTime?.elapsedMs):'unavailable'}`;
       }
@@ -373,7 +384,7 @@ export class Store {
       for (const job of this.list('outbox')) if (job.player === p.id) this.db.prepare('DELETE FROM outbox WHERE id=?').run(job.id);
       for (const sub of this.list('subscriptions')) if (sub.player === p.id) this.db.prepare('DELETE FROM subscriptions WHERE id=?').run(sub.id);
       this.db.prepare('DELETE FROM players WHERE id=?').run(p.id);
-      for(const row of this.list('metadata'))if(['saved-records','chat-announcement','browser-session','discord-recovery','discord-session'].includes(row.kind)&&row.player===p.id)this.db.prepare('DELETE FROM metadata WHERE id=?').run(row.id);
+      for(const row of this.list('metadata'))if(['folder-pb','saved-records','chat-announcement','browser-session','discord-recovery','discord-session'].includes(row.kind)&&row.player===p.id)this.db.prepare('DELETE FROM metadata WHERE id=?').run(row.id);
     });
   }
 }

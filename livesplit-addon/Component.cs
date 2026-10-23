@@ -14,7 +14,7 @@ using LiveSplit.Model;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;
 
-[assembly: AssemblyVersion("1.0.9.0")]
+[assembly: AssemblyVersion("1.0.10.0")]
 [assembly: ComponentFactory(typeof(LiveSplit.ZombiesTracker.Factory))]
 
 namespace LiveSplit.ZombiesTracker
@@ -35,6 +35,7 @@ namespace LiveSplit.ZombiesTracker
         public bool Enabled;
         public string Server = "https://doctormonty.beer", Token = "", Map = "", Category = "", Game = "";
         public bool Practice;
+        public string SplitsFolder = "";
         public List<SplitLink> Aliases = new List<SplitLink>();
     }
     public sealed class TrackerComponent : LogicComponent
@@ -55,6 +56,7 @@ namespace LiveSplit.ZombiesTracker
         readonly AddonUpdates updates = new AddonUpdates();
         AddonOptions options = new AddonOptions();
         UploadQueue uploader;
+        FolderPBSync folderSync;
         readonly JavaScriptSerializer json = new JavaScriptSerializer();
         string id = Guid.NewGuid().ToString(), identity, lastPhase, frozen;
         long sequence;
@@ -101,6 +103,10 @@ namespace LiveSplit.ZombiesTracker
             try { EnsureUploader(); } catch (Exception ex) { panel.StatusText = "Connection waiting: " + ex.Message; return; }
             if ((DateTime.UtcNow - lastHeartbeat).TotalSeconds >= 5) Capture(false);
             if (uploader != null) uploader.Flush();
+            if(options.Enabled && !options.Practice && !string.IsNullOrWhiteSpace(options.SplitsFolder)) {
+                if(folderSync==null)folderSync=new FolderPBSync(options.Server,options.Token,options.SplitsFolder,options.Aliases);
+                folderSync.Tick(); panel.FolderStatus=folderSync.Status;
+            }
         }
         Dictionary<string,string> Variables()
         {
@@ -190,6 +196,7 @@ namespace LiveSplit.ZombiesTracker
             UploadQueue.ValidateServer(value.Server);
             value.Aliases = ManualAliases.Validate(value.Aliases);
             if (uploader != null) { uploader.Dispose(); uploader = null; }
+            if(folderSync!=null){folderSync.Dispose();folderSync=null;}
             options = value;
             forceNew = true; first = true; suppressNext = true; frozen = null;
         }
@@ -233,6 +240,7 @@ namespace LiveSplit.ZombiesTracker
             catch (Exception ex) { canSave = false; panel.StatusText = "Cannot save key: " + ex.Message; }
             put("Version", AddonUpdates.InstalledVersion); put("Enabled", (options.Enabled && canSave).ToString()); put("Server", options.Server);
             put("ProtectedToken", protectedToken);
+            put("SplitsFolder", options.SplitsFolder);
             put("SplitAliases", json.Serialize(options.Aliases));
             put("AliasEditorMap", panel.AliasMap);
             put("Game", options.Game); put("Map", options.Map); put("Category", options.Category); put("Practice", options.Practice.ToString());
@@ -242,7 +250,7 @@ namespace LiveSplit.ZombiesTracker
         {
             Func<string,string,string> read = (key, fallback) => root[key] == null ? fallback : root[key].InnerText;
             var value = new AddonOptions { Enabled = read("Enabled", "False") == "True", Server = read("Server", "https://doctormonty.beer"),
-                Game = new[]{"bo3","bo2"}.Contains(read("Game", "")) ? read("Game", "") : "", Map = read("Map", ""), Category = read("Category", ""), Practice = read("Practice", "False") == "True" };
+                SplitsFolder = read("SplitsFolder", ""), Game = new[]{"bo3","bo2"}.Contains(read("Game", "")) ? read("Game", "") : "", Map = read("Map", ""), Category = read("Category", ""), Practice = read("Practice", "False") == "True" };
             try
             {
                 value.Aliases = ManualAliases.Validate(json.Deserialize<List<SplitLink>>(read("SplitAliases", "[]")));
@@ -288,6 +296,7 @@ namespace LiveSplit.ZombiesTracker
         void Deactivate()
         {
             activated = false;
+            if(folderSync!=null){folderSync.Dispose();folderSync=null;}
             if (runtime.Owner == this) runtime.Owner = null;
             if (uploader != null) { var previous = uploader; uploader = null; previous.Dispose(); }
         }
@@ -297,6 +306,7 @@ namespace LiveSplit.ZombiesTracker
             disposed = true; timer.Stop(); timer.Dispose();
             state.OnStart -= Started; state.OnSplit -= Changed; state.OnUndoSplit -= Changed; state.OnSkipSplit -= Changed;
             state.OnPause -= Changed; state.OnResume -= Changed; state.OnUndoAllPauses -= Changed; state.OnReset -= Reset;
+            if(folderSync!=null)folderSync.Dispose();
             Deactivate(); updates.Dispose(); panel.Dispose();
         }
     }
@@ -313,6 +323,9 @@ namespace LiveSplit.ZombiesTracker
         bool loadingOptions, refreshingMaps, hasRunContext;
         public string AliasMap { get { return aliasEditor.SelectedMap; } }
         public void RestoreAliasMap(string map) { aliasEditor.RestoreMap(map); }
+        readonly TextBox splitsFolder = new TextBox();
+        readonly Label folderStatus = new Label { AutoSize=true, MaximumSize=new Size(450,0) };
+        public string FolderStatus { set { folderStatus.Text=value; } }
         readonly CheckBox practice = new CheckBox { Text = "Practice (excluded from records and alerts)", AutoSize = true };
         readonly Label detection = new Label { AutoSize = true, MaximumSize = new Size(450, 0) };
         readonly Label status = new Label { Text = "Waiting for this component to become active. Close settings with OK to use this layout.", AutoSize = true, MaximumSize = new Size(450, 0) };
@@ -339,6 +352,10 @@ namespace LiveSplit.ZombiesTracker
             map.SelectedIndexChanged += delegate { if(!refreshingMaps)RefreshCategories(); };
             game.SelectedIndexChanged += delegate { if(!loadingOptions)RefreshMaps(); };
             add(practice);
+            add(new Label {Text="Automatic saved PB sync (optional)",AutoSize=true});add(splitsFolder);
+            var browse=new Button {Text="Choose splits folder",AutoSize=true};
+            browse.Click+=delegate {using(var dialog=new FolderBrowserDialog()){if(dialog.ShowDialog()==DialogResult.OK)splitsFolder.Text=dialog.SelectedPath;}};add(browse);
+            add(new Label {Text="Syncs supported .lss PBs in this folder and subfolders every minute. No live runs or announcements. Clear the folder to stop. Apply and save your layout.",AutoSize=true,MaximumSize=new Size(450,0)});add(folderStatus);
             add(aliasEditor);
             add(new Label {Text="Aliases change tracker labels only. Finish or reset, Apply, then save your layout. For Super EE choose map-prefixed splits and a Complete marker for each map.",AutoSize=true,MaximumSize=new Size(450,0)});
             var import = new Button { Text = "Import downloaded config.json", AutoSize = true };
@@ -401,7 +418,7 @@ namespace LiveSplit.ZombiesTracker
             return new AddonOptions { Enabled = enabled.Checked, Server = server.Text.Trim(), Token = token.Text.Trim(),
                 Game = game.SelectedIndex == 1 ? "bo3" : game.SelectedIndex == 2 ? "bo2" : "",
                 Map = map.SelectedItem is MapInfo ? ((MapInfo)map.SelectedItem).Id : "", Category = category.SelectedIndex > 0 ? (string)category.SelectedItem : "",
-                Practice = practice.Checked, Aliases = aliasEditor.Read() };
+                SplitsFolder = splitsFolder.Text.Trim(), Practice = practice.Checked, Aliases = aliasEditor.Read() };
         }
         public void LoadOptions(AddonOptions value)
         {
@@ -411,7 +428,7 @@ namespace LiveSplit.ZombiesTracker
             game.SelectedIndex = value.Game == "bo3" ? 1 : value.Game == "bo2" ? 2 : 0;
             loadingOptions=false;
             RefreshMaps();
-            enabled.Checked = value.Enabled; server.Text = value.Server; token.Text = value.Token; practice.Checked = value.Practice;
+            splitsFolder.Text=value.SplitsFolder; enabled.Checked = value.Enabled; server.Text = value.Server; token.Text = value.Token; practice.Checked = value.Practice;
             map.SelectedIndex = 0; foreach (var item in map.Items) if (item is MapInfo && ((MapInfo)item).Id == value.Map) map.SelectedItem = item;
             category.SelectedIndex = Math.Max(0, category.Items.IndexOf(value.Category));
         }

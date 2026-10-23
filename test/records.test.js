@@ -91,3 +91,20 @@ test('WR replies show only achieved date and omit source link and checked timest
  assert.doesNotMatch(answer,/Checked|https?:|ZWR added|zwr-added|stale cache/);
  store.put('metadata',id,{...record,achievedDate:null});assert.match(store.answer('!wr DE'),/Achieved: unavailable/);
 });
+
+test('folder PB sync keeps fastest by profile without altering live status or sending alerts',t=>{
+ const {store,player,send}=fixture(t);send();
+ const before=store.get('players',player.id),attempts=store.attempts(player.id),outbox=store.list('outbox');
+ store.importPB(player,{profile,pbMs:1500000});
+ store.importPB(player,{profile,pbMs:1600000});
+ assert.match(store.answer('!pb @runner DE'),/25:00/);
+ send({sequence:2,records:{...records,pbMs:1700000}});
+ assert.match(store.answer('!pb @runner DE'),/25:00/);
+ store.importPB(player,{profile:{map:'bo2-origins',category:'Standard',timing:'GameTime'},pbMs:1400000,pbRealTimeMs:1500000});
+ assert.equal(store.get('players',player.id).profile.map,before.profile.map);
+ assert.equal(store.attempts(player.id).length,attempts.length);assert.deepEqual(store.list('outbox'),outbox);
+ assert.throws(()=>store.importPB(player,{profile,pbMs:-10}));
+ assert.throws(()=>store.importPB(player,{profile:{...profile,map:'zetsubou-no-shima',category:'No Gums'},pbMs:1500000}));
+ assert.throws(()=>store.importPB(player,{profile:{...profile,map:'nuketown'},pbMs:1500000}));
+ store.removePlayer(player);assert.equal(store.list('metadata').filter(x=>x.kind==='folder-pb').length,0);
+});

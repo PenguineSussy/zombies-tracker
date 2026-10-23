@@ -197,13 +197,14 @@ class Tests
             Check(countProbe.igtMs == null,"idle does not invent IGT");
             var model = new TimerModel { CurrentState = state };
             using(var settingsProbe=new TrackerComponent(state)) {
-                var settingsDoc=new XmlDocument(); settingsDoc.LoadXml("<Settings><Enabled>False</Enabled><ProtectedToken>" + Convert.ToBase64String(Protection.Protect(Encoding.UTF8.GetBytes("synthetic-test-key"))) + "</ProtectedToken></Settings>");
+                var settingsDoc=new XmlDocument(); settingsDoc.LoadXml("<Settings><SplitsFolder>C:\\Splits</SplitsFolder><Enabled>False</Enabled><ProtectedToken>" + Convert.ToBase64String(Protection.Protect(Encoding.UTF8.GetBytes("synthetic-test-key"))) + "</ProtectedToken></Settings>");
                 var linksNode=settingsDoc.CreateElement("SplitAliases");linksNode.InnerText=new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(aliasRows);settingsDoc.DocumentElement.AppendChild(linksNode);
                 settingsProbe.SetSettings(settingsDoc.DocumentElement);
                 var settingsPanel=(SettingsPanel)settingsProbe.GetSettingsControl(LiveSplit.UI.LayoutMode.Vertical);
                 var gameOptions=settingsPanel.ReadOptions(); gameOptions.Game="bo3"; settingsPanel.LoadOptions(gameOptions);
                 settingsPanel.RestoreAliasMap("der-eisendrache");
                 var selectionXml=settingsProbe.GetSettings(new XmlDocument());
+                Check(selectionXml["SplitsFolder"].InnerText==@"C:\Splits","PB folder survives layout settings");
                 Check(selectionXml["AliasEditorMap"].InnerText=="der-eisendrache","alias editor selection saved in layout");
                 Check(selectionXml["Game"].InnerText=="bo3","game selection saved in layout");
                 using(var reopened=new TrackerComponent(state)) {
@@ -388,6 +389,20 @@ class Tests
                     Check(state.CurrentPhase==TimerPhase.Ended,"native BO2 run finished without tracker changing timer");
                 }
             }
+            var pbFile=Path.Combine(Path.GetTempPath(),Guid.NewGuid().ToString()+".lss");
+            try {
+                var xml="<Run><GameName>Call of Duty: Black Ops III Zombies</GameName><CategoryName>Der Eisendrache</CategoryName><Segments><Segment><Name>End</Name><SplitTimes><SplitTime name='Personal Best'><RealTime>00:25:48.0000000</RealTime></SplitTime></SplitTimes></Segment></Segments></Run>";
+                File.WriteAllText(pbFile,xml);
+                var imported=new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(FolderPBSync.ReadPB(pbFile));
+                Check(imported.Contains("1548000") && imported.Contains("Mega Gums") && imported.Contains("der-eisendrache"),"folder PB reads final RTA and automatic category");
+                File.WriteAllText(pbFile,xml.Replace("Black Ops III","Black Ops II").Replace("Der Eisendrache","Origins").Replace("RealTime","GameTime"));
+                imported=new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(FolderPBSync.ReadPB(pbFile));
+                Check(imported.Contains("bo2-origins") && imported.Contains("GameTime"),"folder PB uses BO2 IGT");
+                File.WriteAllText(pbFile,xml.Replace("Black Ops III","Black Ops IV"));
+                bool pbRejected=false;try{FolderPBSync.ReadPB(pbFile);}catch{pbRejected=true;}Check(pbRejected,"folder PB rejects unsupported game");
+                File.WriteAllText(pbFile,xml.Replace("00:25:48.0000000",""));
+                pbRejected=false;try{FolderPBSync.ReadPB(pbFile);}catch{pbRejected=true;}Check(pbRejected,"folder PB rejects missing finish time");
+            } finally {File.Delete(pbFile);}
             Console.WriteLine("PASS " + assertions + " addon assertions"); return 0;
         }
         catch (Exception ex) { Console.Error.WriteLine(ex); return 1; }
