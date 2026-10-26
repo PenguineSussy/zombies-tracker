@@ -1,0 +1,36 @@
+[
+  {
+    "id": "zwr:{\"map\":\"bo2-victis-super\",\"category\":\"Richtofen\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"bo2\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "bo2-victis-super",
+      "category": "Richtofen",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 1699000,
+    "holder": "JettLag",
+    "source": "https://zwr.gg/leaderboards/bo2/Super-ee-speedrun/bo2-super-ee/",
+    "checkedAt": 1793049496131,
+    "achievedDate": "2025-05-29",
+    "dateSource": "zwr-added",
+    "recordId": "126043"
+  },
+  {
+    "id": "zwr:{\"map\":\"bo2-victis-super\",\"category\":\"Maxis\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"bo2\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "bo2-victis-super",
+      "category": "Maxis",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 1774000,
+    "holder": "Excosis",
+    "source": "https://zwr.gg/leaderboards/bo2/Super-ee-speedrun/bo2-super-ee/",
+    "checkedAt": 1793049496131,
+    "achievedDate": "2023-08-26",
+    "dateSource": "zwr-added",
+    "recordId": "110307"
+  }
+]

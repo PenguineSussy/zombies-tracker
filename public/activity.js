@@ -2,7 +2,7 @@ import {filterActivity} from './activity-filters.js?v=1.0.6';
 const $=id=>document.getElementById(id), body=$('activity-body'),toggle=$('activity-toggle'),scroll=$('activity-scroll'),items=$('activity-items');
 let hidden=false,paused=false,hover=false,focused=false,busy=false,lastIds='',lastFrame=0;
 const gameFilter=$('activity-game'),typeFilter=$('activity-type');
-try{const saved=JSON.parse(localStorage.getItem('montyActivityFilters')??'{}');if(['all','bo2','bo3'].includes(saved.game))gameFilter.value=saved.game;if(['all','no-resets','split','pb','finish','reset'].includes(saved.type))typeFilter.value=saved.type;}catch{}
+try{const saved=JSON.parse(localStorage.getItem('montyActivityFilters')??'{}');if(['all','bo2','bo3','iw'].includes(saved.game))gameFilter.value=saved.game;if(['all','no-resets','split','pb','finish','reset'].includes(saved.type))typeFilter.value=saved.type;}catch{}
 for(const control of [gameFilter,typeFilter])control.addEventListener('change',()=>{try{localStorage.setItem('montyActivityFilters',JSON.stringify({game:gameFilter.value,type:typeFilter.value}));}catch{}lastIds='';scroll.scrollLeft=0;void update();});
 try{hidden=localStorage.getItem('montyActivityHidden')==='true';}catch{}
 function visibility(){body.hidden=hidden;toggle.textContent=hidden?'▾':'▴';toggle.setAttribute('aria-expanded',String(!hidden));toggle.setAttribute('aria-label',hidden?'Show live activity':'Hide live activity');}

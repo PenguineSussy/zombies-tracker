@@ -37,6 +37,6 @@ export function publicActivity(store){
   const hasContext=attempt&&attempt.splits.some(s=>same(s,e.split));
   const rows=hasContext?attempt.splits:e.split?[e.split]:[];
   const resolved=resolveSplits(e.profile,rows,{timing:!!hasContext,finished:hasContext&&attempt.phase==='Ended'&&attempt.complete}).find(s=>s.index===e.split?.index&&s.ms===e.split?.ms);
-  return {id:e.id,runner:store.get('players',e.player).name,player:e.player,type:e.type,at:e.at,ms:e.ms,igtMs:e.igtMs??null,timing:e.profile.timing,game:e.profile.game??'bo3',realTimeMs:e.realTimeMs??null,split:resolved?splitName(e.profile,resolved.displayName??resolved.name):undefined,map:(e.profile.game==='bo2'?'BO2 · ':'')+(MAPS.find(m=>m.id===e.profile.map)?.name??e.profile.map),category:e.profile.category};
+  return {id:e.id,runner:store.get('players',e.player).name,player:e.player,type:e.type,at:e.at,ms:e.ms,igtMs:e.igtMs??null,timing:e.profile.timing,game:e.profile.game??'bo3',realTimeMs:e.realTimeMs??null,split:resolved?splitName(e.profile,resolved.displayName??resolved.name):undefined,map:(e.profile.game==='iw'?'IW · ':e.profile.game==='bo2'?'BO2 · ':'')+(MAPS.find(m=>m.id===e.profile.map)?.name??e.profile.map),category:e.profile.category};
  });
 }

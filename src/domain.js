@@ -13,12 +13,16 @@ export const MAPS = [
 
 export const BO2_CATEGORIES = ['No Bank Richtofen','No Bank Maxis','Bank Richtofen','Bank Maxis'];
 MAPS.forEach(m=>m.game='bo3');
-MAPS.push(...[['tranzit','TranZit'],['die-rise','Die Rise'],['buried','Buried'],['mob-of-the-dead','Mob of the Dead'],['origins','Origins']].map(([id,name])=>({id:'bo2-'+id,name,game:'bo2',enabled:true})));
+MAPS.push(...[['victis-super','Victis Super'],['tranzit','TranZit'],['die-rise','Die Rise'],['buried','Buried'],['mob-of-the-dead','Mob of the Dead'],['origins','Origins']].map(([id,name])=>({id:'bo2-'+id,name,game:'bo2',enabled:true})));
+export const IW_CATEGORIES=['Fate','FF','DC Fate','DC FF'];
+MAPS.push(...[['mephistopheles-super','Mephistopheles Super'],['spaceland','Zombies in Spaceland'],['rave-in-the-redwoods','Rave in the Redwoods'],['shaolin-shuffle','Shaolin Shuffle'],['attack-of-the-radioactive-thing','Attack of the Radioactive Thing'],['beast-from-beyond','The Beast from Beyond']].map(([id,name])=>({id:'iw-'+id,name,game:'iw',enabled:true})));
 export const gameForMap = map => MAPS.find(m=>m.id===map)?.game??'bo3';
 export const timingLabel = p => p?.timing==='GameTime'?'IGT':'RTA';
 export const ENABLED_MAPS = MAPS.filter(map => map.enabled);
 export const CATEGORIES = ['No Gums', 'Classic Gums', 'Mega Gums', 'Any%'];
 export function categoriesForMap(map) {
+  if(gameForMap(map)==='iw')return map==='iw-mephistopheles-super'?['DC Fate','DC FF']:[...IW_CATEGORIES];
+  if(map==='bo2-victis-super')return ['Richtofen','Maxis'];
   if (gameForMap(map)==='bo2') return ['bo2-origins','bo2-mob-of-the-dead'].includes(map)?['Standard']:[...BO2_CATEGORIES];
   if (['ascension', 'shangri-la'].includes(map)) return ['Any%'];
   return ['zetsubou-no-shima','super-easter-egg'].includes(map) ? CATEGORIES.filter(c => c !== 'No Gums') : [...CATEGORIES];
@@ -52,17 +56,17 @@ export function profile(input) {
   check(input.players === undefined || input.players === 1, 'This tracker supports Solo Easter Egg runs only.');
   const game=gameForMap(input.map);
   check(input.game==null||input.game===game,'Game and map do not match.');
-  const category = (game==='bo2'?categoriesForMap(input.map):CATEGORIES).find(c => c.toLowerCase() === String(input.category??(categoriesForMap(input.map).length===1?'Standard':'')).trim().toLowerCase());
-  check(category, game==='bo2'?'Choose '+categoriesForMap(input.map).join(', ')+'.':'Choose No Gums, Classic Gums, Mega Gums, or Any%. Update older companion configurations in Runner setup.');
+  const category = (game==='bo3'?CATEGORIES:categoriesForMap(input.map)).find(c => c.toLowerCase() === String(input.category??(categoriesForMap(input.map).length===1?'Standard':'')).trim().toLowerCase());
+  check(category, game!=='bo3'?'Choose '+categoriesForMap(input.map).join(', ')+'.':'Choose No Gums, Classic Gums, Mega Gums, or Any%. Update older companion configurations in Runner setup.');
   check(categoriesForMap(input.map).includes(category), `This map allows only: ${categoriesForMap(input.map).join(', ')}.`);
-  const timing=game==='bo2'?'GameTime':'RealTime';
-  check(input.timing === undefined || input.timing === timing, 'BO2 uses IGT (Game Time); BO3 uses RTA (Real Time).');
-  return { map: input.map, category, players: 1, timing, ...(game==='bo2'?{game}: {}) };
+  const timing=game!=='bo3'?'GameTime':'RealTime';
+  check(input.timing === undefined || input.timing === timing, 'BO2 and IW use IGT (Game Time); BO3 uses RTA (Real Time).');
+  return { map: input.map, category, players: 1, timing, ...(game!=='bo3'?{game}: {}) };
 }
 // Retain historical categories without silently assigning old records to a gum category.
-export function profileKey(p) { return p.category ? JSON.stringify({map:p.map,category:p.category,players:p.players??1,timing:p.timing??(gameForMap(p.map)==='bo2'?'GameTime':'RealTime'),...(gameForMap(p.map)==='bo2'?{game:'bo2'}:{})}) : JSON.stringify({map:p.map,objective:p.objective,players:p.players,rules:p.rules,route:p.route,timing:p.timing}); }
+export function profileKey(p) { return p.category ? JSON.stringify({map:p.map,category:p.category,players:p.players??1,timing:p.timing??(gameForMap(p.map)!=='bo3'?'GameTime':'RealTime'),...(gameForMap(p.map)!=='bo3'?{game:gameForMap(p.map)}:{})}) : JSON.stringify({map:p.map,objective:p.objective,players:p.players,rules:p.rules,route:p.route,timing:p.timing}); }
 export function profileLabel(p) {
-  return `${gameForMap(p.map)==='bo2'?'BO2 · ':''}${MAPS.find(m => m.id === p.map)?.name ?? p.map} · ${p.category ? 'Solo · Easter Egg'+(p.category==='Standard'?'':' · '+p.category) : 'Legacy · '+p.players+'P · '+p.objective+' · '+p.rules+' · '+p.route} · ${timingLabel(p)}`;
+  return `${gameForMap(p.map)==='iw'?'IW · ':gameForMap(p.map)==='bo2'?'BO2 · ':''}${MAPS.find(m => m.id === p.map)?.name ?? p.map} · ${p.category ? 'Solo · Easter Egg'+(p.category==='Standard'?'':' · '+p.category) : 'Legacy · '+p.players+'P · '+p.objective+' · '+p.rules+' · '+p.route} · ${timingLabel(p)}`;
 }
 export function milliseconds(value) {
   if (value == null || value === '-' || value === '') return null;
@@ -179,14 +183,14 @@ function legacyCommand(text, defaultPlayer) {
     return {command:'pb',player,...(selected.error?{error:selected.error.replace('!wr <map>','!pb [@runner] <map>').replace('!wr Der Eisendrache','!pb @Penguine Der Eisendrache')}:{profile:selected.profile})};
   }
   if (command === '!wr') {
-    const requestedGame=/^bo[23]$/i.test(words[0]??'')?words.shift().toLowerCase():null;
+    const requestedGame=/^(?:bo[23]|iw)$/i.test(words[0]??'')?words.shift().toLowerCase():null;
     const text=stageWords(words.join(' '));
-    const candidates=ENABLED_MAPS.filter(m=>!requestedGame||m.game===requestedGame).flatMap(m=>[m.name,m.id,...(CORE_MAP_ALIASES[m.id]??[]),...(m.id==='super-easter-egg'?['super easter egg','super ee']:[])].map(alias=>({map:m.id,alias:stageWords(alias)}))).sort((a,b)=>b.alias.length-a.alias.length);
+    const candidates=ENABLED_MAPS.filter(m=>!requestedGame||m.game===requestedGame).flatMap(m=>[m.name,m.id,...(CORE_MAP_ALIASES[m.id]??[]),...(m.game==='iw'?[m.id.slice(3).replaceAll('-',' '),...({'iw-mephistopheles-super':['mephistopheles','mephistopheles supers','iw super'],'iw-spaceland':['zis','spaceland'],'iw-rave-in-the-redwoods':['rave','ritr'],'iw-shaolin-shuffle':['shaolin','ss'],'iw-attack-of-the-radioactive-thing':['attack','aotrt'],'iw-beast-from-beyond':['beast','bfb']}[m.id]??[])]:[]),...(m.id==='super-easter-egg'?['super easter egg','super ee']:[])].map(alias=>({map:m.id,alias:stageWords(alias)}))).sort((a,b)=>b.alias.length-a.alias.length);
     const match=candidates.find(m=>text===m.alias||text.startsWith(m.alias+' '));
     if(!match) return {command:'wr',error:'Use !wr <map> [category], e.g. !wr Der Eisendrache Any%. Mega Gums is the default.'};
     const suffix=text.slice(match.alias.length).trim();
     const allowed=categoriesForMap(match.map);
-    const category=suffix ? allowed.find(c=>stageWords(c)===suffix) : gameForMap(match.map)==='bo2'?(allowed.includes('Bank Richtofen')?'Bank Richtofen':allowed[0]):'Mega Gums';
+    const category=suffix ? allowed.find(c=>stageWords(c)===suffix || (gameForMap(match.map)==='iw'&&stageWords(c).replaceAll(' ','')===suffix.replaceAll(' ',''))) : gameForMap(match.map)==='iw'?(allowed.includes('Fate')?'Fate':'DC Fate'):gameForMap(match.map)==='bo2'?(allowed.includes('Bank Richtofen')?'Bank Richtofen':allowed[0]):'Mega Gums';
     if(!category) return {command:'wr',error:(CATEGORIES.some(c=>stageWords(c)===suffix)?'This map allows only: ':'Choose ')+allowed.join(', ')+'.'};
     return {command:'wr',profile:{map:match.map,category}};
   }
@@ -219,7 +223,7 @@ export function parseCommand(text, defaultPlayer, runnerIds=[]) {
  const scopeAt=words.findIndex(w=>['session','alltime'].includes(w.toLowerCase()));
  if(scopeAt>=0)scope=words.splice(scopeAt,1)[0].toLowerCase();
  let selected;
- for(let i=0;i<words.length;i++) {
+ for(let i=name==='best'?1:0;i<words.length;i++) {
   const candidate=legacyCommand('!wr '+words.slice(i).join(' '));
   if(!candidate.error || !candidate.error.startsWith('Use !wr')) {
    if(candidate.error)return {command:name,player,error:candidate.error};

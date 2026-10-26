@@ -9,7 +9,14 @@ namespace LiveSplit.ZombiesTracker {
   public static readonly string[] Core = {"shadows-of-evil","the-giant","der-eisendrache","zetsubou-no-shima","gorod-krovi","revelations"};
   public static string[] Targets(string map) {
    if(map=="super-easter-egg") return Core.SelectMany(id=>Targets(id).Where(n=>n!="End").Select(n=>Detector.Maps.First(m=>m.Id==id).Name+" - "+n).Concat(new[]{Detector.Maps.First(m=>m.Id==id).Name+" - Complete"})).ToArray();
+   if(map=="iw-mephistopheles-super" || map=="bo2-victis-super")return SplitAliases.Canonical(map);
    return SplitAliases.Canonical(map).Concat(new[]{"End"}).Concat(map=="zetsubou-no-shima"?new[]{"KT4"}:new string[0]).Distinct().ToArray();
+  }
+  public static string[] Targets(string map,string category) {
+   return Targets(map).Where(n=>!(map=="iw-spaceland" && category!=null && category.StartsWith("DC") && n=="Round 9 End")
+    && !(map=="iw-attack-of-the-radioactive-thing" && (category=="Fate"||category=="FF") && n=="Death Reset")
+    && !(map=="bo2-tranzit" && category!=null && category.Contains("Maxis") && (n=="Jetgun"||n=="Tower"))
+    && !(map=="bo2-tranzit" && category!=null && category.Contains("Richtofen") && n=="Power off")).ToArray();
   }
   public static List<SplitLink> Validate(IEnumerable<SplitLink> links) {
    var result=new List<SplitLink>();
@@ -36,7 +43,7 @@ namespace LiveSplit.ZombiesTracker {
  public sealed class AliasEditor : UserControl {
   readonly ComboBox maps=new ComboBox{DropDownStyle=ComboBoxStyle.DropDownList,Dock=DockStyle.Top};
   readonly DataGridView grid=new DataGridView{Dock=DockStyle.Fill,AllowUserToAddRows=true,AllowUserToDeleteRows=true,AutoSizeColumnsMode=DataGridViewAutoSizeColumnsMode.Fill,RowHeadersWidth=24};
-  List<SplitLink> saved=new List<SplitLink>(); string selected; bool loading;
+  List<SplitLink> saved=new List<SplitLink>(); string selectedCategory=""; string selected; bool loading;
   public AliasEditor() {
    Height=245;
    var label=new Label{Text="Split aliases - follows loaded splits; saved separately per map.",Dock=DockStyle.Top,Height=22};
@@ -44,9 +51,9 @@ namespace LiveSplit.ZombiesTracker {
    grid.Columns.Add(new DataGridViewTextBoxColumn{HeaderText="Your LiveSplit name",Name="source"});
    grid.Columns.Add(new DataGridViewComboBoxColumn{HeaderText="Tracker split",Name="target",FlatStyle=FlatStyle.Flat});
    grid.DataError+=(s,e)=>{e.ThrowException=false;};
-   foreach(var map in Detector.Maps.Where(m=>m.Enabled))maps.Items.Add(map);
+   // Maps are populated only after the game is known.
    maps.SelectedIndexChanged+=delegate { if(loading)return; try{SaveRows();ShowMap(maps.SelectedItem is MapInfo?((MapInfo)maps.SelectedItem).Id:null);}catch(Exception ex){MessageBox.Show(ex.Message,"Split aliases");loading=true;maps.SelectedItem=Detector.Maps.First(m=>m.Id==selected);loading=false;} };
-   maps.SelectedIndex=0;
+
   }
   void SaveRows() {
    if(selected==null)return;
@@ -58,20 +65,21 @@ namespace LiveSplit.ZombiesTracker {
     if(source==""||target=="")throw new InvalidOperationException("Fill in both the LiveSplit name and split, or delete the row.");
     rows.Add(new SplitLink{Map=selected,Source=source,Target=target});
    }
-   saved=ManualAliases.Validate(saved.Where(r=>r.Map!=selected).Concat(rows));
+   saved=ManualAliases.Validate(saved.Where(r=>r.Map!=selected || !ManualAliases.Targets(selected,selectedCategory).Contains(r.Target)).Concat(rows));
   }
-  void ShowMap(string id) { selected=id;grid.Rows.Clear();grid.Enabled=id!=null;var col=(DataGridViewComboBoxColumn)grid.Columns[1];col.Items.Clear();if(id==null)return;col.Items.AddRange(ManualAliases.Targets(id));foreach(var r in saved.Where(r=>r.Map==id))grid.Rows.Add(r.Source,r.Target); }
+  void ShowMap(string id) { selected=id;grid.Rows.Clear();grid.Enabled=id!=null;var col=(DataGridViewComboBoxColumn)grid.Columns[1];col.Items.Clear();if(id==null)return;col.Items.AddRange(ManualAliases.Targets(id,selectedCategory));foreach(var r in saved.Where(r=>r.Map==id && ManualAliases.Targets(id,selectedCategory).Contains(r.Target)))grid.Rows.Add(r.Source,r.Target); }
   public void FilterGame(string game) {
    SaveRows();loading=true;
    try {
     maps.Items.Clear();
-    foreach(var map in Detector.Maps.Where(m=>m.Enabled && (game=="bo2" || game=="bo3") && Detector.IsBo2(m.Id)==(game=="bo2")))maps.Items.Add(map);
+    foreach(var map in Detector.Maps.Where(m=>m.Enabled && (game=="bo2" || game=="bo3" || game=="iw") && Detector.GameForMap(m.Id)==game))maps.Items.Add(map);
     var current=maps.Items.Cast<MapInfo>().FirstOrDefault(m=>m.Id==selected);
     maps.SelectedItem=current;ShowMap(current==null?null:current.Id);
    } finally {loading=false;}
   }
+  public void SetCategory(string value) { value=value??"";if(selectedCategory==value)return;SaveRows();selectedCategory=value;ShowMap(selected); }
   public void FollowMap(string id) {
-   id=Detector.Maps.Any(m=>m.Enabled&&m.Id==id)?id:null;
+   id=maps.Items.Cast<MapInfo>().Any(m=>m.Id==id)?id:null;
    if(selected==id)return;
    SaveRows(); // Validate before switching; never discard an unfinished edit.
    loading=true;
@@ -81,7 +89,7 @@ namespace LiveSplit.ZombiesTracker {
   public List<SplitLink> Read() {SaveRows();return ManualAliases.Validate(saved);}
   public string SelectedMap { get { return selected ?? ""; } }
   public void RestoreMap(string id) {
-   var map=Detector.Maps.FirstOrDefault(m=>m.Enabled && m.Id==id);
+   var map=maps.Items.Cast<MapInfo>().FirstOrDefault(m=>m.Id==id);
    if(map==null)return; // Older layouts have no saved selection.
    loading=true;
    try { maps.SelectedItem=map;ShowMap(map.Id); }

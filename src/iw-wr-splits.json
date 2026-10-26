@@ -1,0 +1,732 @@
+{
+  "reviewedOn": "2026-10-26",
+  "timing": "GameTime",
+  "records": [
+    {
+      "map": "iw-spaceland",
+      "category": "DC FF",
+      "splits": [
+        {
+          "name": "PAP",
+          "time": "1:49"
+        },
+        {
+          "name": "Seticom 1",
+          "time": "2:03"
+        },
+        {
+          "name": "Seticom 2",
+          "time": "3:39"
+        },
+        {
+          "name": "Seticom 3",
+          "time": "5:13"
+        },
+        {
+          "name": "Boss Enter",
+          "time": "8:28"
+        },
+        {
+          "name": "End",
+          "time": "11:45"
+        }
+      ],
+      "recordId": "134598",
+      "holder": "Pinkhalfmoon",
+      "listedMs": 705000
+    },
+    {
+      "map": "iw-spaceland",
+      "category": "DC Fate",
+      "splits": [
+        {
+          "name": "PAP",
+          "time": "2:15"
+        },
+        {
+          "name": "Seticom 1",
+          "time": "2:50"
+        },
+        {
+          "name": "Seticom 2",
+          "time": "4:44"
+        },
+        {
+          "name": "Seticom 3",
+          "time": "6:18"
+        },
+        {
+          "name": "Boss Enter",
+          "time": "10:01"
+        },
+        {
+          "name": "End",
+          "time": "13:56"
+        }
+      ],
+      "recordId": "124136",
+      "holder": "Pinkhalfmoon",
+      "listedMs": 836000
+    },
+    {
+      "map": "iw-spaceland",
+      "category": "FF",
+      "splits": [
+        {
+          "name": "PAP",
+          "time": "5:47"
+        },
+        {
+          "name": "Seticom 1",
+          "time": "6:17"
+        },
+        {
+          "name": "Seticom 2",
+          "time": "10:11"
+        },
+        {
+          "name": "Seticom 3",
+          "time": "13:49"
+        },
+        {
+          "name": "Round 9 End",
+          "time": "16:36"
+        },
+        {
+          "name": "Boss Enter",
+          "time": "17:55"
+        },
+        {
+          "name": "End",
+          "time": "21:44"
+        }
+      ],
+      "recordId": "143128",
+      "holder": "Pinkhalfmoon",
+      "listedMs": 1304000
+    },
+    {
+      "map": "iw-spaceland",
+      "category": "Fate",
+      "splits": [
+        {
+          "name": "PAP",
+          "time": "6:50"
+        },
+        {
+          "name": "Seticom 1",
+          "time": "7:41"
+        },
+        {
+          "name": "Seticom 2",
+          "time": "10:11"
+        },
+        {
+          "name": "Seticom 3",
+          "time": "13:49"
+        },
+        {
+          "name": "Round 9 End",
+          "time": "16:27"
+        },
+        {
+          "name": "Boss Enter",
+          "time": "19:07"
+        },
+        {
+          "name": "End",
+          "time": "24:28"
+        }
+      ],
+      "recordId": "141741",
+      "holder": "Pinkhalfmoon",
+      "listedMs": 1468000
+    },
+    {
+      "map": "iw-rave-in-the-redwoods",
+      "category": "DC FF",
+      "splits": [
+        {
+          "name": "Boat 1",
+          "time": "1:43"
+        },
+        {
+          "name": "Zipline",
+          "time": "2:52"
+        },
+        {
+          "name": "Boat 2",
+          "time": "4:29"
+        },
+        {
+          "name": "Boss Enter",
+          "time": "8:02"
+        },
+        {
+          "name": "Boss Phase 1",
+          "time": "11:25"
+        },
+        {
+          "name": "Boss Phase 2",
+          "time": "14:02"
+        },
+        {
+          "name": "End",
+          "time": "17:02"
+        }
+      ],
+      "recordId": "123262",
+      "holder": "Pinkhalfmoon",
+      "listedMs": 1022000
+    },
+    {
+      "map": "iw-rave-in-the-redwoods",
+      "category": "DC Fate",
+      "splits": [
+        {
+          "name": "Boat 1",
+          "time": "1:59"
+        },
+        {
+          "name": "Zipline",
+          "time": "3:08"
+        },
+        {
+          "name": "Boat 2",
+          "time": "5:09"
+        },
+        {
+          "name": "Boss Enter",
+          "time": "9:12"
+        },
+        {
+          "name": "Boss Phase 1",
+          "time": "12:40"
+        },
+        {
+          "name": "Boss Phase 2",
+          "time": "15:31"
+        },
+        {
+          "name": "End",
+          "time": "18:33"
+        }
+      ],
+      "recordId": "124137",
+      "holder": "Pinkhalfmoon",
+      "listedMs": 1113000
+    },
+    {
+      "map": "iw-rave-in-the-redwoods",
+      "category": "FF",
+      "splits": [
+        {
+          "name": "Boat 1",
+          "time": "4:17"
+        },
+        {
+          "name": "Zipline",
+          "time": "5:42"
+        },
+        {
+          "name": "Boat 2",
+          "time": "7:57"
+        },
+        {
+          "name": "Boss Enter",
+          "time": "11:44"
+        },
+        {
+          "name": "Boss Phase 1",
+          "time": "15:06"
+        },
+        {
+          "name": "Boss Phase 2",
+          "time": "17:55"
+        },
+        {
+          "name": "End",
+          "time": "21:10"
+        }
+      ],
+      "recordId": "124108",
+      "holder": "Pinkhalfmoon",
+      "listedMs": 1270000
+    },
+    {
+      "map": "iw-rave-in-the-redwoods",
+      "category": "Fate",
+      "splits": [
+        {
+          "name": "Boat 1",
+          "time": "4:19"
+        },
+        {
+          "name": "Zipline",
+          "time": "5:46"
+        },
+        {
+          "name": "Boat 2",
+          "time": "8:03"
+        },
+        {
+          "name": "Boss Enter",
+          "time": "12:20"
+        },
+        {
+          "name": "Boss Phase 1",
+          "time": "15:54"
+        },
+        {
+          "name": "Boss Phase 2",
+          "time": "18:37"
+        },
+        {
+          "name": "End",
+          "time": "21:46"
+        }
+      ],
+      "recordId": "126212",
+      "holder": "Pinkhalfmoon",
+      "listedMs": 1306000
+    },
+    {
+      "map": "iw-shaolin-shuffle",
+      "category": "DC FF",
+      "splits": [
+        {
+          "name": "Symbols Start",
+          "time": "6:32"
+        },
+        {
+          "name": "Morse Code",
+          "time": "8:11"
+        },
+        {
+          "name": "Words",
+          "time": "9:51"
+        },
+        {
+          "name": "Missing Reel",
+          "time": "12:02"
+        },
+        {
+          "name": "Boss Enter",
+          "time": "16:27"
+        },
+        {
+          "name": "End",
+          "time": "19:52"
+        }
+      ],
+      "recordId": "137801",
+      "holder": "Pinkhalfmoon",
+      "listedMs": 1192000
+    },
+    {
+      "map": "iw-shaolin-shuffle",
+      "category": "DC Fate",
+      "splits": [
+        {
+          "name": "Symbols Start",
+          "time": "6:32"
+        },
+        {
+          "name": "Morse Code",
+          "time": "9:19"
+        },
+        {
+          "name": "Words",
+          "time": "11:20"
+        },
+        {
+          "name": "Missing Reel",
+          "time": "13:59"
+        },
+        {
+          "name": "Boss Enter",
+          "time": "19:16"
+        },
+        {
+          "name": "End",
+          "time": "22:48"
+        }
+      ],
+      "recordId": "128923",
+      "holder": "Pinkhalfmoon",
+      "listedMs": 1368000
+    },
+    {
+      "map": "iw-shaolin-shuffle",
+      "category": "FF",
+      "splits": [
+        {
+          "name": "Symbols Start",
+          "time": "9:01"
+        },
+        {
+          "name": "Morse Code",
+          "time": "11:24"
+        },
+        {
+          "name": "Words",
+          "time": "13:37"
+        },
+        {
+          "name": "Missing Reel",
+          "time": "15:43"
+        },
+        {
+          "name": "Boss Enter",
+          "time": "20:54"
+        },
+        {
+          "name": "End",
+          "time": "24:34"
+        }
+      ],
+      "recordId": "139297",
+      "holder": "Pinkhalfmoon",
+      "listedMs": 1474000
+    },
+    {
+      "map": "iw-shaolin-shuffle",
+      "category": "Fate",
+      "splits": [
+        {
+          "name": "Symbols Start",
+          "time": "10:00"
+        },
+        {
+          "name": "Morse Code",
+          "time": "11:33"
+        },
+        {
+          "name": "Words",
+          "time": "14:03"
+        },
+        {
+          "name": "Missing Reel",
+          "time": "16:42"
+        },
+        {
+          "name": "Boss Enter",
+          "time": "21:18"
+        },
+        {
+          "name": "End",
+          "time": "25:11"
+        }
+      ],
+      "recordId": "140646",
+      "holder": "Pinkhalfmoon",
+      "listedMs": 1511000
+    },
+    {
+      "map": "iw-attack-of-the-radioactive-thing",
+      "category": "DC FF",
+      "splits": [
+        {
+          "name": "Death Reset",
+          "time": "1:57"
+        },
+        {
+          "name": "PAP",
+          "time": "5:05"
+        },
+        {
+          "name": "Bomb Complete",
+          "time": "7:49"
+        },
+        {
+          "name": "Boss Enter",
+          "time": "8:10"
+        },
+        {
+          "name": "End",
+          "time": "12:47"
+        }
+      ],
+      "recordId": "130199",
+      "holder": "Pinkhalfmoon",
+      "listedMs": 767000
+    },
+    {
+      "map": "iw-attack-of-the-radioactive-thing",
+      "category": "DC Fate",
+      "splits": [
+        {
+          "name": "Death Reset",
+          "time": "2:04"
+        },
+        {
+          "name": "PAP",
+          "time": "5:55"
+        },
+        {
+          "name": "Bomb Complete",
+          "time": "9:03"
+        },
+        {
+          "name": "Boss Enter",
+          "time": "9:24"
+        },
+        {
+          "name": "End",
+          "time": "14:10"
+        }
+      ],
+      "recordId": "127130",
+      "holder": "Pinkhalfmoon",
+      "listedMs": 850000
+    },
+    {
+      "map": "iw-attack-of-the-radioactive-thing",
+      "category": "FF",
+      "splits": [
+        {
+          "name": "PAP",
+          "time": "7:46"
+        },
+        {
+          "name": "Bomb Complete",
+          "time": "10:43"
+        },
+        {
+          "name": "Boss Enter",
+          "time": "11:03"
+        },
+        {
+          "name": "End",
+          "time": "15:53"
+        }
+      ],
+      "recordId": "146392",
+      "holder": "Pinkhalfmoon",
+      "listedMs": 953000
+    },
+    {
+      "map": "iw-attack-of-the-radioactive-thing",
+      "category": "Fate",
+      "splits": [
+        {
+          "name": "PAP",
+          "time": "9:57"
+        },
+        {
+          "name": "Bomb Complete",
+          "time": "13:43"
+        },
+        {
+          "name": "Boss Enter",
+          "time": "14:03"
+        },
+        {
+          "name": "End",
+          "time": "18:44"
+        }
+      ],
+      "recordId": "137600",
+      "holder": "Pinkhalfmoon",
+      "listedMs": 1124000
+    },
+    {
+      "map": "iw-beast-from-beyond",
+      "category": "DC FF",
+      "splits": [
+        {
+          "name": "Red X Start",
+          "time": "0:54"
+        },
+        {
+          "name": "Theater TP",
+          "time": "2:06"
+        },
+        {
+          "name": "Bridge Complete",
+          "time": "2:32"
+        },
+        {
+          "name": "Poster TP",
+          "time": "3:45"
+        },
+        {
+          "name": "Boss Enter",
+          "time": "4:26"
+        },
+        {
+          "name": "End",
+          "time": "10:59"
+        }
+      ],
+      "recordId": "140382",
+      "holder": "Zilla",
+      "listedMs": 659000
+    },
+    {
+      "map": "iw-beast-from-beyond",
+      "category": "DC Fate",
+      "splits": [
+        {
+          "name": "Red X Start",
+          "time": "0:54"
+        },
+        {
+          "name": "Theater TP",
+          "time": "2:06"
+        },
+        {
+          "name": "Bridge Complete",
+          "time": "3:18"
+        },
+        {
+          "name": "Poster TP",
+          "time": "4:30"
+        },
+        {
+          "name": "Boss Enter",
+          "time": "5:29"
+        },
+        {
+          "name": "End",
+          "time": "12:05"
+        }
+      ],
+      "recordId": "147252",
+      "holder": "Zilla",
+      "listedMs": 725000
+    },
+    {
+      "map": "iw-beast-from-beyond",
+      "category": "FF",
+      "splits": [
+        {
+          "name": "Red X Start",
+          "time": "3:40"
+        },
+        {
+          "name": "Theater TP",
+          "time": "5:30"
+        },
+        {
+          "name": "Bridge Complete",
+          "time": "6:23"
+        },
+        {
+          "name": "Poster TP",
+          "time": "7:21"
+        },
+        {
+          "name": "Boss Enter",
+          "time": "8:16"
+        },
+        {
+          "name": "End",
+          "time": "14:46"
+        }
+      ],
+      "recordId": "148511",
+      "holder": "Zilla",
+      "listedMs": 886000
+    },
+    {
+      "map": "iw-beast-from-beyond",
+      "category": "Fate",
+      "splits": [
+        {
+          "name": "Red X Start",
+          "time": "4:16"
+        },
+        {
+          "name": "Theater TP",
+          "time": "6:05"
+        },
+        {
+          "name": "Bridge Complete",
+          "time": "9:29"
+        },
+        {
+          "name": "Poster TP",
+          "time": "11:44"
+        },
+        {
+          "name": "Boss Enter",
+          "time": "12:48"
+        },
+        {
+          "name": "End",
+          "time": "19:25"
+        }
+      ],
+      "recordId": "149980",
+      "holder": "Zackarry1",
+      "listedMs": 1165000
+    },
+    {
+      "map": "iw-mephistopheles-super",
+      "category": "DC FF",
+      "splits": [
+        {
+          "name": "Spaceland",
+          "time": "11:45"
+        },
+        {
+          "name": "Rave",
+          "time": "30:00"
+        },
+        {
+          "name": "Shaolin",
+          "time": "52:54"
+        },
+        {
+          "name": "Attack",
+          "time": "1:08:13"
+        },
+        {
+          "name": "Beast",
+          "time": "1:20:25"
+        },
+        {
+          "name": "Mephistopheles",
+          "time": "1:30:55"
+        }
+      ],
+      "recordId": "136740",
+      "holder": "Pinkhalfmoon",
+      "listedMs": 5455000
+    },
+    {
+      "map": "iw-mephistopheles-super",
+      "category": "DC Fate",
+      "splits": [
+        {
+          "name": "Spaceland",
+          "time": "16:07"
+        },
+        {
+          "name": "Rave",
+          "time": "35:06"
+        },
+        {
+          "name": "Shaolin",
+          "time": "1:00:55"
+        },
+        {
+          "name": "Attack",
+          "time": "1:17:17"
+        },
+        {
+          "name": "Beast",
+          "time": "1:31:08"
+        },
+        {
+          "name": "Mephistopheles",
+          "time": "1:42:38"
+        }
+      ],
+      "recordId": "136739",
+      "holder": "Pinkhalfmoon",
+      "listedMs": 6158000
+    }
+  ]
+}

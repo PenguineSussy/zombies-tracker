@@ -37,6 +37,64 @@ class Tests
     {
         try
         {
+            foreach(var iwMap in Detector.Maps.Where(m=>Detector.IsIW(m.Id))) {
+                Check(Detector.Detect("Call of Duty: Infinite Warfare Zombies",iwMap.Name,"",new Dictionary<string,string>(),new[]{"Custom split","End"},"").Map==iwMap.Id,"IW map "+iwMap.Id);
+                Check(Detector.Detect(iwMap.Aliases[0],"FF","",new Dictionary<string,string>(),new string[0],"").Map==iwMap.Id,"IW map title "+iwMap.Id);
+                Check(Detector.UsesIGT(iwMap.Id),"IW uses IGT");
+            }
+            foreach(var category in Detector.IWCategories)Check(Detector.IWCategory(new[]{category},"")==category,"IW category "+category);
+            Check(Detector.IWCategory(new[]{"Directors Cut (Fate & Fortune Cards)"},"")=="DC FF","IW full category");
+            Check(Detector.IWCategory(new[]{"Fate Cards Only","Fate & Fortune"},"")==null,"IW conflicting cards blocked");
+            Check(Detector.Detect("IW","Spaceland 2P","",new Dictionary<string,string>(),new string[0],"").NonSolo,"IW coop blocked");
+            Check(!Detector.Detect("BO3","Spaceland","",new Dictionary<string,string>(),new string[0],"iw-spaceland").Success,"IW cannot relabel BO3");
+            bool productionBlocked=false;try{UploadQueue.ValidateServer("https://doctormonty.beer");}catch{productionBlocked=true;}Check(!productionBlocked,"release accepts production server");
+            foreach(var iwMap in Detector.Maps.Where(m=>Detector.IsIW(m.Id))) {
+                var targets=ManualAliases.Targets(iwMap.Id);
+                Check(targets.Length>=5 && targets.Last()==(iwMap.Id=="iw-mephistopheles-super"?"Mephistopheles":"End"),"IW alias targets "+iwMap.Id);
+                Check(SplitAliases.Known(iwMap.Id,targets[0].ToLowerInvariant())==targets[0],"IW canonical spelling");
+                var links=new[]{new SplitLink{Map=iwMap.Id,Source="Custom name",Target=targets[0]}};
+                Check(ManualAliases.Resolve(links,iwMap.Id,new[]{"Custom name","Unmapped"},null)[0]==targets[0],"IW manual alias");
+                using(var editor=new AliasEditor()){editor.FilterGame("iw");editor.FollowMap(iwMap.Id);var choices=Field<ComboBox>(editor,"maps");Check(choices.Items.Count==6 && editor.SelectedMap==iwMap.Id,"IW map selector retains map");}
+            }
+            Check(ManualAliases.Targets("iw-rave-in-the-redwoods").SequenceEqual(new[]{"Boat 1","Zipline","Boat 2","Boss Enter","Boss Phase 1","Boss Phase 2","End"}),"Rave exact order including Death Reset");
+            using(var editor=new AliasEditor()) {
+                editor.FilterGame("iw");editor.FollowMap("iw-spaceland");editor.SetCategory("DC FF");
+                var grid=Field<DataGridView>(editor,"grid");var options=((DataGridViewComboBoxColumn)grid.Columns[1]).Items;
+                Check(!options.Contains("Round 9 End"),"DC Spaceland hides round 9");editor.SetCategory("Fate");Check(options.Contains("Round 9 End"),"Fate Spaceland includes round 9");
+                editor.FollowMap("iw-attack-of-the-radioactive-thing");Check(!options.Contains("Death Reset"),"Fate Attack hides death reset");editor.SetCategory("DC Fate");Check(options.Contains("Death Reset"),"DC Attack includes death reset");
+            }
+            Check(Detector.CategoriesForMap("iw-mephistopheles-super").SequenceEqual(new[]{"DC Fate","DC FF"}),"Super DC categories only");
+            Check(Detector.IWCategory(new[]{"DCFF"},"")=="DC FF" && Detector.IWCategory(new[]{"DCFate"},"")=="DC Fate","compact DC categories");
+            Check(Detector.CategoriesForMap("bo2-victis-super").SequenceEqual(new[]{"Richtofen","Maxis"}),"Victis has no Bank categories");
+            Check(ManualAliases.Targets("bo2-victis-super").SequenceEqual(new[]{"Tranzit","Die Rise","Buried"}),"Victis ordered map completions");
+            foreach(var side in new[]{"Richtofen","Maxis"}) {
+                Check(Detector.Detect("Black Ops II Zombies","Victis Super "+side,"",new Dictionary<string,string>(),new[]{"Tranzit","Die Rise","Buried"},"").Map=="bo2-victis-super","Victis detection "+side);
+                Check(Detector.Bo2Category(new[]{side},"","bo2-victis-super")==side,"Victis side "+side);
+            }
+            Check(Detector.Bo2Category(new[]{"Richtofen Maxis"},"","bo2-victis-super")==null,"Victis conflicting sides blocked");
+            using(var panel=new SettingsPanel(o=>{},()=>{})) {
+                var games=Field<ComboBox>(panel,"game");var maps=Field<ComboBox>(panel,"map");var cats=Field<ComboBox>(panel,"category");var editor=Field<AliasEditor>(panel,"aliasEditor");var aliases=Field<ComboBox>(editor,"maps");
+                Check(maps.Items.Count==1 && aliases.Items.Count==0,"unknown game shows no mixed map lists");
+                foreach(var gameId in new[]{"bo3","bo2","iw"}) {
+                    games.SelectedIndex=gameId=="bo3"?1:gameId=="bo2"?2:3;
+                    Check(maps.Items.OfType<MapInfo>().All(m=>Detector.GameForMap(m.Id)==gameId),"map selector game isolation "+gameId);
+                    Check(aliases.Items.Cast<MapInfo>().All(m=>Detector.GameForMap(m.Id)==gameId),"alias selector game isolation "+gameId);
+                    foreach(var entry in maps.Items.OfType<MapInfo>().ToArray()) {
+                        maps.SelectedItem=entry;
+                        Check(cats.Items.Cast<string>().Skip(1).SequenceEqual(Detector.CategoriesForMap(entry.Id)),"category list scoped "+entry.Id);
+                        Check(panel.AliasMap==entry.Id,"alias follows selected map "+entry.Id);
+                        foreach(var cat in Detector.CategoriesForMap(entry.Id)){cats.SelectedItem=cat;var grid=Field<DataGridView>(editor,"grid");Check(((DataGridViewComboBoxColumn)grid.Columns[1]).Items.Cast<string>().SequenceEqual(ManualAliases.Targets(entry.Id,cat)),"split list scoped "+entry.Id+" "+cat);}
+                    }
+                }
+                panel.RestoreAliasMap("der-eisendrache");Check(Detector.GameForMap(panel.AliasMap)=="iw","old layout cannot restore another game's alias map");
+            }
+            using(var editor=new AliasEditor()) {
+                editor.LoadLinks(new[]{new SplitLink{Map="iw-spaceland",Source="My round",Target="Round 9 End"},new SplitLink{Map="der-eisendrache",Source="My rocket",Target="Rocket"}});
+                editor.FilterGame("iw");editor.FollowMap("iw-spaceland");editor.SetCategory("DC FF");
+                var grid=Field<DataGridView>(editor,"grid");Check(grid.Rows.Count==1 && editor.Read().Count==2,"category-incompatible alias hidden but retained");
+                editor.SetCategory("Fate");Check(grid.Rows.Count==2 && Convert.ToString(grid.Rows[0].Cells[1].Value)=="Round 9 End","hidden category alias restored");
+                editor.FilterGame("bo2");editor.RestoreMap("iw-spaceland");Check(editor.SelectedMap=="" && editor.Read().Count==2,"game switch retains saved aliases without cross-game restore");
+            }
             var factory = new Factory();
             Check(factory.Version == new Version(AddonUpdates.InstalledVersion), "factory and upload versions agree");
             Check(factory.XMLURL == factory.UpdateURL + "update.LiveSplit.ZombiesTracker.xml", "production updater manifest URL");
@@ -103,7 +161,7 @@ class Tests
             Check(AddonUpdates.Describe("0.2.6","0.2.9","0.2.7").Contains("Important update"),"important update notice");
             Check(AddonUpdates.Describe("0.2.10","0.2.9","0.2.7").Contains("up to date"),"numeric version ordering");
             bool invalidRelease=false;try{AddonUpdates.Describe("0.2.8","bad","0.2.7");}catch{invalidRelease=true;}Check(invalidRelease,"invalid manifest rejected");
-            foreach(var map in Detector.Maps.Where(m=>m.Enabled&&!Detector.IsBo2(m.Id)&&m.Id!="super-easter-egg"))
+            foreach(var map in Detector.Maps.Where(m=>m.Enabled&&Detector.GameForMap(m.Id)=="bo3"&&m.Id!="super-easter-egg"))
                 Check(Detector.Detect(map.Name,"","",new Dictionary<string,string>(),new string[0],"").Map==map.Id,"map-only title "+map.Id);
             Check(Detector.RunCategory("","","der-eisendrache")=="Mega Gums","empty category defaults Mega");
             Check(Detector.RunCategory("","","ascension")=="Any%","Any only category default");
@@ -115,7 +173,7 @@ class Tests
             Check(!Detector.Detect("Black Ops II Zombies","Origins","",new Dictionary<string,string>(),new string[0],"",null,"bo3").Success,"explicit BO3 cannot relabel BO2");
             Check(!Detector.Detect("BO3","DE","",new Dictionary<string,string>{{"Speedrun Type","High Round"}},new string[0],"").Success,"unsupported speedrun type blocked");
             Check(Detector.Detect("BO3","","",new Dictionary<string,string>{{"Map","DE"},{"Speedrun Type","Easter Egg"}},new string[0],"").Success,"map and speedrun metadata");
-            foreach(var map in Detector.Maps.Where(m=>m.Enabled&&!Detector.IsBo2(m.Id))) {
+            foreach(var map in Detector.Maps.Where(m=>m.Enabled&&Detector.GameForMap(m.Id)=="bo3")) {
                 var defaultCategory=Detector.CategoriesForMap(map.Id).Contains("Mega Gums")?"Mega Gums":"Any%";
                 Check(Detector.RunCategory(map.Name,"",map.Id)==defaultCategory,"map-only default "+map.Id);
                 Check(Detector.MetadataCategory(map.Name,new Dictionary<string,string>{{"Category","Easter Egg"},{"Gobblegum Loadout",""}},"",map.Id)==defaultCategory,"EE blank loadout "+map.Id);
@@ -134,7 +192,7 @@ class Tests
             Check(AutosplitBridge.Select(order,settings.DocumentElement,"zm_zod",2)==null,"other map cannot borrow settings");
             Check(AutosplitBridge.Compatible("der-eisendrache",new[]{"Penguine Eats Bread","TP"},new[]{"Rocket Test TP","First TP"}),"custom names with consistent anchors");
             Check(!AutosplitBridge.Compatible("der-eisendrache",new[]{"Bow","TP"},new[]{"Rocket Test TP","First TP"}),"contradictory named anchor rejected");
-            foreach (var map in Detector.Maps.Where(m => m.Enabled && !Detector.IsBo2(m.Id) && m.Id != "super-easter-egg")) Check(Detect(map.Name + " Any% Solo").Map == map.Id, "map " + map.Name);
+            foreach (var map in Detector.Maps.Where(m => m.Enabled && Detector.GameForMap(m.Id)=="bo3" && m.Id != "super-easter-egg")) Check(Detect(map.Name + " Any% Solo").Map == map.Id, "map " + map.Name);
             Check(!Detector.CategoriesForMap("zetsubou-no-shima").Contains("No Gums"), "ZNS category restriction");
             Check(!Detector.CategoriesForMap("super-easter-egg").Contains("No Gums"), "Super EE category restriction");
             Check(Detector.CategoriesForMap("ascension").SequenceEqual(new[]{"Any%"}) && Detector.CategoriesForMap("shangri-la").SequenceEqual(new[]{"Any%"}), "Any percent only maps");

@@ -1,3 +1,4 @@
+import {iwSplits} from './iw-splits.js';
 import {bo2Splits} from './bo2-splits.js';
 import {splitName} from './split-rules.js';
 import {randomBytes,createHash,createCipheriv,createDecipheriv} from 'node:crypto';
@@ -5,6 +6,7 @@ import {check,milliseconds,profile} from './domain.js';
 import {MAPS} from './domain.js';
 import {SPLIT_RULES} from './split-rules.js';
 export function discordCheckpoints(map,category){
+ if(map?.startsWith('iw-'))return iwSplits({map,category});
  if(map?.startsWith('bo2-'))return [...new Set((map==='bo2-tranzit'&&!category?[...bo2Splits({map,category:'Bank Richtofen'}),...bo2Splits({map,category:'Bank Maxis'})]:bo2Splits({map,category})).map(s=>s.name))];
  if(map==='super-easter-egg')return ['shadows-of-evil','the-giant','der-eisendrache','zetsubou-no-shima','gorod-krovi','revelations'].flatMap(id=>{const name=MAPS.find(m=>m.id===id).name;return [...discordCheckpoints(id).filter(n=>n!=='End').map(n=>name+' - '+n),name+' - Complete'];});
  return [...new Set([...(SPLIT_RULES[map]??[]).map(r=>r.name),'End',...(map==='zetsubou-no-shima'?['KT4']:[])])];

@@ -2,7 +2,7 @@ import {MAPS,time} from './domain.js';
 export function runTime(primary,igt,p,realTime){return p?.timing==='GameTime'?`${time(primary)} IGT${realTime==null?'':` (${time(realTime)} RTA)`}`:`${time(primary)} RTA${igt==null?'':` (${time(igt)} IGT)`}`;}
 export function replyProfile(p){
  if(!p)return 'No run selected';
- return (p.map?.startsWith('bo2-')?'BO2 · ':'')+(MAPS.find(m=>m.id===p.map)?.name??p.map)+(p.category&&p.category!=='Standard'?' · '+p.category:'');
+ return (p.map?.startsWith('iw-')?'IW · ':p.map?.startsWith('bo2-')?'BO2 · ':'')+(MAPS.find(m=>m.id===p.map)?.name??p.map)+(p.category&&p.category!=='Standard'?' · '+p.category:'');
 }
 export function duration(ms){
  const minutes=Math.floor(Math.max(0,ms)/60000),hours=Math.floor(minutes/60);

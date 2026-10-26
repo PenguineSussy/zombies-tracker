@@ -2,7 +2,7 @@ import {eligibleTime} from './minimum-run.js';
 import {bo2Splits} from './bo2-splits.js';
 import {verifiedLiveStreams} from './streams.js';
 import { createPublicKey, verify, createHash } from 'node:crypto';
-import { check, milliseconds, ENABLED_MAPS, CATEGORIES, BO2_CATEGORIES, categoriesForMap, profile, profileLabel } from './domain.js';
+import { check, milliseconds, ENABLED_MAPS, CATEGORIES, IW_CATEGORIES, BO2_CATEGORIES, categoriesForMap, profile, profileLabel } from './domain.js';
 import { SPLIT_RULES, splitName } from './split-rules.js';
 
 export function verifyDiscord(publicKey, timestamp, signature, raw, now = Date.now()) {
@@ -21,8 +21,8 @@ export const discordCommands = [
       {name:'role',description:'Role to ping',type:8,required:false},
       { ...stringOption('mode','When to notify (default: every time the split is reached)',false), choices:[{name:'Every time the split is reached',value:'milestone'},{name:'At or under a time',value:'under'},{name:'Ahead of WR split',value:'wr'}] },
       stringOption('threshold','Required for under: e.g. 7:35',false),
-      { ...stringOption('map','Map (default: the runner’s current map)',false), choices:ENABLED_MAPS.map(m=>({name:(m.game==='bo2'?'BO2 · ':'')+m.name,value:m.id})) },
-      { ...stringOption('category','Category (default: the runner’s current category, or Mega Gums)',false), choices:[...CATEGORIES,...BO2_CATEGORIES,'Standard'].map(c=>({name:c,value:c})) }] },
+      { ...stringOption('map','Map (default: the runner’s current map)',false), choices:ENABLED_MAPS.map(m=>({name:(m.game==='iw'?'IW · ':m.game==='bo2'?'BO2 · ':'')+m.name,value:m.id})) },
+      { ...stringOption('category','Category (default: the runner’s current category, or Mega Gums)',false), choices:[...CATEGORIES,...IW_CATEGORIES,...BO2_CATEGORIES,'Richtofen','Maxis','Standard'].map(c=>({name:c,value:c})) }] },
   { name: 'track-alerts', description: 'List this server’s alert subscription IDs', default_member_permissions: '32', dm_permission: false },
   { name: 'track-unalert', description: 'Remove an alert', default_member_permissions: '32', dm_permission: false, options:[stringOption('id','Subscription ID from /track-alerts')] }
 ];

@@ -1,0 +1,376 @@
+[
+  {
+    "id": "zwr:{\"map\":\"iw-spaceland\",\"category\":\"Fate\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"iw\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "iw-spaceland",
+      "category": "Fate",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 1468000,
+    "holder": "Pinkhalfmoon",
+    "source": "https://zwr.gg/leaderboards/iw/ee-speedrun/spaceland/",
+    "checkedAt": 1792999660755,
+    "achievedDate": "2025-10-01",
+    "dateSource": "zwr-added",
+    "recordId": "141741"
+  },
+  {
+    "id": "zwr:{\"map\":\"iw-spaceland\",\"category\":\"FF\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"iw\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "iw-spaceland",
+      "category": "FF",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 1304000,
+    "holder": "Pinkhalfmoon",
+    "source": "https://zwr.gg/leaderboards/iw/ee-speedrun/spaceland/",
+    "checkedAt": 1792999660755,
+    "achievedDate": "2025-12-07",
+    "dateSource": "zwr-added",
+    "recordId": "143128"
+  },
+  {
+    "id": "zwr:{\"map\":\"iw-spaceland\",\"category\":\"DC Fate\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"iw\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "iw-spaceland",
+      "category": "DC Fate",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 836000,
+    "holder": "Pinkhalfmoon",
+    "source": "https://zwr.gg/leaderboards/iw/ee-speedrun/spaceland/",
+    "checkedAt": 1792999660755,
+    "achievedDate": "2026-10-22",
+    "dateSource": "zwr-added",
+    "recordId": "124136"
+  },
+  {
+    "id": "zwr:{\"map\":\"iw-spaceland\",\"category\":\"DC FF\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"iw\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "iw-spaceland",
+      "category": "DC FF",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 705000,
+    "holder": "Pinkhalfmoon",
+    "source": "https://zwr.gg/leaderboards/iw/ee-speedrun/spaceland/",
+    "checkedAt": 1792999660755,
+    "achievedDate": "2026-10-20",
+    "dateSource": "zwr-added",
+    "recordId": "134598"
+  },
+  {
+    "id": "zwr:{\"map\":\"iw-rave-in-the-redwoods\",\"category\":\"Fate\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"iw\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "iw-rave-in-the-redwoods",
+      "category": "Fate",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 1306000,
+    "holder": "Pinkhalfmoon",
+    "source": "https://zwr.gg/leaderboards/iw/ee-speedrun/rave-in-the-redwoods/",
+    "checkedAt": 1792999660761,
+    "achievedDate": "2025-03-10",
+    "dateSource": "zwr-added",
+    "recordId": "126212"
+  },
+  {
+    "id": "zwr:{\"map\":\"iw-rave-in-the-redwoods\",\"category\":\"FF\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"iw\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "iw-rave-in-the-redwoods",
+      "category": "FF",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 1270000,
+    "holder": "Pinkhalfmoon",
+    "source": "https://zwr.gg/leaderboards/iw/ee-speedrun/rave-in-the-redwoods/",
+    "checkedAt": 1792999660761,
+    "achievedDate": "2025-11-13",
+    "dateSource": "zwr-added",
+    "recordId": "124108"
+  },
+  {
+    "id": "zwr:{\"map\":\"iw-rave-in-the-redwoods\",\"category\":\"DC Fate\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"iw\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "iw-rave-in-the-redwoods",
+      "category": "DC Fate",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 1113000,
+    "holder": "Pinkhalfmoon",
+    "source": "https://zwr.gg/leaderboards/iw/ee-speedrun/rave-in-the-redwoods/",
+    "checkedAt": 1792999660761,
+    "achievedDate": "2025-03-25",
+    "dateSource": "zwr-added",
+    "recordId": "124137"
+  },
+  {
+    "id": "zwr:{\"map\":\"iw-rave-in-the-redwoods\",\"category\":\"DC FF\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"iw\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "iw-rave-in-the-redwoods",
+      "category": "DC FF",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 1022000,
+    "holder": "Pinkhalfmoon",
+    "source": "https://zwr.gg/leaderboards/iw/ee-speedrun/rave-in-the-redwoods/",
+    "checkedAt": 1792999660761,
+    "achievedDate": "2026-08-21",
+    "dateSource": "zwr-added",
+    "recordId": "123262"
+  },
+  {
+    "id": "zwr:{\"map\":\"iw-shaolin-shuffle\",\"category\":\"Fate\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"iw\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "iw-shaolin-shuffle",
+      "category": "Fate",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 1511000,
+    "holder": "Pinkhalfmoon",
+    "source": "https://zwr.gg/leaderboards/iw/ee-speedrun/shaolin-shuffle/",
+    "checkedAt": 1792999660763,
+    "achievedDate": "2025-08-23",
+    "dateSource": "zwr-added",
+    "recordId": "140646"
+  },
+  {
+    "id": "zwr:{\"map\":\"iw-shaolin-shuffle\",\"category\":\"FF\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"iw\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "iw-shaolin-shuffle",
+      "category": "FF",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 1474000,
+    "holder": "Pinkhalfmoon",
+    "source": "https://zwr.gg/leaderboards/iw/ee-speedrun/shaolin-shuffle/",
+    "checkedAt": 1792999660763,
+    "achievedDate": "2025-07-13",
+    "dateSource": "zwr-added",
+    "recordId": "139297"
+  },
+  {
+    "id": "zwr:{\"map\":\"iw-shaolin-shuffle\",\"category\":\"DC Fate\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"iw\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "iw-shaolin-shuffle",
+      "category": "DC Fate",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 1368000,
+    "holder": "Pinkhalfmoon",
+    "source": "https://zwr.gg/leaderboards/iw/ee-speedrun/shaolin-shuffle/",
+    "checkedAt": 1792999660763,
+    "achievedDate": "2024-11-27",
+    "dateSource": "zwr-added",
+    "recordId": "128923"
+  },
+  {
+    "id": "zwr:{\"map\":\"iw-shaolin-shuffle\",\"category\":\"DC FF\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"iw\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "iw-shaolin-shuffle",
+      "category": "DC FF",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 1192000,
+    "holder": "Pinkhalfmoon",
+    "source": "https://zwr.gg/leaderboards/iw/ee-speedrun/shaolin-shuffle/",
+    "checkedAt": 1792999660763,
+    "achievedDate": "2026-07-31",
+    "dateSource": "zwr-added",
+    "recordId": "137801"
+  },
+  {
+    "id": "zwr:{\"map\":\"iw-attack-of-the-radioactive-thing\",\"category\":\"Fate\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"iw\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "iw-attack-of-the-radioactive-thing",
+      "category": "Fate",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 1124000,
+    "holder": "Pinkhalfmoon",
+    "source": "https://zwr.gg/leaderboards/iw/ee-speedrun/attack-of-the-radioactive-thing/",
+    "checkedAt": 1792999660765,
+    "achievedDate": "2025-05-27",
+    "dateSource": "zwr-added",
+    "recordId": "137600"
+  },
+  {
+    "id": "zwr:{\"map\":\"iw-attack-of-the-radioactive-thing\",\"category\":\"FF\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"iw\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "iw-attack-of-the-radioactive-thing",
+      "category": "FF",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 953000,
+    "holder": "Pinkhalfmoon",
+    "source": "https://zwr.gg/leaderboards/iw/ee-speedrun/attack-of-the-radioactive-thing/",
+    "checkedAt": 1792999660765,
+    "achievedDate": "2026-02-28",
+    "dateSource": "zwr-added",
+    "recordId": "146392"
+  },
+  {
+    "id": "zwr:{\"map\":\"iw-attack-of-the-radioactive-thing\",\"category\":\"DC Fate\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"iw\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "iw-attack-of-the-radioactive-thing",
+      "category": "DC Fate",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 850000,
+    "holder": "Pinkhalfmoon",
+    "source": "https://zwr.gg/leaderboards/iw/ee-speedrun/attack-of-the-radioactive-thing/",
+    "checkedAt": 1792999660765,
+    "achievedDate": "2025-10-14",
+    "dateSource": "zwr-added",
+    "recordId": "127130"
+  },
+  {
+    "id": "zwr:{\"map\":\"iw-attack-of-the-radioactive-thing\",\"category\":\"DC FF\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"iw\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "iw-attack-of-the-radioactive-thing",
+      "category": "DC FF",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 767000,
+    "holder": "Pinkhalfmoon",
+    "source": "https://zwr.gg/leaderboards/iw/ee-speedrun/attack-of-the-radioactive-thing/",
+    "checkedAt": 1792999660765,
+    "achievedDate": "2026-09-12",
+    "dateSource": "zwr-added",
+    "recordId": "130199"
+  },
+  {
+    "id": "zwr:{\"map\":\"iw-beast-from-beyond\",\"category\":\"Fate\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"iw\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "iw-beast-from-beyond",
+      "category": "Fate",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 1165000,
+    "holder": "Zackarry1",
+    "source": "https://zwr.gg/leaderboards/iw/ee-speedrun/beast-from-beyond/",
+    "checkedAt": 1792999660767,
+    "achievedDate": "2026-07-14",
+    "dateSource": "zwr-added",
+    "recordId": "149980"
+  },
+  {
+    "id": "zwr:{\"map\":\"iw-beast-from-beyond\",\"category\":\"FF\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"iw\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "iw-beast-from-beyond",
+      "category": "FF",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 886000,
+    "holder": "Zilla",
+    "source": "https://zwr.gg/leaderboards/iw/ee-speedrun/beast-from-beyond/",
+    "checkedAt": 1792999660767,
+    "achievedDate": "2026-05-26",
+    "dateSource": "zwr-added",
+    "recordId": "148511"
+  },
+  {
+    "id": "zwr:{\"map\":\"iw-beast-from-beyond\",\"category\":\"DC Fate\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"iw\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "iw-beast-from-beyond",
+      "category": "DC Fate",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 725000,
+    "holder": "Zilla",
+    "source": "https://zwr.gg/leaderboards/iw/ee-speedrun/beast-from-beyond/",
+    "checkedAt": 1792999660767,
+    "achievedDate": "2026-05-24",
+    "dateSource": "zwr-added",
+    "recordId": "147252"
+  },
+  {
+    "id": "zwr:{\"map\":\"iw-beast-from-beyond\",\"category\":\"DC FF\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"iw\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "iw-beast-from-beyond",
+      "category": "DC FF",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 659000,
+    "holder": "Zilla",
+    "source": "https://zwr.gg/leaderboards/iw/ee-speedrun/beast-from-beyond/",
+    "checkedAt": 1792999660767,
+    "achievedDate": "2026-08-01",
+    "dateSource": "zwr-added",
+    "recordId": "140382"
+  },
+  {
+    "id": "zwr:{\"map\":\"iw-mephistopheles-super\",\"category\":\"DC Fate\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"iw\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "iw-mephistopheles-super",
+      "category": "DC Fate",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 6158000,
+    "holder": "Pinkhalfmoon",
+    "source": "https://zwr.gg/leaderboards/iw/Super-ee-speedrun/mephistopheles/",
+    "checkedAt": 1793049041548,
+    "achievedDate": "2025-04-16",
+    "dateSource": "zwr-added",
+    "recordId": "136739"
+  },
+  {
+    "id": "zwr:{\"map\":\"iw-mephistopheles-super\",\"category\":\"DC FF\",\"players\":1,\"timing\":\"GameTime\",\"game\":\"iw\"}",
+    "kind": "zwr",
+    "profile": {
+      "map": "iw-mephistopheles-super",
+      "category": "DC FF",
+      "players": 1,
+      "timing": "GameTime"
+    },
+    "ms": 5455000,
+    "holder": "Pinkhalfmoon",
+    "source": "https://zwr.gg/leaderboards/iw/Super-ee-speedrun/mephistopheles/",
+    "checkedAt": 1793049041548,
+    "achievedDate": "2026-10-21",
+    "dateSource": "zwr-added",
+    "recordId": "136740"
+  }
+]

@@ -26,9 +26,26 @@ namespace LiveSplit.ZombiesTracker
     public static class Detector
     {
         public static readonly string[] Categories = { "No Gums", "Classic Gums", "Mega Gums", "Any%" };
+        public static bool IsIW(string map) { return map!=null && map.StartsWith("iw-"); }
+        public static string GameForMap(string map) { return IsIW(map)?"iw":IsBo2(map)?"bo2":"bo3"; }
+        public static bool UsesIGT(string map) { return IsIW(map)||IsBo2(map); }
+        public static readonly string[] IWCategories={"Fate","FF","DC Fate","DC FF"};
+        public static string IWCategory(IEnumerable<string> texts,string manual) {
+            if(!string.IsNullOrWhiteSpace(manual))return IWCategories.Contains(manual)?manual:null;
+            var all=Normalize(string.Join(" ",texts)).Replace("dcff","dc ff").Replace("dcfate","dc fate");
+            bool dc=Has(all,"dc")||Has(all,"directors cut")||Has(all,"director s cut");
+            bool ff=Has(all,"ff")||Has(all,"fortune")||Has(all,"all cards");
+            bool fate=Has(all,"fate cards only")||Has(all,"fate only");
+            if(ff&&fate)return null;
+            return (dc?"DC ":"")+(ff?"FF":"Fate");
+        }
         public static bool IsBo2(string map) { return map != null && map.StartsWith("bo2-"); }
         public static readonly string[] Bo2Categories = { "No Bank Richtofen", "No Bank Maxis", "Bank Richtofen", "Bank Maxis" };
         public static string Bo2Category(IEnumerable<string> texts, string manual, string map) {
+            if(map=="bo2-victis-super") {
+                if(!string.IsNullOrEmpty(manual))return new[]{"Richtofen","Maxis"}.Contains(manual)?manual:null;
+                var labels=string.Join(" ",texts);bool r=Has(labels,"richtofen"),m=Has(labels,"maxis");return r&&m?null:m?"Maxis":"Richtofen";
+            }
             if(map=="bo2-origins" || map=="bo2-mob-of-the-dead") return string.IsNullOrEmpty(manual)||manual=="Standard" ? "Standard" : null;
             if(!string.IsNullOrEmpty(manual)) return Bo2Categories.Contains(manual)?manual:null;
             var values=texts.ToArray(); var all=string.Join(" ",values); bool no=Has(all,"no bank"), bank=Has(all,"bank");
@@ -39,6 +56,8 @@ namespace LiveSplit.ZombiesTracker
         }
         public static string[] CategoriesForMap(string map)
         {
+            if(IsIW(map))return map=="iw-mephistopheles-super"?new[]{"DC Fate","DC FF"}:IWCategories;
+            if(map=="bo2-victis-super")return new[]{"Richtofen","Maxis"};
             if(IsBo2(map)) return map=="bo2-origins"||map=="bo2-mob-of-the-dead"?new[]{"Standard"}:Bo2Categories;
             if (map == "ascension" || map == "shangri-la") return new[]{"Any%"};
             return map == "zetsubou-no-shima" || map == "super-easter-egg" ? Categories.Where(c => c != "No Gums").ToArray() : Categories;
@@ -82,6 +101,13 @@ namespace LiveSplit.ZombiesTracker
             return Category(values, "");
         }
         public static readonly MapInfo[] Maps = {
+            new MapInfo("bo2-victis-super","BO2 - Victis Super",true,"Victis Super","Victis Super EE","Richtofen Super","Maxis Super"),
+            new MapInfo("iw-mephistopheles-super","IW - Mephistopheles Super",true,"Mephistopheles Super","Mephistopheles","Super EE"),
+            new MapInfo("iw-spaceland","IW - Zombies in Spaceland",true,"Zombies in Spaceland","Spaceland","ZIS"),
+            new MapInfo("iw-rave-in-the-redwoods","IW - Rave in the Redwoods",true,"Rave in the Redwoods","Rave","RITR"),
+            new MapInfo("iw-shaolin-shuffle","IW - Shaolin Shuffle",true,"Shaolin Shuffle","Shaolin"),
+            new MapInfo("iw-attack-of-the-radioactive-thing","IW - Attack of the Radioactive Thing",true,"Attack of the Radioactive Thing","AOTRT"),
+            new MapInfo("iw-beast-from-beyond","IW - The Beast from Beyond",true,"The Beast from Beyond","Beast from Beyond","BFB"),
             new MapInfo("bo2-tranzit", "BO2 - TranZit", true, "TranZit"),
             new MapInfo("bo2-die-rise", "BO2 - Die Rise", true, "Die Rise"),
             new MapInfo("bo2-buried", "BO2 - Buried", true, "Buried"),
@@ -114,7 +140,7 @@ namespace LiveSplit.ZombiesTracker
         static bool Has(string text, string phrase) { return (" " + Normalize(text) + " ").Contains(" " + Normalize(phrase) + " "); }
         static List<MapInfo> Matches(IEnumerable<string> texts, bool shortNames, bool bo2)
         {
-            return Maps.Where(m => IsBo2(m.Id)==bo2 && m.Aliases.Any(a => (shortNames || Normalize(a).Length > 3) && texts.Any(t => Has(t, a)))).ToList();
+            return Maps.Where(m => !IsIW(m.Id) && IsBo2(m.Id)==bo2 && m.Aliases.Any(a => (shortNames || Normalize(a).Length > 3) && texts.Any(t => Has(t, a)))).ToList();
         }
         static readonly string[] CoreIds = { "shadows-of-evil", "the-giant", "der-eisendrache", "zetsubou-no-shima", "gorod-krovi", "revelations" };
         public static string Stage(string name, bool completion)
@@ -155,6 +181,20 @@ namespace LiveSplit.ZombiesTracker
         }
         public static Detection Detect(string game, string category, string fileTitle, IDictionary<string, string> variables, IEnumerable<string> splits, string manualMap, IEnumerable<SplitLink> aliases = null, string manualGame = "")
         {
+            var iwGame=Normalize(game).Replace(" zombies","");
+            bool namedIW=new[]{"iw","infinite warfare","call of duty infinite warfare"}.Contains(iwGame);
+            bool iwTitle=Maps.Any(m=>IsIW(m.Id)&&m.Aliases.Any(a=>Normalize(a)==Normalize(game)));
+            if(namedIW||iwTitle||manualGame=="iw") {
+                if((!namedIW&&!iwTitle)||(!string.IsNullOrEmpty(manualGame)&&manualGame!="iw"))return new Detection {Reason="Conflicting or unsupported IW game"};
+                var labels=new[]{game,category,fileTitle}.Concat(variables.Where(v=>Has(v.Key,"map")).Select(v=>v.Value));
+                var detected=Resolve(Maps.Where(m=>IsIW(m.Id)&&m.Aliases.Any(a=>labels.Any(t=>Has(t,a)))).ToList(),"IW map labels");
+                if(detected==null)return new Detection {Reason="Choose a supported IW map in Category Name or file name"};
+                if(!string.IsNullOrEmpty(manualMap)&&manualMap!=detected.Map)return new Detection {Reason="Selected map conflicts with IW split file"};
+                var playerLabels=string.Join(" ",new[]{category,fileTitle}.Concat(variables.Where(v=>Has(v.Key,"players")).Select(v=>v.Value+" players")));
+                detected.NonSolo=Regex.IsMatch(Normalize(playerLabels),@"\b[2-4] ?(?:p|player|players)\b")||Has(playerLabels,"coop")||Has(playerLabels,"co op");
+                if(variables.Any(v=>Has(v.Key,"objective")&&!string.IsNullOrWhiteSpace(v.Value)&&!new[]{"ee","easter egg"}.Contains(Normalize(v.Value))))return new Detection {Reason="Only Solo IW Easter Egg runs supported"};
+                return detected;
+            }
             // Overrides must never bypass the supported-game boundary.
             var supportedGames = new[] { "bo3", "boiii", "black ops 3", "black ops iii", "call of duty black ops 3", "call of duty black ops iii" };
             bool mapTitle = false;
@@ -163,7 +203,7 @@ namespace LiveSplit.ZombiesTracker
             bool namedBo2 = new[]{"bo2","boii","black ops 2","black ops ii","call of duty black ops 2","call of duty black ops ii"}.Contains(gameName);
             bool namedBo3 = supportedGames.Contains(gameName);
             bool bo2MapTitle=Maps.Any(m=>m.Enabled && IsBo2(m.Id) && m.Aliases.Any(a=>Normalize(a)==Normalize(game)));
-            bool bo3MapTitle=Maps.Any(m=>m.Enabled && !IsBo2(m.Id) && m.Aliases.Any(a=>Normalize(a)==Normalize(game)));
+            bool bo3MapTitle=Maps.Any(m=>m.Enabled && !IsBo2(m.Id) && !IsIW(m.Id) && m.Aliases.Any(a=>Normalize(a)==Normalize(game)));
             bool bo2 = manualGame=="bo2" || namedBo2 || (manualGame!="bo3" && bo2MapTitle && !bo3MapTitle);
             mapTitle=bo2?bo2MapTitle:bo3MapTitle;
             bool otherGame = new[]{"bo4","black ops iv","black ops 4"}.Any(g => Has(game,g)) || (manualGame=="bo3" && namedBo2) || (manualGame=="bo2" && (namedBo3 || (bo3MapTitle && !bo2MapTitle)));

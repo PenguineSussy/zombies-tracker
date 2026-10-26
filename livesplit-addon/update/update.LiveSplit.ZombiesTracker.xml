@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <updates>
-  <update version="1.0.10">
-    <changelog><change>Automatically sync supported PBs from a chosen splits folder and subfolders.</change><change>Keep the fastest PB per game/map/category without live activity or alerts.</change><change>Show skipped files and retry failed uploads; preserve saved aliases and settings.</change></changelog>
+  <update version="1.1.0">
+    <changelog><change>Add Infinite Warfare and BO2 Victis Super with primary IGT and secondary RTA.</change><change>Filter maps, categories and split aliases by game and preserve saved mappings.</change><change>Support category-specific checkpoints and WR pace in site and chat integrations.</change></changelog>
     <files>
       <file path="Components/LiveSplit.ZombiesTracker.dll" status="changed" />
     </files>

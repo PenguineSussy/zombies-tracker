@@ -5,6 +5,7 @@ const normalize=s=>String(s??'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()
 const split=(name,aliases=[])=>({name,aliases:[name,...aliases].map(normalize)});
 const staff=i=>split(`Staff ${i}`,[`Staff ${['I','II','III','IV'][i-1]}`,`staff_${i}`]);
 export const BO2_SPLITS={
+ 'bo2-victis-super':[split('Tranzit'),split('Die Rise'),split('Buried')],
  'bo2-tranzit':{
   Richtofen:[split('Jetgun',['Jetgun/Power off','Jetgun / Power off','jetgun_power_off']),split('Tower',['Tower / Turbines']),split('End',['Lights','EMP','EMP (Richtofen)','Complete'])],
   Maxis:[split('Power off',['Jetgun/Power off','Jetgun / Power off','jetgun_power_off']),split('End',['Turbines','Tower / Turbines','Complete'])]

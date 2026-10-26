@@ -55,13 +55,13 @@ namespace LiveSplit.ZombiesTracker
             var detected=Detector.Detect(game,category,Path.GetFileNameWithoutExtension(file),variables,names,"",aliases);
             if(!detected.Success || detected.NonSolo)throw new InvalidOperationException("Unsupported or ambiguous game/map/players");
             bool bo2=Detector.IsBo2(detected.Map);
-            var selected=bo2?Detector.Bo2Category(new[]{category}.Concat(variables.Values),"",detected.Map):Detector.MetadataCategory(category,variables,"",detected.Map);
+            var selected=Detector.IsIW(detected.Map)?Detector.IWCategory(new[]{category}.Concat(variables.Values),""):bo2?Detector.Bo2Category(new[]{category}.Concat(variables.Values),"",detected.Map):Detector.MetadataCategory(category,variables,"",detected.Map);
             if(selected==null || !Detector.CategoriesForMap(detected.Map).Contains(selected))throw new InvalidOperationException("Unsupported or ambiguous category");
             var last=run.SelectSingleNode("Segments/Segment[last()]/SplitTimes/SplitTime[@name='Personal Best']");
             if(last==null)throw new InvalidOperationException("No complete saved PB");
-            var rta=Time(last,"RealTime");var igt=Time(last,"GameTime");var primary=bo2?igt:rta;
-            if(primary==null)throw new InvalidOperationException(bo2?"No saved IGT PB":"No saved RTA PB");
-            return new {profile=new {map=detected.Map,category=selected,players=1,timing=bo2?"GameTime":"RealTime"},pbMs=primary,pbIgtMs=igt,pbRealTimeMs=rta};
+            var rta=Time(last,"RealTime");var igt=Time(last,"GameTime");var primary=Detector.UsesIGT(detected.Map)?igt:rta;
+            if(primary==null)throw new InvalidOperationException(Detector.UsesIGT(detected.Map)?"No saved IGT PB":"No saved RTA PB");
+            return new {profile=new {map=detected.Map,category=selected,players=1,timing=Detector.UsesIGT(detected.Map)?"GameTime":"RealTime"},pbMs=primary,pbIgtMs=igt,pbRealTimeMs=rta};
         }
         static IEnumerable<string> Files(string root)
         {

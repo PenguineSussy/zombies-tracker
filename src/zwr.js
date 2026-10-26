@@ -2,10 +2,13 @@ import {ENABLED_MAPS,categoriesForMap,profileKey,milliseconds} from './domain.js
 import {readFileSync} from 'node:fs';
 
 export function zwrUrl(map) {
+  if(map==='iw-mephistopheles-super')return 'https://zwr.gg/leaderboards/iw/Super-ee-speedrun/mephistopheles/';
+  if(map.startsWith('iw-'))return `https://zwr.gg/leaderboards/iw/ee-speedrun/${map.slice(3)}/`;
+  if(map==='bo2-victis-super')return 'https://zwr.gg/leaderboards/bo2/Super-ee-speedrun/bo2-super-ee/';
   if(map.startsWith('bo2-'))return `https://zwr.gg/leaderboards/bo2/ee-speedrun/${map.slice(4)}/`;
   return map==='super-easter-egg'?'https://zwr.gg/leaderboards/bo3/Super-ee-speedrun/bo3-super-ee/':`https://zwr.gg/leaderboards/bo3/ee-speedrun/${map}/`;
 }
-const categories={'Mega Gums':'all-gobblegum','Classic Gums':'classic-gobblegum','No Gums':'no-gobblegum','Any%':'any-gobblegum','Bank Richtofen':'richtofen','No Bank Richtofen':'richtofen-nobank','Bank Maxis':'maxis','No Bank Maxis':'maxis-nobank'};
+const categories={'Richtofen':'richtofen','Maxis':'maxis','Fate':'fate-cards','FF':'all-cards','DC Fate':'dc-fate-cards','DC FF':'dc-all-cards','Mega Gums':'all-gobblegum','Classic Gums':'classic-gobblegum','No Gums':'no-gobblegum','Any%':'any-gobblegum','Bank Richtofen':'richtofen','No Bank Richtofen':'richtofen-nobank','Bank Maxis':'maxis','No Bank Maxis':'maxis-nobank'};
 const text=s=>s.replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&#39;|&apos;/g,"'").replace(/&quot;/g,'"').replace(/&#(\d+);/g,(_,n)=>String.fromCodePoint(Number(n))).trim();
 // Site-owner selection, scoped to this Solo map/category only.
 function excludedRecord(record) {
@@ -26,7 +29,7 @@ export function parseZwr(html,map,checkedAt=Date.now()) {
   const records=[];
   for(const category of categoriesForMap(map)) {
     const gum=map==='super-easter-egg'&&category==='Any%'?'any-gums':categories[category];
-    const board=map.startsWith('bo2-')?`bo2-${map.slice(4)}-ee-speedrun${category==='Standard'?'-ALL':'-'+gum}-1-board`:map==='super-easter-egg'?`bo3-bo3-super-ee-Super-ee-speedrun-${gum}-1-board`:`bo3-${map}-ee-speedrun-${gum}-1-board`;
+    const board=map==='bo2-victis-super'?`bo2-bo2-super-ee-Super-ee-speedrun-${gum}-1-board`:map==='iw-mephistopheles-super'?`iw-mephistopheles-Super-ee-speedrun-${gum}-1-board`:map.startsWith('iw-')?`iw-${map.slice(3)}-ee-speedrun-${gum}-1-board`:map.startsWith('bo2-')?`bo2-${map.slice(4)}-ee-speedrun${category==='Standard'?'-ALL':'-'+gum}-1-board`:map==='super-easter-egg'?`bo3-bo3-super-ee-Super-ee-speedrun-${gum}-1-board`:`bo3-${map}-ee-speedrun-${gum}-1-board`;
     const start=html.indexOf(`data-json="${board}"`);
     if(start<0)continue;
     const rest=html.slice(start);const end=rest.slice(1).search(/<div class="Board\b|<div class="SubBoard\b/);
@@ -46,7 +49,7 @@ export function parseZwr(html,map,checkedAt=Date.now()) {
       details=json&&JSON.parse(json[2])['1']?.find(r=>Number(r.players)===1&&r.player1?.name===holder&&milliseconds(r.achieved)===ms);
     } catch { /* Missing or malformed metadata must not create a date. */ }
     const achievedDate=recordDate(details?.added);
-    const profile={map,category,players:1,timing:map.startsWith('bo2-')?'GameTime':'RealTime'};
+    const profile={map,category,players:1,timing:/^(bo2|iw)-/.test(map)?'GameTime':'RealTime'};
     records.push({id:`zwr:${profileKey(profile)}`,kind:'zwr',profile,ms,holder,source:zwrUrl(map),checkedAt,achievedDate,dateSource:achievedDate?'zwr-added':null,recordId:details?.id??null});
   }
   return records;
@@ -54,7 +57,7 @@ export function parseZwr(html,map,checkedAt=Date.now()) {
 export function startZwr(store,fetcher=fetch,log=console.log) {
   // Dated public-page snapshot also supports hosts blocked by ZWR's edge protection.
   // Never advance checkedAt unless an actual source fetch succeeds.
-  const baseline=JSON.parse(readFileSync(new URL('./zwr-baseline.json',import.meta.url),'utf8'));
+  const baseline=['zwr-baseline.json','iw-zwr-baseline.json','victis-zwr-baseline.json'].flatMap(file=>JSON.parse(readFileSync(new URL('./'+file,import.meta.url),'utf8')));
   for(const record of baseline) {
     const current=store.get('metadata',record.id);
     if(!current || excludedRecord(current) || record.checkedAt>current.checkedAt)store.put('metadata',record.id,record);

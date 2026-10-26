@@ -61,7 +61,7 @@ function renderSession(box,s){
   if(s.unconfirmedEnds)section.append(node('p',`${s.unconfirmedEnds} attempt endings were not observed; they are not counted as confirmed resets.`,'small muted'));
   box.append(section);
 }
-function profile(){return {map:$('map').value,category:$('category').value,players:1,timing:$('map').value.startsWith('bo2-')?'GameTime':'RealTime'};}
+function profile(){return {map:$('map').value,category:$('category').value,players:1,timing:/^(bo2|iw)-/.test($('map').value)?'GameTime':'RealTime'};}
 function updateCategories(preferred=$('category').value){
   const map=$('map').value;
   const allowed=catalog.categoriesByMap?.[map]??(['ascension','shangri-la'].includes(map)?['Any%']:['zetsubou-no-shima','super-easter-egg'].includes(map)?['Classic Gums','Mega Gums','Any%']:['No Gums','Classic Gums','Mega Gums','Any%']);
@@ -150,7 +150,7 @@ function renderRunners(){
  
  function card(p){
   const b=node('button',null,'runner');const state=p.archived?'OFFLINE':p.status==='Running'?'RUNNING':p.status==='NotRunning'?'IDLE':p.status.toUpperCase();
-  b.append(node('span',state,'pill'+(p.status==='Running'?' live':'')),node('strong',p.name),node('small',p.archived?'Run history is private':(catalog.allMaps??catalog.maps).find(m=>m.id===p.profile?.map)?.name??'Waiting for first connection'),node('small',p.archived?'':p.profile?.category?(p.profile.map.startsWith('bo2-')?'BO2':'BO3')+' · Solo'+(p.profile.category==='Standard'?'':' · '+p.profile.category)+' · '+(p.profile.timing==='GameTime'?'IGT':'RTA'):'No run recorded'));
+  b.append(node('span',state,'pill'+(p.status==='Running'?' live':'')),node('strong',p.name),node('small',p.archived?'Run history is private':(catalog.allMaps??catalog.maps).find(m=>m.id===p.profile?.map)?.name??'Waiting for first connection'),node('small',p.archived?'':p.profile?.category?(p.profile.map.startsWith('iw-')?'IW':p.profile.map.startsWith('bo2-')?'BO2':'BO3')+' · Solo'+(p.profile.category==='Standard'?'':' · '+p.profile.category)+' · '+(p.profile.timing==='GameTime'?'IGT':'RTA'):'No run recorded'));
   const age=p.lastSeen==null?null:Math.max(0,Date.now()-p.lastSeen);
   const ago=age==null?'Never connected':age<60000?'just now':age<3600000?Math.floor(age/60000)+' min ago':age<86400000?Math.floor(age/3600000)+' hr ago':Math.floor(age/86400000)+' days ago';
   const seen=node('small',age==null?ago:'Last seen '+ago,'runner-last-seen');if(p.lastSeen!=null)seen.title=new Date(p.lastSeen).toLocaleString();b.append(seen);
@@ -184,7 +184,7 @@ async function details(id){
 action('refresh',refresh);
 action('query-form',async()=>{$('answer').textContent=(await api('/api/query',{method:'POST',body:{command:$('command').value}})).reply;},'submit');
 action('register-form',async()=>{const result=await api('/api/register',{method:'POST',body:{username:$('username').value},key:''});await saveKey(result.token);revealKey(result.token);await loadMe();await refresh();notice('Account created. Save your private runner key, then configure your data source.');},'submit');
-action('login-form',async()=>{const candidate=$('runner-key').value.trim();await api('/api/me',{key:candidate});await saveKey(candidate);await loadMe();if(me.profile){$('game').value=me.profile.map.startsWith('bo2-')?'bo2':'bo3';updateMaps(me.profile.map);}if(me.profile)for(const [k,v]of Object.entries(me.profile))if($(k))$(k).value=v;updateCategories(me.profile?.category);fillStreams();notice('Signed in for 30 days on this browser. Keep your runner key for your next sign-in.');},'submit');
+action('login-form',async()=>{const candidate=$('runner-key').value.trim();await api('/api/me',{key:candidate});await saveKey(candidate);await loadMe();if(me.profile){$('game').value=me.profile.map.startsWith('iw-')?'iw':me.profile.map.startsWith('bo2-')?'bo2':'bo3';updateMaps(me.profile.map);}if(me.profile)for(const [k,v]of Object.entries(me.profile))if($(k))$(k).value=v;updateCategories(me.profile?.category);fillStreams();notice('Signed in for 30 days on this browser. Keep your runner key for your next sign-in.');},'submit');
 let recoveryAccount='';
 action('recover-form',async()=>{const result=await api('/api/recovery/discord/start',{method:'POST',body:{username:$('recover-name').value.trim()}});location.assign(result.url);},'submit');
 action('recovery-reset',async()=>{const result=await api('/api/recovery/discord/reset',{method:'POST',body:{username:recoveryAccount}});$('recovery-confirm').hidden=true;rememberExpiry(result.expiresAt);revealKey(result.token);await loadMe();showTab('setup');notice('New key created. Save it and update the key in every LiveSplit layout you use.');});
