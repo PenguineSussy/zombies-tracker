@@ -3,7 +3,7 @@ import {eligibleTime} from './minimum-run.js';
 import {bo2Splits} from './bo2-splits.js';
 import {verifiedLiveStreams} from './streams.js';
 import { createPublicKey, verify, createHash } from 'node:crypto';
-import { check, milliseconds, ENABLED_MAPS, CATEGORIES, IW_CATEGORIES, BO2_CATEGORIES, categoriesForMap, profile, profileLabel } from './domain.js';
+import { check, milliseconds, ENABLED_MAPS, CATEGORIES, IW_CATEGORIES, BO2_CATEGORIES, categoriesForMap, profile, profileKey, profileLabel } from './domain.js';
 import { SPLIT_RULES, splitName } from './split-rules.js';
 
 export function verifyDiscord(publicKey, timestamp, signature, raw, now = Date.now()) {
@@ -67,8 +67,8 @@ export async function deliverAlerts(store, token, fetcher = fetch) {
     const p = store.get('players',job.player), sub = store.get('subscriptions',job.subscription);
     const resetAttempt=job.type==='reset'?store.get('attempts',job.attempt):null;
     const finishAttempt=job.type==='finish'?store.get('attempts',job.attempt):null;
-    const finishSubs=job.type==='finish'?(job.subscriptions??[job.subscription]).map(id=>store.get('subscriptions',id)).filter(s=>s?.enabled):[];
-    const roles=job.type==='finish'?[...new Set(finishSubs.map(s=>s.role).filter(Boolean))]:job.role?[job.role]:[];
+    const finishSubs=job.type==='finish'?(job.subscriptions??[job.subscription]).map(id=>store.get('subscriptions',id)).filter(s=>s?.enabled&&s.channel===job.channel&&(s.player==='*'||s.player===p?.id)&&(job.record||profileKey(s.profile)===profileKey(finishAttempt?.profile??{}))):[];
+    const roles=job.type==='finish'?[...new Set(finishSubs.filter(s=>!job.record||s.profile.map===finishAttempt?.profile?.map).map(s=>s.role).filter(Boolean))]:job.role?[job.role]:[];
     const validAttempt=job.type==='finish'?finishAttempt?.phase==='Ended'&&finishAttempt.complete&&!finishAttempt.practice:job.type==='reset'?resetAttempt?.resetObserved===true:p?.activeAttempt===job.attempt;
     if (!eligibleTime(job.split?.ms) || !p?.public || !(job.type==='finish'?finishSubs.length:sub?.enabled) || !validAttempt || (!['reset','finish'].includes(job.type) && now - job.createdAt > 120000)) { job.status='cancelled'; store.put('outbox',job.id,job); continue; }
     const live=verifiedLiveStreams(store,p,now)[0];

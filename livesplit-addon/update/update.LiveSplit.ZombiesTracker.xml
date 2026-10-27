@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <updates>
-  <update version="1.1.0">
-    <changelog><change>Add Infinite Warfare and BO2 Victis Super with primary IGT and secondary RTA.</change><change>Filter maps, categories and split aliases by game and preserve saved mappings.</change><change>Support category-specific checkpoints and WR pace in site and chat integrations.</change></changelog>
+  <update version="1.1.1">
+    <changelog><change>Save split alias presets separately by map and category, preserving existing mappings.</change><change>Fix settings scrolling in smaller windows.</change></changelog>
     <files>
       <file path="Components/LiveSplit.ZombiesTracker.dll" status="changed" />
     </files>

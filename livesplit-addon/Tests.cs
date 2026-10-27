@@ -91,9 +91,20 @@ class Tests
             using(var editor=new AliasEditor()) {
                 editor.LoadLinks(new[]{new SplitLink{Map="iw-spaceland",Source="My round",Target="Round 9 End"},new SplitLink{Map="der-eisendrache",Source="My rocket",Target="Rocket"}});
                 editor.FilterGame("iw");editor.FollowMap("iw-spaceland");editor.SetCategory("DC FF");
-                var grid=Field<DataGridView>(editor,"grid");Check(grid.Rows.Count==1 && editor.Read().Count==2,"category-incompatible alias hidden but retained");
+                var grid=Field<DataGridView>(editor,"grid");Check(grid.Rows.Count==1 && editor.Read().Count==6,"category-incompatible alias hidden but retained");
                 editor.SetCategory("Fate");Check(grid.Rows.Count==2 && Convert.ToString(grid.Rows[0].Cells[1].Value)=="Round 9 End","hidden category alias restored");
-                editor.FilterGame("bo2");editor.RestoreMap("iw-spaceland");Check(editor.SelectedMap=="" && editor.Read().Count==2,"game switch retains saved aliases without cross-game restore");
+                editor.FilterGame("bo2");editor.RestoreMap("iw-spaceland");Check(editor.SelectedMap=="" && editor.Read().Count==6,"game switch retains saved aliases without cross-game restore");
+            }
+            var scoped=new[]{new SplitLink{Map="der-eisendrache",Category="Mega Gums",Source="Custom",Target="Rocket"},new SplitLink{Map="der-eisendrache",Category="Any%",Source="Custom",Target="Bow"}};
+            Check(ManualAliases.Resolve(scoped,"der-eisendrache","Mega Gums",new[]{"Custom"},null)[0]=="Rocket","Mega preset isolated");
+            Check(ManualAliases.Resolve(scoped,"der-eisendrache","Any%",new[]{"Custom"},null)[0]=="Bow","Any preset isolated");
+            using(var presetEditor=new AliasEditor()) {
+             presetEditor.LoadLinks(scoped);presetEditor.FilterGame("bo3");presetEditor.FollowMap("der-eisendrache");presetEditor.SetCategory("Mega Gums");
+             var g=Field<DataGridView>(presetEditor,"grid");Check((string)g.Rows[0].Cells[1].Value=="Rocket","editor Mega loaded");
+             presetEditor.SetCategory("Any%");Check((string)g.Rows[0].Cells[1].Value=="Bow","editor Any loaded");
+             g.Rows.Clear();var persisted=presetEditor.Read();
+             Check(ManualAliases.Resolve(persisted,"der-eisendrache","Any%",new[]{"Custom"},null)[0]=="Custom","empty preset stays empty");
+             Check(ManualAliases.Resolve(persisted,"der-eisendrache","Mega Gums",new[]{"Custom"},null)[0]=="Rocket","deleting Any does not delete Mega");
             }
             var factory = new Factory();
             Check(factory.Version == new Version(AddonUpdates.InstalledVersion), "factory and upload versions agree");
@@ -115,7 +126,7 @@ class Tests
             var superLinks=ManualAliases.Core.Select((id,i)=>new SplitLink{Map="super-easter-egg",Source="Custom "+i,Target=Detector.Maps.First(m=>m.Id==id).Name+" - Complete"}).ToArray();
             Check(Detector.Detect("Super Easter Egg","","",new Dictionary<string,string>(),superLinks.Select(r=>r.Source),"",superLinks).Success,"custom Super EE completion aliases pass detection");
             bool collision=false;try{ManualAliases.Resolve(aliasRows,"der-eisendrache",new[]{"My split","Rocket"},null);}catch{collision=true;}Check(collision,"duplicate mapped checkpoints blocked");
-            using(var editor=new AliasEditor()){editor.LoadLinks(aliasRows);Check(editor.Read().Count==2,"alias editor roundtrip retains every map");}
+            using(var editor=new AliasEditor()){editor.LoadLinks(aliasRows);Check(editor.Read().Count==ManualAliases.Migrate(aliasRows).Count,"alias editor roundtrip retains every map");}
             using(var panel=new SettingsPanel(o=>{},()=>{})) {
                 panel.LoadOptions(new AddonOptions{Aliases=ManualAliases.Validate(aliasRows)});
                 panel.FollowRun("der-eisendrache","bo3");
@@ -127,7 +138,7 @@ class Tests
                 Check(grid.Rows.Cast<DataGridViewRow>().All(r=>r.IsNewRow),"new SOE map has blank aliases");
                 grid.Rows.Add("My split",ManualAliases.Targets("shadows-of-evil")[0]);
                 panel.FollowRun("der-eisendrache","bo3");
-                Check(grid.Rows.Count==3 && panel.ReadOptions().Aliases.Count==4,"switching back saves edits without replacing other maps");
+                Check(grid.Rows.Count==3 && panel.ReadOptions().Aliases.Count==ManualAliases.Migrate(aliasRows).Count+2,"switching back saves edits without replacing other maps");
                 panel.FollowRun("bo2-tranzit","bo2");
                 Check(!categories.Items.Contains("Mega Gums") && categories.Items.Contains("Bank Richtofen"),"automatic BO2 excludes BO3 categories");
                 panel.FollowRun("bo2-origins","bo2");
@@ -135,7 +146,7 @@ class Tests
                 panel.FollowRun("shadows-of-evil","bo3");
                 Check(grid.Rows.Count==2 && !categories.Items.Contains("Bank Richtofen"),"SOE aliases restored and BO2 categories removed");
                 panel.FollowRun(null,"");
-                Check(!grid.Enabled && panel.ReadOptions().Aliases.Count==4,"unknown run hides aliases without deleting them");
+                Check(!grid.Enabled && panel.ReadOptions().Aliases.Count==ManualAliases.Migrate(aliasRows).Count+2,"unknown run hides aliases without deleting them");
                 games.SelectedIndex=2;
                 Check(categories.Items.Contains("Bank Richtofen") && !categories.Items.Contains("Mega Gums"),"explicit game filters automatic-map categories");
                 panel.FollowRun("der-eisendrache","bo3");
@@ -348,7 +359,8 @@ class Tests
             string lifecycleKey=Guid.NewGuid().ToString();
             var oldQueue=new UploadQueue("http://localhost:1",lifecycleKey,lifecycleDir,delayed);
             oldQueue.Enqueue(sample);
-            Check(delayed.Started.WaitOne(2000),"stalled upload started");
+            for(int wait=0;wait<100&&!delayed.Started.WaitOne(0);wait++)Pump(100);
+            Check(delayed.Started.WaitOne(0),"stalled upload started: "+oldQueue.Status);
             Exception closeError=null;
             var closer=new Thread(delegate(){try{oldQueue.Dispose();oldQueue.Dispose();}catch(Exception ex){closeError=ex;}}){IsBackground=true};
             closer.Start();Check(closer.Join(1000),"close never waits for stalled HTTP upload");Check(closeError==null,"dispose is idempotent and safe from another thread");
@@ -427,7 +439,7 @@ class Tests
                 using (var recovered = new UploadQueue(args[0], args[1], queueDir))
                 {
                     Check(recovered.Count == 1, "pending event recovered from disk");
-                    recovered.Flush(); Pump(500); Check(recovered.Count == 0, "recovered event acknowledged");
+                    recovered.Flush(); for(int wait=0;wait<100&&recovered.Count>0;wait++)Pump(100); Check(recovered.Count == 0, "recovered event acknowledged: "+recovered.Status);
                 }
             }
             if(args.Length==2) {

@@ -278,3 +278,37 @@ test('monitor includes unmatched splits once and retries independently of origin
  await deliverAlerts(store,'test',fetcher);
  assert.equal(messages.filter(m=>m.url.includes('/234567/')).length,1);assert.equal(messages.filter(m=>/Rocket:/.test(m.body.content)).length,2);
 });
+
+test('PB/WR finishes reach configured channels without a matching map and only mention matching map roles',async t=>{
+ const {store,player}=fixture(t);
+ const other={...P,map:'origins'};
+ const add=(channel,profile,role,who='*')=>store.subscribe({guild:'123456',channel,role,player:who,profile,split:'End',mode:'under',thresholdMs:10000});
+ add('234567',other,'999999');
+ add('234568',{...P,category:'Classic Gums'},'345678');
+ add('234568',other,'999999');
+ add('234569',other,'999999','someoneelse');
+ const disabled=add('234570',other,'999999');store.put('subscriptions',disabled.id,{...disabled,enabled:false});
+ store.put('metadata','folder-pb:'+player.id+':'+profileKey(P),{pbMs:700000});
+ store.put('metadata','zwr:'+profileKey(P),{ms:650000});
+ store.ingest(player.id,event());
+ const finish=event({sequence:2,phase:'Ended',complete:true,index:2,elapsedMs:600000,splits:[{index:0,name:'Bow',ms:283000},{index:1,name:'End',ms:600000}]});
+ store.ingest(player.id,finish);store.ingest(player.id,{...finish,sequence:3});
+ const jobs=store.list('outbox').filter(j=>j.type==='finish');assert.equal(jobs.length,2);
+ const messages=[];await deliverAlerts(store,'test',async(url,o)=>{messages.push({url,...JSON.parse(o.body)});return {ok:true,json:async()=>({id:'100000001'})};});
+ assert.equal(messages.length,2);
+ for(const m of messages)assert.match(m.content,/WR TIME BEATEN \/ NEW PB/);
+ assert.deepEqual(messages.find(m=>m.url.includes('/234567/')).allowed_mentions.roles,[]);
+ assert.doesNotMatch(messages.find(m=>m.url.includes('/234567/')).content,/<@/);
+ assert.deepEqual(messages.find(m=>m.url.includes('/234568/')).allowed_mentions.roles,['345678']);
+});
+
+test('ordinary finishes do not broadcast to other maps and replayed record finishes do not expand destinations',t=>{
+ for(const replay of [false,true]){
+ const {store,player}=fixture(t);
+ store.subscribe({guild:'123456',channel:'234567',player:'*',profile:{...P,map:'origins'},split:'End',mode:'milestone'});
+ store.put('metadata','folder-pb:'+player.id+':'+profileKey(P),{pbMs:replay?700000:500000});
+ if(!replay)store.ingest(player.id,event());
+ store.ingest(player.id,event({sequence:2,phase:'Ended',complete:true,index:2,elapsedMs:600000,splits:[{index:0,name:'Bow',ms:283000},{index:1,name:'End',ms:600000}]}));
+ assert.equal(store.list('outbox').filter(j=>j.type==='finish').length,0);
+ }
+});

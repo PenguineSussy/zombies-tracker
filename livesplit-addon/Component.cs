@@ -14,7 +14,7 @@ using LiveSplit.Model;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;
 
-[assembly: AssemblyVersion("1.1.0.0")]
+[assembly: AssemblyVersion("1.1.1.0")]
 [assembly: ComponentFactory(typeof(LiveSplit.ZombiesTracker.Factory))]
 
 namespace LiveSplit.ZombiesTracker
@@ -157,7 +157,7 @@ namespace LiveSplit.ZombiesTracker
                 var profile = new RunProfile { map = detected.Map, category = category, players = 1, timing = Detector.UsesIGT(detected.Map)?"GameTime":"RealTime", game = Detector.GameForMap(detected.Map) };
                 string bridgeStatus;
                 var autosplitNames = AutosplitBridge.Read(state, detected.Map, out bridgeStatus);
-                var activeAliases=options.Aliases.Where(r=>r.Map!=detected.Map || ManualAliases.Targets(detected.Map,category).Contains(r.Target)).ToList();
+                var activeAliases=ManualAliases.Migrate(options.Aliases).Where(r=>r.Map==detected.Map && r.Category==category).ToList();
                 var linkedNames = ManualAliases.Resolve(activeAliases, detected.Map, state.Run.Select(s => s.Name).ToArray(), autosplitNames);
                 bool hasManual = activeAliases.Any(r=>r.Map==detected.Map && state.Run.Any(segment=>Detector.Normalize(segment.Name)==Detector.Normalize(r.Source)));
                 string fingerprint = json.Serialize(profile) + "|" + options.Practice + "|" + string.Join("|", state.Run.Select(s => s.Name)) + "|" + string.Join("|",linkedNames);
@@ -339,8 +339,9 @@ namespace LiveSplit.ZombiesTracker
         public string StatusText { set { status.Text = value; } }
         public SettingsPanel(Action<AddonOptions> apply, Action clear)
         {
-            Width = 490; Height = 670; AutoScroll = true;
-            var table = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1, Padding = new Padding(10) };
+            Width = 490; Height = 670; Dock = DockStyle.Fill; AutoScroll = true;
+            AutoScrollMargin = new Size(0, 16);
+            var table = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 1, Padding = new Padding(10) };
             Controls.Add(table);
             Action<Control> add = control => { control.Margin = new Padding(3, 4, 3, 4); control.Width = 450; table.Controls.Add(control); };
             add(new Label { Text = "BO2 / BO3 / IW - Solo Easter Egg - IGT / RTA", AutoSize = true });

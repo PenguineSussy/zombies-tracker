@@ -158,6 +158,7 @@ export class Store {
       queueAnnouncements(this,p,a,previousAttempt);
       recordActivity(this,p,a,previousAttempt,old);
       queueDiscordReset(this,p,a,old);
+      queueDiscordFinish(this,p,a,previousAttempt);
       if(s.records && !s.practice) {
         const recordId=`saved-records:${p.id}:${profileKey(s.profile)}`;
         const previous=this.get('metadata',recordId);
@@ -170,7 +171,7 @@ export class Store {
           job.status = 'cancelled'; this.put('outbox', job.id, job);
         }
       }
-      queueDiscordFinish(this,p,a);
+
       if (!a.practice && p.public && !s.suppressAlerts && now - s.observedAt <= 30000) {
         // Alerts match the split name shown on the site (aliases resolved) or the runner's own split name.
         const resolved = resolveSplits(a.profile, a.splits, { finished: a.phase === 'Ended' && a.complete });
