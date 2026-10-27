@@ -30,7 +30,7 @@ test('Discord form retains channel and role after saving and isolates each serve
  elements.guild.value='11111';await elements.guild.fire('change');assert.equal(elements.channel.value,'66666');assert.equal(elements.role.value,'33333');
  elements.map.value='soe';await elements.map.fire('change');assert.deepEqual(elements.split.options.map(o=>o.value),['Rift','Sword','__custom']);
  elements.game.value='bo2';await elements.game.fire('change');
- assert.deepEqual(elements.map.options.map(o=>o.value),['bo2-tranzit']);assert.equal(elements.category.value,'Bank Richtofen');assert.deepEqual(elements.split.options.map(o=>o.value),['Power','End','__custom']);
+ assert.deepEqual(elements.map.options.map(o=>o.value),['bo2-tranzit']);assert.equal(elements.category.value,'Bank Richtofen');assert.deepEqual(elements.split.options.map(o=>o.value),['Power','__custom']);
  await elements['alert-form'].fire('submit');assert.deepEqual(saved.profile,{map:'bo2-tranzit',category:'Bank Richtofen'});
  await panel.refresh();assert.equal(elements.game.value,'bo2');assert.equal(elements.map.value,'bo2-tranzit');assert.equal(elements.channel.value,'66666');assert.equal(elements.role.value,'33333');
  elements.game.value='bo3';await elements.game.fire('change');assert.deepEqual(elements.map.options.map(o=>o.value),['de','soe']);assert.equal(elements.category.value,'Mega Gums');assert.deepEqual(elements.split.options.map(o=>o.value),['Bow','Rocket','__custom']);

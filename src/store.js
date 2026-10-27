@@ -1,3 +1,4 @@
+import {queueDiscordFinish} from './discord-finishes.js';
 import {eligibleTime,eligibleRun} from './minimum-run.js';
 import {queueDiscordReset} from './discord-resets.js';
 import {replyProfile,duration,lastSeen,achievedDate,runTime,replyTiming as timingLabel} from './reply-format.js';
@@ -164,14 +165,16 @@ export class Store {
       delete a.records;
       // Cancel queued alerts for splits removed by undo; don't retract already delivered pings.
       for (const job of this.list('outbox')) {
-        if (job.attempt === id && job.status === 'pending' && !a.splits.some(x => x.index === job.split.index && x.ms === job.split.ms)) {
+        if (job.attempt === id && job.status === 'pending' && job.type !== 'finish' && !a.splits.some(x => x.index === job.split.index && x.ms === job.split.ms)) {
           job.status = 'cancelled'; this.put('outbox', job.id, job);
         }
       }
+      queueDiscordFinish(this,p,a);
       if (!a.practice && p.public && !s.suppressAlerts && now - s.observedAt <= 30000) {
         // Alerts match the split name shown on the site (aliases resolved) or the runner's own split name.
         const resolved = resolveSplits(a.profile, a.splits, { finished: a.phase === 'Ended' && a.complete });
         for (const [i, split] of resolved.entries()) {
+          if(a.phase==='Ended' && a.complete && split.index===a.splits.length-1)continue;
           if(!eligibleTime(split.ms))continue;
           if (previousSplits.some(x => x.index === split.index && x.ms === split.ms)) continue;
           if(a.handoverSplits.some(x=>x.index===split.index&&x.ms===split.ms))continue;

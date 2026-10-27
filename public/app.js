@@ -135,7 +135,7 @@ function renderAddonUpdate(update){
     const link=node('a','Download latest addon');link.href='/downloads/Zombies-Tracker-LiveSplit.zip';link.className='button';box.append(link);
   }
 }
-function showTab(id){document.querySelectorAll('.panel').forEach(p=>p.hidden=p.id!==id);document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('selected',t.dataset.tab===id));}
+function showTab(id){document.querySelectorAll('[data-quick-tab]').forEach(n=>n.hidden=n.dataset.quickTab!==id);document.querySelectorAll('.panel').forEach(p=>p.hidden=p.id!==id);document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('selected',t.dataset.tab===id));}
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{showTab(t.dataset.tab);if(t.dataset.tab==='integrations')void loadChatbot().catch(e=>notice(e.message,true));}));
 document.querySelectorAll('input[name="source"]').forEach(r=>r.addEventListener('change',()=>{$('direct-fields').hidden=r.value!=='direct';$('therun-fields').hidden=r.value!=='therun';}));
 let runnerCache=[],runnerPage=0,archivePage=0;

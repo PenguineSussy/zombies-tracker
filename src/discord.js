@@ -65,8 +65,11 @@ export async function deliverAlerts(store, token, fetcher = fetch) {
   for (const job of store.list('outbox').filter(j => j.status === 'pending' && j.nextTry <= now).slice(0,10)) {
     const p = store.get('players',job.player), sub = store.get('subscriptions',job.subscription);
     const resetAttempt=job.type==='reset'?store.get('attempts',job.attempt):null;
-    const validAttempt=job.type==='reset'?resetAttempt?.resetObserved===true:p?.activeAttempt===job.attempt;
-    if (!eligibleTime(job.split?.ms) || !p?.public || !sub?.enabled || !validAttempt || (job.type!=='reset' && now - job.createdAt > 120000)) { job.status='cancelled'; store.put('outbox',job.id,job); continue; }
+    const finishAttempt=job.type==='finish'?store.get('attempts',job.attempt):null;
+    const finishSubs=job.type==='finish'?(job.subscriptions??[job.subscription]).map(id=>store.get('subscriptions',id)).filter(s=>s?.enabled):[];
+    const roles=job.type==='finish'?[...new Set(finishSubs.map(s=>s.role).filter(Boolean))]:job.role?[job.role]:[];
+    const validAttempt=job.type==='finish'?finishAttempt?.phase==='Ended'&&finishAttempt.complete&&!finishAttempt.practice:job.type==='reset'?resetAttempt?.resetObserved===true:p?.activeAttempt===job.attempt;
+    if (!eligibleTime(job.split?.ms) || !p?.public || !(job.type==='finish'?finishSubs.length:sub?.enabled) || !validAttempt || (!['reset','finish'].includes(job.type) && now - job.createdAt > 120000)) { job.status='cancelled'; store.put('outbox',job.id,job); continue; }
     const live=verifiedLiveStreams(store,p,now)[0];
     const streamLine=job.type==='reset'?'':live?'\nWatch live: '+live.url:'\nCurrently Offline';
     const nonce = BigInt('0x' + createHash('sha256').update(job.id).digest('hex').slice(0,15)).toString();
@@ -86,7 +89,7 @@ export async function deliverAlerts(store, token, fetcher = fetch) {
         if(cache.emojis.length)emoji=' '+cache.emojis[Math.floor(Math.random()*cache.emojis.length)];
       }
       const response = await fetcher(`https://discord.com/api/v10/channels/${job.channel}/messages`, { method:'POST', headers:{Authorization:`Bot ${token}`,'Content-Type':'application/json'},
-        body:JSON.stringify({content:`${job.role ? '<@&'+job.role+'>\n' : ''}${job.content}`.slice(0,1900-streamLine.length-emoji.length)+streamLine+emoji, allowed_mentions:{parse:[],roles:job.role?[job.role]:[],...(job.type==='reset'?{replied_user:false}:{})}, ...(job.type==='reset'?{message_reference:{message_id:job.replyTo,channel_id:job.channel,fail_if_not_exists:true}}:{}), nonce, enforce_nonce:true}), signal:AbortSignal.timeout(8000) });
+        body:JSON.stringify({content:`${roles.length ? roles.map(role=>'<@&'+role+'>').join(' ')+'\n' : ''}${job.content}`.slice(0,1900-streamLine.length-emoji.length)+streamLine+emoji, allowed_mentions:{parse:[],roles,...(job.type==='reset'?{replied_user:false}:{})}, ...(job.type==='reset'?{message_reference:{message_id:job.replyTo,channel_id:job.channel,fail_if_not_exists:true}}:{}), nonce, enforce_nonce:true}), signal:AbortSignal.timeout(8000) });
       if (response.ok) {
         // Persist the exact Discord message so reset follow-ups reply to the
         // correct run in its original channel, including after a restart.

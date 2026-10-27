@@ -221,3 +221,32 @@ test('one reset per run and channel replies to latest ping, isolating players an
  store.ingest(player.id,event({attemptId:'idle-002',sequence:2,phase:'NotRunning',index:0,elapsedMs:0,splits:[]}));await deliverAlerts(store,'test',fetcher);
  assert.equal(messages.filter(m=>m.message_reference).length,6);
 });
+
+test('completion alerts ignore split thresholds, deduplicate channels and survive the next attempt',async t=>{
+ const {store,player}=fixture(t);
+ for(const split of ['Bow','End'])store.subscribe({guild:'123456',channel:'234567',role:'345678',player:'*',profile:P,split,mode:'under',thresholdMs:10000});
+ store.subscribe({guild:'123456',channel:'234568',player:player.id,profile:P,split:'Rocket',mode:'milestone'});
+ const finish=event({phase:'Ended',complete:true,index:2,elapsedMs:600000,splits:[{index:0,name:'Bow',ms:283000},{index:1,name:'End',ms:600000}]});
+ store.ingest(player.id,finish);
+ store.ingest(player.id,{...finish,sequence:2});
+ assert.equal(store.list('outbox').filter(j=>j.type==='finish').length,2);
+ store.ingest(player.id,event({attemptId:'idle-001',phase:'NotRunning',index:0,elapsedMs:0,splits:[]}));
+ const messages=[];
+ await deliverAlerts(store,'test',async(url,options)=>{messages.push(JSON.parse(options.body));return {ok:true,json:async()=>({id:'100000001'})};});
+ assert.equal(messages.length,2);
+ assert.match(messages[0].content,/Run completed: 10:00 RTA/);
+ assert.deepEqual(messages[0].allowed_mentions.roles,['345678']);
+ assert.equal(messages[0].content.match(/<@&345678>/g).length,1);
+ await deliverAlerts(store,'test',async()=>{throw Error('duplicate');});
+ assert.equal(store.list('outbox').filter(j=>j.type==='finish'&&j.status==='sent').length,2);
+});
+
+test('completion alerts exclude practice, private, incomplete and replayed finishes',t=>{
+ for(const variant of ['practice','private','incomplete','replay']){
+  const {store,player}=fixture(t);
+  store.subscribe({guild:'123456',channel:'234567',player:'*',profile:P,split:'Bow',mode:'milestone'});
+  if(variant==='private')store.privacy(store.get('players',player.id),false);
+  store.ingest(player.id,event({phase:'Ended',complete:variant!=='incomplete',practice:variant==='practice',observedAt:variant==='replay'?NOW-60000:NOW,index:1,elapsedMs:600000,splits:[{index:0,name:'End',ms:600000}]}));
+  assert.equal(store.list('outbox').filter(j=>j.type==='finish').length,0,variant);
+ }
+});
