@@ -1,3 +1,4 @@
+import {queueMonitor,deliverMonitor} from './discord-monitor.js';
 import {eligibleTime} from './minimum-run.js';
 import {bo2Splits} from './bo2-splits.js';
 import {verifiedLiveStreams} from './streams.js';
@@ -62,7 +63,7 @@ export function discordInteraction(store, interaction) {
 export async function deliverAlerts(store, token, fetcher = fetch) {
   if (!token) return;
   const now = store.clock();
-  for (const job of store.list('outbox').filter(j => j.status === 'pending' && j.nextTry <= now).slice(0,10)) {
+  for (const job of store.list('outbox').filter(j => j.type !== 'monitor' && j.status === 'pending' && j.nextTry <= now).slice(0,10)) {
     const p = store.get('players',job.player), sub = store.get('subscriptions',job.subscription);
     const resetAttempt=job.type==='reset'?store.get('attempts',job.attempt):null;
     const finishAttempt=job.type==='finish'?store.get('attempts',job.attempt):null;
@@ -95,6 +96,7 @@ export async function deliverAlerts(store, token, fetcher = fetch) {
         // correct run in its original channel, including after a restart.
         try { const message=await response.json(); if(/^\d+$/.test(message.id??''))job.messageId=message.id; } catch {}
         job.status='sent';
+        queueMonitor(store,{id:job.id,player:job.player,attempt:job.attempt,source:{channel:job.channel,messageId:job.messageId},content:`[Alert copy · channel ${job.channel}]\n${roles.length?roles.map(r=>'<@&'+r+'>').join(' ')+'\n':''}${job.content}${streamLine}${emoji}`});
       }
       else if (response.status === 429) {
         const data = await response.json(); job.nextTry = now + Math.max(1000, Number(data.retry_after ?? 5)*1000);
@@ -104,4 +106,5 @@ export async function deliverAlerts(store, token, fetcher = fetch) {
     } catch { job.tries++; job.nextTry=now+Math.min(60000,1000*2**job.tries); if(job.tries>=6) job.status='failed'; }
     store.put('outbox',job.id,job);
   }
+  await deliverMonitor(store,token,fetcher);
 }

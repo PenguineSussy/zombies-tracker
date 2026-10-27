@@ -11,7 +11,7 @@ export function queueDiscordReset(store,p,a,old){
  const lastSplit=resolveSplits(old.profile,old.splits).reduce((last,split)=>!last||split.index>last.index?split:last,null);
  const jobs=store.list('outbox'),latestByChannel=new Map();
  for(const sent of jobs){
-  if(sent.type==='reset'||sent.status!=='sent'||!/^\d+$/.test(sent.messageId??'')||sent.attempt!==old.id)continue;
+  if(['reset','finish','monitor'].includes(sent.type)||sent.status!=='sent'||!/^\d+$/.test(sent.messageId??'')||sent.attempt!==old.id)continue;
   // A delivered alert follows the run through later, unannounced splits.
   // Still exclude alerts whose checkpoint was removed or changed by undo.
   if(!old.splits.some(s=>s.index===sent.split.index&&s.ms===sent.split.ms))continue;

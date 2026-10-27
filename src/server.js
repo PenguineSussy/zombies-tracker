@@ -1,3 +1,4 @@
+import {monitoringChannel} from './discord-monitor.js';
 import {runnerArchived} from './runner-visibility.js';
 import {addonRelease,addonStatus} from './addon-updates.js';
 import {publicActivity} from './activity.js';
@@ -27,6 +28,7 @@ async function body(req) {
   return Buffer.concat(chunks);
 }
 export function createApp({store=new Store(),env={},connectors=false,fetcher=fetch}={}) {
+  store.discordMonitorChannel=connectors?(env.DISCORD_MONITOR_CHANNEL??monitoringChannel):null;
   const chatbot=new ChatConnections(store,env,fetcher);
   const discordSite=new DiscordSite(store,env,fetcher);
   let stopChat=()=>{};

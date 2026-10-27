@@ -1,3 +1,4 @@
+import {queueUnmatchedSplit} from './discord-monitor.js';
 import {queueDiscordFinish} from './discord-finishes.js';
 import {eligibleTime,eligibleRun} from './minimum-run.js';
 import {queueDiscordReset} from './discord-resets.js';
@@ -165,7 +166,7 @@ export class Store {
       delete a.records;
       // Cancel queued alerts for splits removed by undo; don't retract already delivered pings.
       for (const job of this.list('outbox')) {
-        if (job.attempt === id && job.status === 'pending' && job.type !== 'finish' && !a.splits.some(x => x.index === job.split.index && x.ms === job.split.ms)) {
+        if (job.attempt === id && job.status === 'pending' && !['finish','monitor'].includes(job.type) && !a.splits.some(x => x.index === job.split.index && x.ms === job.split.ms)) {
           job.status = 'cancelled'; this.put('outbox', job.id, job);
         }
       }
@@ -174,7 +175,10 @@ export class Store {
         // Alerts match the split name shown on the site (aliases resolved) or the runner's own split name.
         const resolved = resolveSplits(a.profile, a.splits, { finished: a.phase === 'Ended' && a.complete });
         for (const [i, split] of resolved.entries()) {
-          if(a.phase==='Ended' && a.complete && split.index===a.splits.length-1)continue;
+          if(a.phase==='Ended' && a.complete && split.index===a.splits.length-1){
+            if(!this.list('outbox').some(j=>j.type==='finish'&&j.attempt===a.id))queueUnmatchedSplit(this,p,a,split);
+            continue;
+          }
           if(!eligibleTime(split.ms))continue;
           if (previousSplits.some(x => x.index === split.index && x.ms === split.ms)) continue;
           if(a.handoverSplits.some(x=>x.index===split.index&&x.ms===split.ms))continue;
@@ -194,6 +198,7 @@ export class Store {
               split, channel: sub.channel, role: sub.role, status: 'pending', tries: 0, nextTry: now, createdAt: now,
               content: `${p.name} | ${profileLabel(a.profile)}\n${label}: ${runTime(split.ms,split.igtMs,a.profile,a.realTime?.splits.find(v=>v.index===split.index)?.ms)}\n${comparison}${!confirmed && a.benchmark ? '\nBenchmark source: ' + a.benchmark.source : ''}` });
           }
+          queueUnmatchedSplit(this,p,a,split);
         }
       }
       this.saveAttempt(a); this.savePlayer(p);

@@ -250,3 +250,31 @@ test('completion alerts exclude practice, private, incomplete and replayed finis
   assert.equal(store.list('outbox').filter(j=>j.type==='finish').length,0,variant);
  }
 });
+
+test('monitor copies successful split/reset/finish alerts silently without recursion',async t=>{
+ const {store,player}=fixture(t);store.discordMonitorChannel='999999';
+ store.subscribe({guild:'123456',channel:'234567',role:'345678',player:'*',profile:P,split:'Bow',mode:'milestone'});
+ const messages=[];
+ const fetcher=async(url,options)=>{if(url.endsWith('/emojis'))return {ok:true,json:async()=>[]};messages.push({url,body:JSON.parse(options.body)});return {ok:true,json:async()=>({id:String(100000000+messages.length)})};};
+ store.ingest(player.id,event());await deliverAlerts(store,'test',fetcher);
+ store.ingest(player.id,event({attemptId:'idle-001',phase:'NotRunning',index:0,elapsedMs:0,splits:[],resetEvent:true}));await deliverAlerts(store,'test',fetcher);
+ store.ingest(player.id,event({attemptId:'attempt-002',phase:'Ended',complete:true,index:1,elapsedMs:600000,splits:[{index:0,name:'End',ms:600000}]}));await deliverAlerts(store,'test',fetcher);
+ const copies=messages.filter(m=>m.url.includes('/999999/'));
+ assert.equal(copies.length,3);assert.match(copies[0].body.content,/Bow:/);assert.match(copies[1].body.content,/Reset at/);assert.match(copies[2].body.content,/Run completed:/);
+ for(const m of copies){assert.deepEqual(m.body.allowed_mentions,{parse:[],roles:[],users:[],replied_user:false});assert.equal(m.body.message_reference,undefined);}
+ await deliverAlerts(store,'test',fetcher);assert.equal(messages.length,6);
+});
+
+test('monitor includes unmatched splits once and retries independently of original alert',async t=>{
+ const {store,player}=fixture(t);store.discordMonitorChannel='999999';
+ const messages=[];let fail=true;
+ const fetcher=async(url,options)=>{messages.push({url,body:JSON.parse(options.body)});if(url.includes('/999999/')&&fail)return {ok:false,status:500};return {ok:true,json:async()=>({id:'100000001'})};};
+ store.ingest(player.id,event());store.ingest(player.id,event({sequence:2}));
+ assert.equal(store.list('outbox').length,1);await deliverAlerts(store,'test',fetcher);
+ assert.match(messages[0].body.content,/no qualifying alert/);
+ fail=false;const job=store.list('outbox')[0];job.nextTry=NOW;store.put('outbox',job.id,job);await deliverAlerts(store,'test',fetcher);assert.equal(store.list('outbox')[0].status,'sent');
+ store.subscribe({guild:'123456',channel:'234567',player:'*',profile:P,split:'Rocket',mode:'milestone'});
+ store.ingest(player.id,event({sequence:3,index:2,elapsedMs:600000,splits:[{index:0,name:'Bow',ms:283000},{index:1,name:'Rocket',ms:600000}]}));
+ await deliverAlerts(store,'test',fetcher);
+ assert.equal(messages.filter(m=>m.url.includes('/234567/')).length,1);assert.equal(messages.filter(m=>/Rocket:/.test(m.body.content)).length,2);
+});
