@@ -4,6 +4,9 @@ import {runTime} from './reply-format.js';
 
 export function queueDiscordFinish(store,p,a,previous){
  const now=store.clock();
+ // An undo invalidates the pending result even if the same attempt later ends again.
+ for(const job of store.list('outbox'))if(job.type==='finish'&&job.record&&job.status==='pending'&&job.player===p.id&&
+   (job.attempt!==a.id||a.phase!=='Ended'||!a.complete||a.elapsedMs!==job.split.ms))store.put('outbox',job.id,{...job,status:'cancelled'});
  if(a.phase!=='Ended'||!a.complete||a.practice||!p.public||a.suppressAlerts||!eligibleTime(a.elapsedMs)||now-a.observedAt>30000)return;
  const key=profileKey(a.profile);
  const saved=store.get('metadata',`saved-records:${p.id}:${key}`);
@@ -23,7 +26,7 @@ export function queueDiscordFinish(store,p,a,previous){
  for(const [channel,subscriptions] of channels){
   const id=`${a.id}:finish:channel:${channel}`;
   if(store.get('outbox',id))continue;
-  store.put('outbox',id,{id,type:'finish',attempt:a.id,player:p.id,subscription:subscriptions[0],subscriptions,channel,record,pb,wr,split:{ms:a.elapsedMs},status:'pending',tries:0,nextTry:now,createdAt:now,
+  store.put('outbox',id,{id,type:'finish',attempt:a.id,player:p.id,subscription:subscriptions[0],subscriptions,channel,record,pb,wr,split:{ms:a.elapsedMs},status:'pending',tries:0,nextTry:now+(record?30000:0),createdAt:now,
    content:`${p.name} | ${profileLabel(a.profile)}\n${wr?'WR TIME BEATEN'+(pb?' / NEW PB':''):pb?'NEW PB':'Run completed'}: ${runTime(a.elapsedMs,a.igtMs,a.profile,a.realTime?.elapsedMs)}`});
  }
 }

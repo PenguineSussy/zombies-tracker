@@ -52,7 +52,7 @@ export function queueAnnouncements(store,p,a,previous) {
     if(c.player===p.id?c.announcements?.[event.type]!==true:event.type!=='wr'||c.announcements?.communityWr!==true)continue;
     const id=`chat-announcement:${c.provider}:${c.target}:${a.id}:${event.type}:${event.split.index}`;
     if(store.get('metadata',id))continue;
-    store.put('metadata',id,{...event,id,kind:'chat-announcement',provider:c.provider,target:c.target,channelId:c.channelId,player:p.id,recipient:c.player,attempt:a.id,profile:a.profile,runner:p.name,status:'pending',dueAt:now+15000,createdAt:now});
+    store.put('metadata',id,{...event,id,kind:'chat-announcement',provider:c.provider,target:c.target,channelId:c.channelId,player:p.id,recipient:c.player,attempt:a.id,profile:a.profile,runner:p.name,status:'pending',dueAt:now+(event.type==='gold'?15000:30000),createdAt:now});
   }
 }
 
@@ -66,7 +66,7 @@ export async function deliverAnnouncements(store,provider,send) {
   const now=store.clock();
   // One message per pass/provider. Persistent claim avoids duplicate posts after
   // restart or an ambiguous network response; failed sends require no blind retry.
-  for(const j of jobs(store).filter(j=>j.provider===provider&&j.status==='pending'&&j.dueAt<=now).sort((a,b)=>a.dueAt-b.dueAt)) {
+  for(const j of jobs(store).filter(j=>j.provider===provider&&j.status==='pending'&&j.dueAt<=now&&(j.type==='gold'||now-j.createdAt>=30000)).sort((a,b)=>a.dueAt-b.dueAt)) {
     const p=store.get('players',j.player),a=store.get('attempts',j.attempt),c=store.list('metadata').find(c=>c.kind==='chat-connection'&&c.provider===provider&&c.player===j.recipient&&c.target===j.target&&c.channelId===j.channelId&&c.connected);
     const valid=eligibleRun(a)&&eligibleTime(j.split?.ms)&&p?.public&&p.activeAttempt===j.attempt&&now-p.lastSeen<=30000&&a&&!a.closed&&!a.practice&&!a.suppressAlerts&&a.splits.some(s=>matching(s,j.split))&&(j.type!=='gold'||segment(a,j.split)===j.ms)&&c?.connected&&c.enabled&&c.target===j.target&&c.channelId===j.channelId&&(j.recipient===j.player?c.announcements?.[j.type]===true:j.type==='wr'&&c.announcements?.communityWr===true)&&now-j.createdAt<=120000&&(j.type==='gold'||(a.phase==='Ended'&&a.complete&&a.elapsedMs===j.ms));
     if(!valid){store.put('metadata',j.id,{...j,status:'cancelled'});continue;}

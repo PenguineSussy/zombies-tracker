@@ -20,6 +20,7 @@ namespace LiveSplit.ZombiesTracker
         readonly HttpClient http;
         readonly Uri endpoint;
         readonly CancellationTokenSource cancel = new CancellationTokenSource();
+        readonly Dictionary<string,string> unchanged = new Dictionary<string,string>();
         readonly Dictionary<string,string> sent = new Dictionary<string,string>();
         DateTime next = DateTime.MinValue;
         Task worker;
@@ -84,6 +85,10 @@ namespace LiveSplit.ZombiesTracker
                     foreach(var file in Files(folder)) {
                         if(cancel.IsCancellationRequested)return;
                         try {
+                            var info = new FileInfo(file);
+                            string stamp = info.Length + ":" + info.LastWriteTimeUtc.Ticks;
+                            string known;
+                            if (unchanged.TryGetValue(file, out known) && known == stamp) { synced++; continue; }
                             var body=json.Serialize(ReadPB(file,aliases));string previous;
                             if(!sent.TryGetValue(file,out previous)||previous!=body) {
                                 using(var content=new StringContent(body,System.Text.Encoding.UTF8,"application/json"))
@@ -92,6 +97,9 @@ namespace LiveSplit.ZombiesTracker
                                 }
                                 sent[file]=body;
                             }
+                            // Do not cache files changed during reading/uploading, or failed uploads.
+                            info.Refresh();
+                            if (stamp == info.Length + ":" + info.LastWriteTimeUtc.Ticks) unchanged[file] = stamp;
                             synced++;
                         } catch(OperationCanceledException){if(!disposed)Status="PB upload timed out; retrying next scan.";return;}
                         catch(Exception ex){skipped.Add(Path.GetFileName(file)+": "+ex.Message);}

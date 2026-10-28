@@ -63,13 +63,13 @@ export function discordInteraction(store, interaction) {
 export async function deliverAlerts(store, token, fetcher = fetch) {
   if (!token) return;
   const now = store.clock();
-  for (const job of store.list('outbox').filter(j => j.type !== 'monitor' && j.status === 'pending' && j.nextTry <= now).slice(0,10)) {
+  for (const job of store.list('outbox').filter(j => j.type !== 'monitor' && j.status === 'pending' && j.nextTry <= now && (!j.record || now-j.createdAt>=30000)).slice(0,10)) {
     const p = store.get('players',job.player), sub = store.get('subscriptions',job.subscription);
     const resetAttempt=job.type==='reset'?store.get('attempts',job.attempt):null;
     const finishAttempt=job.type==='finish'?store.get('attempts',job.attempt):null;
     const finishSubs=job.type==='finish'?(job.subscriptions??[job.subscription]).map(id=>store.get('subscriptions',id)).filter(s=>s?.enabled&&s.channel===job.channel&&(s.player==='*'||s.player===p?.id)&&(job.record||profileKey(s.profile)===profileKey(finishAttempt?.profile??{}))):[];
     const roles=job.type==='finish'?[...new Set(finishSubs.filter(s=>!job.record||s.profile.map===finishAttempt?.profile?.map).map(s=>s.role).filter(Boolean))]:job.role?[job.role]:[];
-    const validAttempt=job.type==='finish'?finishAttempt?.phase==='Ended'&&finishAttempt.complete&&!finishAttempt.practice:job.type==='reset'?resetAttempt?.resetObserved===true:p?.activeAttempt===job.attempt;
+    const validAttempt=job.type==='finish'?finishAttempt?.phase==='Ended'&&finishAttempt.complete&&!finishAttempt.practice&&(!job.record||(!finishAttempt.closed&&!finishAttempt.suppressAlerts&&p?.activeAttempt===job.attempt&&finishAttempt.elapsedMs===job.split.ms)):job.type==='reset'?resetAttempt?.resetObserved===true:p?.activeAttempt===job.attempt;
     if (!eligibleTime(job.split?.ms) || !p?.public || !(job.type==='finish'?finishSubs.length:sub?.enabled) || !validAttempt || (!['reset','finish'].includes(job.type) && now - job.createdAt > 120000)) { job.status='cancelled'; store.put('outbox',job.id,job); continue; }
     const live=verifiedLiveStreams(store,p,now)[0];
     const streamLine=job.type==='reset'?'':live?'\nWatch live: '+live.url:'\nCurrently Offline';

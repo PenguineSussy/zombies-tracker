@@ -293,7 +293,7 @@ test('PB/WR finishes reach configured channels without a matching map and only m
  store.ingest(player.id,event());
  const finish=event({sequence:2,phase:'Ended',complete:true,index:2,elapsedMs:600000,splits:[{index:0,name:'Bow',ms:283000},{index:1,name:'End',ms:600000}]});
  store.ingest(player.id,finish);store.ingest(player.id,{...finish,sequence:3});
- const jobs=store.list('outbox').filter(j=>j.type==='finish');assert.equal(jobs.length,2);
+ const jobs=store.list('outbox').filter(j=>j.type==='finish');assert.equal(jobs.length,2);store.clock=()=>NOW+30000;
  const messages=[];await deliverAlerts(store,'test',async(url,o)=>{messages.push({url,...JSON.parse(o.body)});return {ok:true,json:async()=>({id:'100000001'})};});
  assert.equal(messages.length,2);
  for(const m of messages)assert.match(m.content,/WR TIME BEATEN \/ NEW PB/);
@@ -310,5 +310,23 @@ test('ordinary finishes do not broadcast to other maps and replayed record finis
  if(!replay)store.ingest(player.id,event());
  store.ingest(player.id,event({sequence:2,phase:'Ended',complete:true,index:2,elapsedMs:600000,splits:[{index:0,name:'Bow',ms:283000},{index:1,name:'End',ms:600000}]}));
  assert.equal(store.list('outbox').filter(j=>j.type==='finish').length,0);
+ }
+});
+
+test('Discord PB/WR wait 30 seconds and cancel undo/reset instead of announcing accidental finishes',async t=>{
+ for(const action of ['none','undo','reset']){
+ const {store,player}=fixture(t);let now=NOW;store.clock=()=>now;
+ store.subscribe({guild:'123456',channel:'234567',player:'*',profile:P,split:'End',mode:'milestone'});
+ store.put('metadata','folder-pb:'+player.id+':'+profileKey(P),{pbMs:700000});
+ store.put('metadata','zwr:'+profileKey(P),{ms:650000});
+ store.ingest(player.id,event());
+ const finish=event({sequence:2,phase:'Ended',complete:true,index:2,elapsedMs:600000,splits:[{index:0,name:'Bow',ms:283000},{index:1,name:'End',ms:600000}]});
+ store.ingest(player.id,finish);
+ const sent=[];const deliver=()=>deliverAlerts(store,'test',async(_,o)=>{sent.push(JSON.parse(o.body));return {ok:true,json:async()=>({id:'100000001'})};});
+ await deliver();now+=29999;await deliver();assert.equal(sent.length,0);
+ if(action==='undo')store.ingest(player.id,event({sequence:3,observedAt:now}));
+ if(action==='reset')store.ingest(player.id,event({attemptId:'reset-001',phase:'NotRunning',index:-1,elapsedMs:0,splits:[],observedAt:now}));
+ now++;await deliver();assert.equal(sent.length,action==='none'?1:0);
+ if(action==='undo'){store.ingest(player.id,{...finish,sequence:4,observedAt:now});now+=30000;await deliver();assert.equal(sent.length,0);}
  }
 });

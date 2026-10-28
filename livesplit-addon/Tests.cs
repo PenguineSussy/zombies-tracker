@@ -296,8 +296,12 @@ class Tests
                 layout.LayoutComponents.Add(new LiveSplit.UI.Components.LayoutComponent("LiveSplit.ZombiesTracker.dll",settingsProbe));
                 var saver=new LiveSplit.UI.LayoutSavers.XMLLayoutSaver();
                 int hash=saver.CreateLayoutNode(null,null,layout);
+                var cachedOptions=Field<string>(settingsProbe,"settingsJson");
+                var cachedAliases=Field<List<SplitLink>>(settingsProbe,"migratedAliases");
                 for(int i=0;i<60;i++) if(hash!=saver.CreateLayoutNode(null,null,layout)) throw new Exception("Layout hash changed on render poll");
                 Check(true,"LiveSplit layout hash stable across 60 render polls");
+                Check(ReferenceEquals(cachedOptions,Field<string>(settingsProbe,"settingsJson")),"render polls reuse serialized settings");
+                Check(ReferenceEquals(cachedAliases,Field<List<SplitLink>>(settingsProbe,"migratedAliases")),"render polls preserve migrated aliases");
                 settingsDoc.DocumentElement["ProtectedToken"].InnerText=Convert.ToBase64String(Protection.Protect(Encoding.UTF8.GetBytes("replacement-test-key")));
                 settingsProbe.SetSettings(settingsDoc.DocumentElement);
                 Check(hash!=saver.CreateLayoutNode(null,null,layout),"changed key invalidates settings hash");
@@ -410,7 +414,11 @@ class Tests
                         Check(editorClone.GetSettings(new XmlDocument())["Enabled"].InnerText == "True", "editor clone keeps enabled settings without claiming uploader");
                     }
                     UseLayout(state,component);component.Update(null,state,0,0,LiveSplit.UI.LayoutMode.Vertical);
-                    Pump(200); model.Start(); Pump(100);
+                    Pump(200); model.Start();
+                    Check(Field<DateTime>(component,"lastRecords")==DateTime.MinValue,"start event defers full history scan");
+                    typeof(TrackerComponent).GetMethod("Capture",BindingFlags.NonPublic|BindingFlags.Instance).Invoke(component,new object[]{false,false});
+                    Check(Field<DateTime>(component,"lastRecords")!=DateTime.MinValue && !Field<bool>(component,"recordsPending"),"heartbeat captures deferred records");
+                    Pump(100);
                     var idField=typeof(TrackerComponent).GetField("id",BindingFlags.NonPublic|BindingFlags.Instance);
                     string beforeSettings=(string)idField.GetValue(component);
                     component.SetSettings(component.GetSettings(new XmlDocument()));

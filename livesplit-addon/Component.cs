@@ -14,7 +14,7 @@ using LiveSplit.Model;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;
 
-[assembly: AssemblyVersion("1.1.1.0")]
+[assembly: AssemblyVersion("1.1.2.0")]
 [assembly: ComponentFactory(typeof(LiveSplit.ZombiesTracker.Factory))]
 
 namespace LiveSplit.ZombiesTracker
@@ -63,7 +63,12 @@ namespace LiveSplit.ZombiesTracker
         DateTime lastHeartbeat = DateTime.MinValue, lastRecords = DateTime.MinValue;
         bool first = true, forceNew = true, disposed, suppressNext = true;
         bool activated;
+        bool recordsPending;
         object observedRun;
+        string settingsJson;
+        int settingsHash;
+        List<SplitLink> migratedAliases = new List<SplitLink>();
+        string SerializedOptions { get { return settingsJson ?? (settingsJson = json.Serialize(options)); } }
         string protectedToken = "";
         string protectedTokenFor = "";
         public override string ComponentName { get { return "Zombies Tracker"; } }
@@ -72,6 +77,7 @@ namespace LiveSplit.ZombiesTracker
             this.state = state;
             observedRun = state.Run;
             runtime = continuity.GetValue(state, s => new Continuity());
+            settingsHash = SerializedOptions.GetHashCode();
             panel = new SettingsPanel(Apply, ClearQueue);
             RefreshRunContext();
             panel.LoadOptions(options);
@@ -157,7 +163,7 @@ namespace LiveSplit.ZombiesTracker
                 var profile = new RunProfile { map = detected.Map, category = category, players = 1, timing = Detector.UsesIGT(detected.Map)?"GameTime":"RealTime", game = Detector.GameForMap(detected.Map) };
                 string bridgeStatus;
                 var autosplitNames = AutosplitBridge.Read(state, detected.Map, out bridgeStatus);
-                var activeAliases=ManualAliases.Migrate(options.Aliases).Where(r=>r.Map==detected.Map && r.Category==category).ToList();
+                var activeAliases=migratedAliases.Where(r=>r.Map==detected.Map && r.Category==category).ToList();
                 var linkedNames = ManualAliases.Resolve(activeAliases, detected.Map, state.Run.Select(s => s.Name).ToArray(), autosplitNames);
                 bool hasManual = activeAliases.Any(r=>r.Map==detected.Map && state.Run.Any(segment=>Detector.Normalize(segment.Name)==Detector.Normalize(r.Source)));
                 string fingerprint = json.Serialize(profile) + "|" + options.Practice + "|" + string.Join("|", state.Run.Select(s => s.Name)) + "|" + string.Join("|",linkedNames);
@@ -168,18 +174,21 @@ namespace LiveSplit.ZombiesTracker
                 bool fresh = forceNew || identity != fingerprint || (lastPhase != phase && (idle || lastPhase == "NotRunning"));
                 if (fresh) { id = Guid.NewGuid().ToString(); sequence = 0; identity = fingerprint; frozen = idle ? null : fingerprint; }
                 var snapshot = Protocol.Capture(state, profile, id, sequence + 1, options.Practice, suppressNext || first);
-                if (!options.Practice && (first || fresh || ((idle || state.CurrentPhase == TimerPhase.Ended) && (transition || (DateTime.UtcNow - lastRecords).TotalSeconds >= 60))))
+                if (!options.Practice && (first || fresh || ((idle || state.CurrentPhase == TimerPhase.Ended) && (transition || (DateTime.UtcNow - lastRecords).TotalSeconds >= 60)))) recordsPending = true;
+                // Keep history traversal out of synchronous Start/Split/Reset event handlers.
+                // The next heartbeat sends saved comparisons without delaying the timer action.
+                if (!options.Practice && recordsPending && !transition)
                 {
                     snapshot.records = Protocol.ReadRecords(state.Run, profile.timing=="GameTime"?TimingMethod.GameTime:TimingMethod.RealTime);
                     if(snapshot.realTime!=null) snapshot.realTime.records=Protocol.ReadRecords(state.Run,TimingMethod.RealTime);
-                    lastRecords = DateTime.UtcNow;
+                    lastRecords = DateTime.UtcNow; recordsPending = false;
                 }
                 snapshot.autosplitNames = autosplitNames;
                 snapshot.manualNames = hasManual ? state.Run.Select(segment=> { var row=activeAliases.FirstOrDefault(r=>r.Map==detected.Map && Detector.Normalize(r.Source)==Detector.Normalize(segment.Name)); return row==null?null:row.Target; }).ToArray() : null;
                 snapshot.resetEvent = resetEvent;
                 uploader.Enqueue(snapshot);
                 sequence++; first = false; forceNew = false; suppressNext = false; lastPhase = phase; lastHeartbeat = DateTime.UtcNow;
-                runtime.Run=state.Run; runtime.Config=json.Serialize(options); runtime.Id=id; runtime.Identity=identity; runtime.LastPhase=lastPhase; runtime.Frozen=frozen;
+                runtime.Run=state.Run; runtime.Config=SerializedOptions; runtime.Id=id; runtime.Identity=identity; runtime.LastPhase=lastPhase; runtime.Frozen=frozen;
                 runtime.Sequence=sequence; runtime.First=first; runtime.ForceNew=forceNew; runtime.SuppressNext=suppressNext;
                 panel.StatusText = uploader.Status + " / " + uploader.Count + " pending / " + phase + " / " + bridgeStatus;
             }
@@ -189,19 +198,20 @@ namespace LiveSplit.ZombiesTracker
         }
         void Apply(AddonOptions value)
         {
-            if (json.Serialize(value) == json.Serialize(options)) return;
+            if (json.Serialize(value) == SerializedOptions) return;
             if (state.CurrentPhase == TimerPhase.Running || state.CurrentPhase == TimerPhase.Paused)
                 throw new InvalidOperationException("Reset or finish the run before changing addon settings.");
             Configure(value);
         }
         void Configure(AddonOptions value)
         {
-            if (json.Serialize(value) == json.Serialize(options)) return;
+            if (json.Serialize(value) == SerializedOptions) return;
             UploadQueue.ValidateServer(value.Server);
             value.Aliases = ManualAliases.Validate(value.Aliases);
+            var nextAliases = ManualAliases.Migrate(value.Aliases);
             if (uploader != null) { uploader.Dispose(); uploader = null; }
             if(folderSync!=null){folderSync.Dispose();folderSync=null;}
-            options = value;
+            options = value; settingsJson = null; settingsHash = SerializedOptions.GetHashCode(); migratedAliases = nextAliases;
             forceNew = true; first = true; suppressNext = true; frozen = null;
         }
         void EnsureUploader()
@@ -223,7 +233,7 @@ namespace LiveSplit.ZombiesTracker
         public override Control GetSettingsControl(LayoutMode mode) { RefreshRunContext(); return panel; }
         // LiveSplit polls this during rendering. Do not apply UI edits, encrypt a
         // key, or change runtime state from its layout-change detection path.
-        public int GetSettingsHashCode() { return (json.Serialize(options) + "|" + panel.AliasMap).GetHashCode(); }
+        public int GetSettingsHashCode() { return settingsHash ^ panel.AliasMap.GetHashCode(); }
         public override XmlNode GetSettings(XmlDocument doc)
         {
             // LiveSplit serializes/clones components while editing layouts. Never start
@@ -264,7 +274,7 @@ namespace LiveSplit.ZombiesTracker
                 protectedTokenFor = value.Token;
                 Configure(value);
             }
-            catch (Exception ex) { value.Enabled = false; options = value; panel.StatusText = "Settings need attention: " + ex.Message; }
+            catch (Exception ex) { value.Enabled = false; options = value; settingsJson = null; settingsHash = SerializedOptions.GetHashCode(); migratedAliases = new List<SplitLink>(); panel.StatusText = "Settings need attention: " + ex.Message; }
             RefreshRunContext();
             panel.LoadOptions(value);
             panel.RestoreAliasMap(read("AliasEditorMap", ""));
@@ -283,7 +293,7 @@ namespace LiveSplit.ZombiesTracker
                 return;
             }
             activated = true;
-            if(ReferenceEquals(runtime.Run,state.Run) && runtime.Config == json.Serialize(options))
+            if(ReferenceEquals(runtime.Run,state.Run) && runtime.Config == SerializedOptions)
             {
                 id=runtime.Id; identity=runtime.Identity; lastPhase=runtime.LastPhase; frozen=runtime.Frozen;
                 sequence=runtime.Sequence; first=runtime.First; forceNew=runtime.ForceNew; suppressNext=runtime.SuppressNext;

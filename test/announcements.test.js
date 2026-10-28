@@ -68,7 +68,7 @@ test('other chats receive WR only with explicit community opt-in; never foreign 
  for(const [player,enabled] of [['other',true],['quiet',false]])f.store.put('metadata',`chat-connection:twitch:${player}`,{...f.connection,player,target:player,channelId:player,announcements:{gold:true,pb:true,wr:true,communityWr:enabled}});
  f.send({records:f.records});f.finish();
  assert.deepEqual(f.jobs().filter(j=>j.recipient==='other').map(j=>j.type),['wr']);assert.equal(f.jobs().filter(j=>j.recipient==='quiet').length,0);
- f.advance(15000);await f.deliver();await f.deliver();
+ f.advance(30000);await f.deliver();await f.deliver();
  assert.equal(f.sent.filter(x=>x.target==='other').length,1);assert.match(f.sent.find(x=>x.target==='other').text,/@Runner WR TIME BEATEN/);
  assert.ok(!f.sent.some(x=>x.target==='other'&&/GOLD|NEW PB/.test(x.text)));
 });
@@ -79,4 +79,16 @@ test('community opt-out and changed segment predecessor cancel delayed announcem
  f.split({phase:'Ended',index:2,elapsedMs:1800000,splits:[{index:0,name:'Rocket',ms:330000},{index:1,name:'End',ms:1800000}]});
  f.advance(15000);await f.deliver();await f.deliver();
  assert.ok(!f.sent.some(x=>x.target==='other'));assert.equal(f.jobs().find(j=>j.type==='gold'&&j.split.index===1).status,'cancelled');
+});
+
+test('Twitch and YouTube PB/WR wait 30 seconds and cancel undone finishes',async t=>{
+ for(const provider of ['twitch','youtube'])for(const type of ['pb','wr'])for(const undo of [false,true]){
+  const f=setup(t,{provider,announcements:{[type]:true}});
+  f.send({records:f.records});f.finish();
+  const sent=[];const deliver=()=>deliverAnnouncements(f.store,provider,async(_,text)=>sent.push(text));
+  await deliver();f.advance(29999);await deliver();assert.equal(sent.length,0,provider+' early '+type);
+  if(undo)f.split();else f.finish();
+  f.advance(1);await deliver();assert.equal(sent.length,undo?0:1,provider+' after wait '+type);
+  if(undo){f.finish();f.advance(30000);await deliver();assert.equal(sent.length,0,'undo cannot resurrect queued result');}
+ }
 });
