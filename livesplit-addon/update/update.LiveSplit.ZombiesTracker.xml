@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <updates>
-  <update version="1.1.2">
-    <changelog><change>Cache settings and alias presets to reduce repeated UI work.</change><change>Defer saved-history scans until the next heartbeat after timer actions.</change><change>Skip unchanged saved PB files during folder scans.</change></changelog>
+  <update version="1.1.3">
+    <changelog><change>Wait for completed splits and current timer values to agree before queuing an upload.</change><change>Preserve valid negative countdown checkpoints.</change></changelog>
     <files>
       <file path="Components/LiveSplit.ZombiesTracker.dll" status="changed" />
     </files>

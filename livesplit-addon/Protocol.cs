@@ -101,7 +101,17 @@ namespace LiveSplit.ZombiesTracker
                 for(int i=0;i<index;i++) if(state.Run[i].SplitTime.RealTime.HasValue) secondary.splits.Add(new Checkpoint {index=i,name=Clean(state.Run[i].Name),ms=(long)Math.Round(state.Run[i].SplitTime.RealTime.Value.TotalMilliseconds)});
                 snapshot.realTime=secondary;
             }
+            ValidateCheckpointTimes(snapshot.splits, snapshot.elapsedMs, "primary timer");
+            if (snapshot.realTime != null) ValidateCheckpointTimes(snapshot.realTime.splits, snapshot.realTime.elapsedMs, "RTA");
             return snapshot;
+        }
+        static void ValidateCheckpointTimes(List<Checkpoint> splits, long elapsed, string clock) {
+            long previous = -3600000;
+            foreach (var split in splits) {
+                if (split.ms < previous || split.ms > elapsed || split.ms > 604800000)
+                    throw new InvalidOperationException("Waiting for LiveSplit " + clock + " and completed splits to agree. No inconsistent update was queued.");
+                previous = split.ms;
+            }
         }
         static long? Milliseconds(TimeSpan? value)
         {

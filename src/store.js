@@ -103,7 +103,19 @@ export class Store {
   }
   attempts(player) { return this.db.prepare('SELECT body FROM attempts WHERE player=?').all(player).map(decode).filter(a=>!a.supersededBy).map(displayAttempt); }
   ingest(playerId, raw, provider='direct') {
-    const s = snapshot(raw);
+    let s;
+    try { s = snapshot(raw); }
+    catch (error) {
+      // A replayed addon snapshot can contain an old split after its timer was
+      // reset. Preserve it privately; never repair its times or ingest it as a run.
+      if(provider !== 'direct' || raw?.suppressAlerts !== true || !raw?.addonVersion ||
+         !/^Invalid split (time|IGT)/.test(error.message)) throw error;
+      snapshot(raw, undefined, true); // All non-temporal validation still applies.
+      check(this.get('players',playerId), 'Unknown runner.',404);
+      const archiveId='rejected-upload:'+createHash('sha256').update(JSON.stringify([playerId,raw.attemptId,raw.sequence])).digest('hex');
+      if(!this.get('metadata',archiveId))this.put('metadata',archiveId,{id:archiveId,kind:'rejected-addon-upload',player:playerId,at:this.clock(),reason:error.message,snapshot:raw});
+      return {accepted:false,reason:'invalid-timing-archived'};
+    }
     return this.transaction(() => {
       const now = this.clock(), p = this.get('players', playerId);
       check(p, 'Unknown runner.', 404);

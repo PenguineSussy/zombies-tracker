@@ -29,3 +29,17 @@ test('queued countdown uploads drain into a positive run without countdown recor
  assert.equal(store.view(player.id).attempt.splits.length,2);
  assert.equal(store.view(player.id).attempt.elapsedMs,10000);
 });
+test('replayed future splits are archived privately and do not block subsequent valid uploads',t=>{
+ const store=new Store();t.after(()=>store.close());const {player}=store.register('ReplayRunner');
+ const bad=upload({addonVersion:'1.1.2',suppressAlerts:true,splits:[{index:0,name:'Box hit',ms:58300}]});
+ assert.equal(store.ingest(player.id,bad).reason,'invalid-timing-archived');
+ assert.equal(store.ingest(player.id,bad).reason,'invalid-timing-archived');
+ const archive=store.list('metadata').filter(m=>m.kind==='rejected-addon-upload');
+ assert.equal(archive.length,1);assert.deepEqual(archive[0].snapshot,bad);
+ assert.equal(store.attempts(player.id).length,0);assert.equal(store.list('outbox').length,0);assert.equal(publicActivity(store).length,0);
+ assert.equal(store.ingest(player.id,upload({addonVersion:'1.1.2',suppressAlerts:true,sequence:2,elapsedMs:60000,splits:[{index:0,name:'Box hit',ms:58300}]})).accepted,true);
+ assert.throws(()=>store.ingest(player.id,{...bad,suppressAlerts:false}),/Invalid split time/);
+ assert.throws(()=>store.ingest(player.id,{...bad,splits:[{index:0,name:'Box hit',ms:-3600001}]}),/Invalid split time/);
+ assert.throws(()=>store.ingest(player.id,{...bad,profile:{...profile,map:'unsupported'}}),/supported/);
+ assert.equal(store.list('metadata').filter(m=>m.kind==='rejected-addon-upload').length,1);
+});

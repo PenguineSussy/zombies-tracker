@@ -342,6 +342,14 @@ class Tests
             var bo2Sample=Protocol.Capture(state,bo2Profile,"bo2-test",1,false,false);
             Check(bo2Sample.elapsedMs==7000 && bo2Sample.splits[0].ms==7000,"BO2 primary and split use Game Time");
             Check(bo2Sample.realTime!=null && bo2Sample.realTime.splits[0].ms==sample.splits[0].ms,"BO2 retains paired RTA");
+            var originalSplit=state.Run[0].SplitTime;
+            state.SetGameTime(TimeSpan.FromMilliseconds(-5950));
+            state.Run[0].SplitTime=new Time {RealTime=originalSplit.RealTime,GameTime=TimeSpan.FromMilliseconds(58300)};
+            bool timingBlocked=false;try { Protocol.Capture(state,bo2Profile,"stale-iw-split",1,false,false); } catch(InvalidOperationException ex) { timingBlocked=ex.Message.Contains("No inconsistent update was queued"); }
+            Check(timingBlocked,"positive checkpoint with negative timer is not queued");
+            state.Run[0].SplitTime=new Time {RealTime=originalSplit.RealTime,GameTime=TimeSpan.FromMilliseconds(-58300)};
+            Check(Protocol.Capture(state,bo2Profile,"negative-iw-split",1,false,false).splits[0].ms==-58300,"valid negative checkpoint preserved");
+            state.Run[0].SplitTime=originalSplit;state.SetGameTime(TimeSpan.FromMilliseconds(7000));
             Check(Protocol.ReadRecords(historyRun,TimingMethod.GameTime).pbMs==1500000 && Protocol.ReadRecords(historyRun,TimingMethod.GameTime).pbRealTimeMs==1625000,"BO2 PB primary IGT paired RTA");
             Check(SplitAliases.Known("bo2-mob-of-the-dead","Flight 3")=="Fly 3" && SplitAliases.Known("bo2-origins","Freedom")=="End","BO2 aliases use Fly and End");
             Check(Detector.Detect("", "Origins", "", new Dictionary<string,string>(),new string[0],"",null,"bo2").Map=="bo2-origins","explicit BO2 selector");
