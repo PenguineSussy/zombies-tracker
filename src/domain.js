@@ -86,7 +86,7 @@ export function time(ms) {
   const fraction = Math.abs(ms) % 1000;
   return `${sign}${h ? h + ':' + String(m).padStart(2, '0') : m}:${String(s).padStart(2, '0')}${fraction ? '.' + String(fraction).padStart(3, '0').replace(/0+$/, '') : ''}`;
 }
-export function snapshot(input) {
+export function snapshot(input, clockLabel) {
   check(input && typeof input === 'object', 'Snapshot required.');
   check(/^[\w-]{8,80}$/.test(input.attemptId), 'Invalid attempt ID.');
   check(Number.isSafeInteger(input.sequence) && input.sequence >= 0, 'Invalid sequence.');
@@ -100,7 +100,7 @@ export function snapshot(input) {
   let previous = -1, previousTime = -3600000, previousIgt = -3600000;
   const splits = input.splits.map(s => {
     check(Number.isInteger(s.index) && s.index > previous && s.index < input.index, 'Splits must be ordered, unique, and completed.');
-    check(Number.isSafeInteger(s.ms) && s.ms >= -3600000 && s.ms >= previousTime && s.ms <= input.elapsedMs, 'Invalid split time.');
+    check(Number.isSafeInteger(s.ms) && s.ms >= -3600000 && s.ms >= previousTime && s.ms <= input.elapsedMs, `Invalid split time (${clockLabel ?? (input.profile?.timing === 'GameTime' ? 'IGT' : 'RTA')}, split #${s.index + 1}): split=${s.ms}ms, previous=${previousTime}ms, timer=${input.elapsedMs}ms.`);
     previous = s.index; previousTime = s.ms;
     const splitIgt = igt(s.igtMs);
     if (splitIgt != null) {
@@ -118,7 +118,7 @@ export function snapshot(input) {
   if(input.realTime!=null){
     check(result.profile.timing==='GameTime','Secondary RTA is supported only for IGT profiles.');
     check(Array.isArray(input.realTime.splits)&&input.realTime.splits.every(s=>splits.some(p=>p.index===s.index&&p.name===key(s.name))),'Secondary RTA splits must match primary split indices and names.');
-    const secondary=snapshot({...input,igtMs:null,autosplitNames:undefined,manualNames:undefined,realTime:undefined,records:input.realTime.records??undefined,elapsedMs:input.realTime.elapsedMs,splits:input.realTime.splits});
+    const secondary=snapshot({...input,igtMs:null,autosplitNames:undefined,manualNames:undefined,realTime:undefined,records:input.realTime.records??undefined,elapsedMs:input.realTime.elapsedMs,splits:input.realTime.splits}, 'secondary RTA');
     result.realTime={elapsedMs:secondary.elapsedMs,splits:secondary.splits,records:secondary.records??null};
   }
   if(input.addonVersion!=null){check(validAddonVersion(input.addonVersion),'Invalid addon version.');result.addonVersion=input.addonVersion;}

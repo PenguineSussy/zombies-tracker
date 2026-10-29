@@ -14,7 +14,7 @@ test('countdown split validation retains lower bound, ordering and current-timer
  for(const ms of [-3600001,-5949,NaN,1.5])assert.throws(()=>snapshot(upload({splits:[{index:0,name:'Box hit',ms}]})),/Invalid split time/);
  assert.throws(()=>snapshot(upload({index:2,splits:[{index:0,name:'First',ms:-50000},{index:1,name:'Second',ms:-58000}]})),/Invalid split time/);
  assert.throws(()=>snapshot(upload({igtMs:-3600001})),/Invalid IGT/);
- assert.throws(()=>snapshot(upload({realTime:{elapsedMs:-60000,splits:[{index:0,name:'Box hit',ms:-58000}]}})),/Invalid split time/);
+ assert.throws(()=>snapshot(upload({realTime:{elapsedMs:-60000,splits:[{index:0,name:'Box hit',ms:-58000}]}})),/Invalid split time \(secondary RTA, split #1\): split=-58000ms, previous=-3600000ms, timer=-60000ms/);
  assert.equal(snapshot(upload({elapsedMs:-3600000,splits:[{index:0,name:'First',ms:-3600000}]})).splits[0].ms,-3600000);
 });
 test('queued countdown uploads drain into a positive run without countdown records or alerts',t=>{
