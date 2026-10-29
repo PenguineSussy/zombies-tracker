@@ -93,13 +93,14 @@ export function snapshot(input) {
   check(['Running', 'Paused', 'Ended', 'NotRunning'].includes(input.phase), 'Invalid timer phase.');
   check(Number.isInteger(input.index) && input.index >= -1 && input.index <= 500, 'Invalid split index.');
   check(Number.isSafeInteger(input.elapsedMs) && input.elapsedMs >= -3600000 && input.elapsedMs <= 604800000, 'Invalid elapsed time.');
-  const igt = value => { check(value == null || (Number.isSafeInteger(value) && value >= 0 && value <= 604800000), 'Invalid IGT.'); return value ?? null; };
+  const igt = value => { check(value == null || (Number.isSafeInteger(value) && value >= -3600000 && value <= 604800000), 'Invalid IGT.'); return value ?? null; };
   const igtMs = igt(input.igtMs);
   check(Array.isArray(input.splits) && input.splits.length <= 500, 'Invalid splits.');
-  let previous = -1, previousTime = -1, previousIgt = -1;
+  // Countdown checkpoints use the same one-hour negative bound as the timer.
+  let previous = -1, previousTime = -3600000, previousIgt = -3600000;
   const splits = input.splits.map(s => {
     check(Number.isInteger(s.index) && s.index > previous && s.index < input.index, 'Splits must be ordered, unique, and completed.');
-    check(Number.isSafeInteger(s.ms) && s.ms >= 0 && s.ms >= previousTime && s.ms <= input.elapsedMs, 'Invalid split time.');
+    check(Number.isSafeInteger(s.ms) && s.ms >= -3600000 && s.ms >= previousTime && s.ms <= input.elapsedMs, 'Invalid split time.');
     previous = s.index; previousTime = s.ms;
     const splitIgt = igt(s.igtMs);
     if (splitIgt != null) {
