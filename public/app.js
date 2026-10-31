@@ -1,4 +1,4 @@
-import {setupDiscord} from './discord-panel.js';
+import {setupDiscord} from './discord-panel.js?v=1.0.6-bot-only';
 import {streamCandidates,distinctSlots,playerUrl} from './watch.js?v=0.3.0';
 const $=id=>document.getElementById(id);
 let token='', me=null, loginExpiresAt=null, catalog, selected=new URLSearchParams(location.search).get('runner');
