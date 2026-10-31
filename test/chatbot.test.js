@@ -42,10 +42,10 @@ test('cooldowns are channel-specific with a separate global guard',t=>{
  now=8000;assert.equal(c.respond('slow','b','3','!help'),null);assert.ok(c.respond('fast','b','4','!help'));
  now=30000;assert.ok(c.respond('slow','b','5','!help'));
 });
-test('HTTP chatbot endpoints require a runner key and OAuth start sets HttpOnly binding cookie',async t=>{
+test('HTTP chatbot endpoints allow bot-only setup and OAuth start sets HttpOnly binding cookie',async t=>{
  const {store,token}=fixture(t);const app=createApp({store,env});await new Promise(r=>app.server.listen(0,'127.0.0.1',r));t.after(()=>app.stop());
  const base=`http://127.0.0.1:${app.server.address().port}`;
- assert.equal((await fetch(base+'/api/me/chatbot')).status,401);
+ assert.equal((await fetch(base+'/api/me/chatbot')).status,200);
  const r=await fetch(base+'/api/me/chatbot/twitch/connect',{method:'POST',headers:{Authorization:`Bearer ${token}`}});
  assert.equal(r.status,200);assert.match(r.headers.get('set-cookie'),/HttpOnly/);assert.match((await r.json()).url,/id.twitch.tv/);
 });

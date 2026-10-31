@@ -1,3 +1,4 @@
+import {botOwner,forgetBotOwner} from './bot-owners.js';
 import {monitoringChannel} from './discord-monitor.js';
 import {runnerArchived} from './runner-visibility.js';
 import {addonRelease,addonStatus} from './addon-updates.js';
@@ -93,7 +94,7 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
       if(req.method==='POST' && path==='/api/query') {limit(req,'query',60);check(typeof data.command==='string'&&data.command.length<=500,'Command required.');return send({reply:store.answer(data.command)??'Use !help to see commands.'});}
       if(path.startsWith('/api/recovery/discord')) {
         checkBrowserOrigin(req,env);limit(req,'recovery',10);
-        if(req.method==='POST'&&path==='/api/recovery/discord/start'){const result=discordSite.startRecovery(data.username);res.setHeader('Set-Cookie',result.cookie);return send({url:result.url});}
+        if(req.method==='POST'&&path==='/api/recovery/discord/start'){const result=discordSite.startRecovery(data.username);res.setHeader('Set-Cookie',[...(res.getHeader('Set-Cookie')?[res.getHeader('Set-Cookie')]:[]),result.cookie]);return send({url:result.url});}
         if(req.method==='GET'&&path==='/api/recovery/discord/status')return send(discordSite.recoveryReady(req.headers.cookie));
         if(req.method==='POST'&&path==='/api/recovery/discord/reset'){
           const result=discordSite.resetRecovered(req.headers.cookie,data.username),session=createBrowserSession(store,req,result.player);
@@ -113,12 +114,13 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
       if(req.method==='POST'&&path==='/api/login') {limit(req,'login',20);checkBrowserOrigin(req,env);const p=store.authenticate(token);const session=createBrowserSession(store,req,p);res.setHeader('Set-Cookie',browserCookie(session.value,env));return send({expiresAt:session.expiresAt});}
       if(req.method==='POST'&&path==='/api/logout') {checkBrowserOrigin(req,env);clearBrowserSession(store,req);res.setHeader('Set-Cookie',browserCookie('',env,true));return send({signedOut:true});}
       let loginExpiresAt=null;
-      const p=token?store.authenticate(token):(()=>{const session=browserSession(store,req);checkBrowserOrigin(req,env);loginExpiresAt=session.expiresAt;return session.player;})();
+      const botRoute=path==='/api/me/chatbot'||path.startsWith('/api/me/chatbot/')||path==='/api/me/discord'||(path.startsWith('/api/me/discord/')&&path!=='/api/me/discord/recovery');
+      const p=token?store.authenticate(token):(()=>{if(botRoute)checkBrowserOrigin(req,env);try{const session=browserSession(store,req);checkBrowserOrigin(req,env);loginExpiresAt=session.expiresAt;return session.player;}catch(error){if(!botRoute||error.status!==401)throw error;return botOwner(store,req,env,res);}})();
       if(path.startsWith('/api/me/discord')) {
         checkBrowserOrigin(req,env);limit(req,'discord-management',30);
         if(req.method==='DELETE'&&path==='/api/me/discord/recovery')return send(discordSite.unlinkRecovery(p));
         if(req.method==='GET'&&path==='/api/me/discord')return send(discordSite.status(p,req.headers.cookie));
-        if(req.method==='POST'&&path==='/api/me/discord/connect'){const result=discordSite.start(p);res.setHeader('Set-Cookie',result.cookie);return send({url:result.url});}
+        if(req.method==='POST'&&path==='/api/me/discord/connect'){const result=discordSite.start(p);res.setHeader('Set-Cookie',[...(res.getHeader('Set-Cookie')?[res.getHeader('Set-Cookie')]:[]),result.cookie]);return send({url:result.url});}
         if(req.method==='DELETE'&&path==='/api/me/discord'){res.setHeader('Set-Cookie',discordSite.disconnect(req.headers.cookie));return send({disconnected:true});}
         if(req.method==='GET'&&path==='/api/me/discord/guilds')return send(await discordSite.guilds(p,req.headers.cookie));
         const match=path.match(/^\/api\/me\/discord\/guilds\/(\d{5,25})(?:\/alerts(?:\/([\w-]+))?)?$/);
@@ -129,12 +131,13 @@ export function createApp({store=new Store(),env={},connectors=false,fetcher=fet
         }
         check(false,'Not found.',404);
       }
+      if(req.method==='POST'&&path==='/api/me/chatbot/signout'){checkBrowserOrigin(req,env);forgetBotOwner(store,req,env,res);return send({signedOut:true});}
       if(req.method==='GET'&&path==='/api/me/chatbot')return send(chatbot.view(p));
       if(req.method==='GET'&&path==='/api/me/chatbot/youtube/broadcasts'){limit(req,'broadcasts',10);return send(await chatbot.broadcasts(p,url.searchParams.get('slot')??0));}
       if(path.startsWith('/api/me/chatbot/')) {
         const [, , , ,provider,operation]=path.split('/');
         limit(req,'chatbot',20);
-        if(req.method==='POST'&&operation==='connect'){const result=chatbot.start(provider,p,token,data.slot);res.setHeader('Set-Cookie',result.cookie);return send({url:result.url});}
+        if(req.method==='POST'&&operation==='connect'){const result=chatbot.start(provider,p,token,data.slot);res.setHeader('Set-Cookie',[...(res.getHeader('Set-Cookie')?[res.getHeader('Set-Cookie')]:[]),result.cookie]);return send({url:result.url});}
         if(req.method==='POST'&&operation==='settings'){const result=await chatbot.settings(provider,p,data);restartChat();return send(result);}
         if(req.method==='DELETE'&&!operation){const result=chatbot.disconnect(provider,p,url.searchParams.get('slot')??0);restartChat();return send(result);}
       }

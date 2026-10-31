@@ -1,3 +1,4 @@
+import {botOwner} from '../src/bot-owners.js';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {DiscordSite,channelPermissions} from '../src/discord-site.js';
@@ -64,10 +65,10 @@ test('Discord channel permission overwrites honor role and member ordering',()=>
  assert.equal(channelPermissions(g,roles,member,c),2048n);
  roles[1].permissions='8';assert.equal(channelPermissions(g,roles,member,c)&3072n,3072n);
 });
-test('Discord website routes require runner sign-in, same origin, and bound Discord session',async t=>{
+test('Discord website routes require same origin and a bound Discord session',async t=>{
  const f=fixture(t),app=createApp({store:f.store,env,fetcher:f.fetcher});await new Promise(r=>app.server.listen(0,'127.0.0.1',r));t.after(()=>app.stop());const origin='http://127.0.0.1:'+app.server.address().port;
  const headers={Authorization:'Bearer '+f.token,Origin:env.PUBLIC_ORIGIN,'Content-Type':'application/json'};
- assert.equal((await fetch(origin+'/api/me/discord/guilds')).status,401);
+ assert.equal((await fetch(origin+'/api/me/discord/guilds')).status,403);
  assert.equal((await fetch(origin+'/api/me/discord/connect',{method:'POST',headers:{Authorization:headers.Authorization}})).status,403);
  const start=await fetch(origin+'/api/me/discord/connect',{method:'POST',headers,body:'{}'}),cookie=start.headers.get('set-cookie'),data=await start.json();
  const callback=new URL(data.url).searchParams.get('state');const result=await fetch(origin+'/api/discord/callback?state='+callback+'&code=code',{headers:{Cookie:cookie},redirect:'manual'});
@@ -139,4 +140,14 @@ test('Discord sessions survive restart encrypted, refresh automatically, and res
  const again=new DiscordSite(f.store,env,f.fetcher);assert.equal(again.status(f.player,cookie).connected,true);
  const rotatedSecret=new DiscordSite(f.store,{...env,DISCORD_CLIENT_SECRET:'changed'},f.fetcher);assert.equal(rotatedSecret.status(f.player,cookie).connected,false);
  restarted.disconnect(cookie);assert.equal(again.status(f.player,cookie).connected,false);assert.equal(restarted.recoveryStatus(f.player).enabled,true);
+});
+
+test('bot-only Discord managers can save alerts while guild and channel permissions remain enforced',async t=>{
+ const f=fixture(t),guest=botOwner(f.store,{headers:{}},env,{setHeader(){}});
+ const start=f.site.start(guest),cookies=await f.site.finish(new URLSearchParams({state:new URL(start.url).searchParams.get('state'),code:'code'}),start.cookie);
+ const saved=await f.site.save(guest,cookies,guild,{...alert,player:'*'});assert.equal(saved.player,'*');
+ f.state.manage=false;await assert.rejects(f.site.save(guest,cookies,guild,alert),/Manage Server/);
+ f.state.manage=true;f.state.visible=false;await assert.rejects(f.site.save(guest,cookies,guild,alert),/channel/);
+ f.state.visible=true;await f.site.remove(guest,cookies,guild,saved.id);
+ assert.equal(f.store.list('players').length,1);assert.equal(f.site.recoveryStatus(guest).enabled,false);
 });

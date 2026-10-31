@@ -1,12 +1,12 @@
 export function setupDiscord({api,notice,player,catalog}){
  const $=id=>document.getElementById('discord-'+id);
- let guilds=[],details=null,loadedGuild='',revision=0;
+ let guilds=[],details=null,loadedGuild='',revision=0,connected=false;
  const option=(value,label)=>{const o=document.createElement('option');o.value=value;o.textContent=label;return o;};
  const on=(id,fn,event='click')=>$(id).addEventListener(event,async e=>{e.preventDefault();const button=e.submitter??(e.currentTarget.tagName==='BUTTON'?e.currentTarget:null);if(button)button.disabled=true;try{await fn();}catch(error){notice(error.message,true);}finally{if(button)button.disabled=false;}});
- const selectionKey=()=> 'montyDiscordChoices:'+player()?.id;
+ const selectionKey=()=> 'montyDiscordChoices:'+(player()?.id??'bot-only');
  const savedChoices=()=>{try{return JSON.parse(localStorage.getItem(selectionKey())??'{}');}catch{return {};}};
- function rememberChannel(){if(!player()||!details)return;try{const choices=savedChoices();choices.guild=loadedGuild;choices[loadedGuild]={channel:$('channel').value,role:$('role').value};localStorage.setItem(selectionKey(),JSON.stringify(choices));}catch{}}
- const required=()=>{if(!player())throw Error('Sign in with your runner key first.');};
+ function rememberChannel(){if(!connected||!details)return;try{const choices=savedChoices();choices.guild=loadedGuild;choices[loadedGuild]={channel:$('channel').value,role:$('role').value};localStorage.setItem(selectionKey(),JSON.stringify(choices));}catch{}}
+ const required=()=>{if(!connected)throw Error('Connect Discord first.');};
  function customCheckpoint(){const custom=$('split').value==='__custom';$('custom-label').hidden=!custom;$('custom').required=custom;}
  function maps(){const game=$('game').value||'bo3';$('map').replaceChildren(...catalog().maps.filter(m=>m.game===game).map(m=>option(m.id,m.name)));categories();}
  function categories(){const values=catalog()?.categoriesByMap?.[$('map').value]??[];$('category').replaceChildren(...values.map(v=>option(v,v)));if(values.includes('Mega Gums'))$('category').value='Mega Gums';else if(values.includes('Bank Richtofen'))$('category').value='Bank Richtofen';splits();}
@@ -17,7 +17,7 @@ export function setupDiscord({api,notice,player,catalog}){
   const guild=guilds.find(g=>g.id===id);if(!guild)return;
   if(!guild.installed){$('server-invite').href=guild.inviteUrl;$('server-invite').hidden=false;$('server-note').textContent='Add the bot to this server, approve on Discord, then click Refresh servers.';return;}
   $('server-note').textContent='Loading channels and alerts…';
-  const data=await api('/api/me/discord/guilds/'+id);if(rev!==revision||!player())return;
+  const data=await api('/api/me/discord/guilds/'+id);if(rev!==revision||!connected)return;
   details=data;loadedGuild=id;$('server-note').textContent=data.channels.length?'':'No available channels. Check View Channel and Send Messages permissions.';
   $('channel').replaceChildren(...data.channels.map(c=>option(c.id,'#'+c.name)));if(data.channels.some(c=>c.id===preferred.channel))$('channel').value=preferred.channel;roles(preferred.role);rememberChannel();$('server-controls').hidden=!data.channels.length;
   const nodes=data.alerts.map(a=>{
@@ -30,20 +30,21 @@ export function setupDiscord({api,notice,player,catalog}){
   });
   if(!nodes.length){const p=document.createElement('p');p.className='muted';p.textContent='No alerts saved for these channels.';nodes.push(p);}$('alerts').replaceChildren(...nodes);
  }
- async function servers(){required();const rev=++revision,old=$('guild').value||savedChoices().guild;const list=await api('/api/me/discord/guilds');if(rev!==revision||!player())return;guilds=list;$('guild').replaceChildren(option('','Choose a server'),...list.map(g=>option(g.id,g.name+(g.installed?'':' — add bot first'))));if(list.some(g=>g.id===old))$('guild').value=old;$('server-note').textContent=list.length?'':'No servers found where you have Manage Server permission.';if($('guild').value)await loadServer();}
+ async function servers(){required();const rev=++revision,old=$('guild').value||savedChoices().guild;const list=await api('/api/me/discord/guilds');if(rev!==revision||!connected)return;guilds=list;$('guild').replaceChildren(option('','Choose a server'),...list.map(g=>option(g.id,g.name+(g.installed?'':' — add bot first'))));if(list.some(g=>g.id===old))$('guild').value=old;$('server-note').textContent=list.length?'':'No servers found where you have Manage Server permission.';if($('guild').value)await loadServer();}
  async function refresh(){
-  const rev=++revision,owner=player()?.id;const config=await api(owner?'/api/me/discord':'/api/discord/config');if(rev!==revision||player()?.id!==owner)return;
+  const rev=++revision,owner=player()?.id;const config=await api('/api/me/discord');if(rev!==revision||player()?.id!==owner)return;
+  connected=!!config.connected;
   $('invite').hidden=!config.inviteUrl;if(config.inviteUrl)$('invite').href=config.inviteUrl;
   $('recovery-note').textContent=!owner?'':config.recovery?.enabled?'Key recovery enabled through '+config.recovery.name+'.':'Connect Discord once to enable lost-key recovery. Existing users must reconnect once after this update.';$('recovery-disable').hidden=!owner||!config.recovery?.enabled;
-  $('connect').disabled=!owner||!config.available;$('disconnect').hidden=!config.connected;$('controls').hidden=!config.connected;
-  $('status').textContent=!owner?'Sign in under LiveSplit to manage server alerts.':!config.available?'Website server controls are awaiting Discord app setup. You can still invite the bot and use /track-alert in Discord.':config.connected?'Connected as '+config.name:'Connect Discord to choose servers and channels.';
+  $('connect').disabled=!config.available;$('disconnect').hidden=!config.connected;$('controls').hidden=!config.connected;
+  $('status').textContent=!config.available?'Website server controls are awaiting Discord app setup. You can still invite the bot and use /track-alert in Discord.':config.connected?'Connected as '+config.name:'Connect Discord to choose servers and channels.';
   if(!config.connected){guilds=[];details=null;$('guild').replaceChildren(option('','Choose a server'));$('server-controls').hidden=true;return;}
   if(!$('map').options.length)maps();
   if(!$('runner').value)$('runner').value='*';
   await servers();
  }
  on('recovery-disable',async()=>{if(!confirm('Disable Discord key recovery? Keep your runner key before continuing.'))return;await api('/api/me/discord/recovery',{method:'DELETE'});await refresh();notice('Discord key recovery disabled.');});
- on('connect',async()=>{required();location.assign((await api('/api/me/discord/connect',{method:'POST',body:{}})).url);});
+ on('connect',async()=>{location.assign((await api('/api/me/discord/connect',{method:'POST',body:{}})).url);});
  on('disconnect',async()=>{await api('/api/me/discord',{method:'DELETE'});await refresh();notice('Discord management disconnected. Saved server alerts remain active.');});
  on('refresh',servers);on('guild',loadServer,'change');on('channel',()=>{roles();rememberChannel();},'change');on('role',rememberChannel,'change');on('game',maps,'change');on('map',categories,'change');on('category',splits,'change');on('split',customCheckpoint,'change');
  on('mode',()=>{const show=$('mode').value==='under';$('threshold-label').hidden=!show;$('threshold').required=show;},'change');

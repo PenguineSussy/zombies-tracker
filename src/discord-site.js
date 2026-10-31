@@ -1,3 +1,4 @@
+import {ownerKey} from './bot-owners.js';
 import {iwSplits} from './iw-splits.js';
 import {bo2Splits} from './bo2-splits.js';
 import {splitName} from './split-rules.js';
@@ -40,7 +41,7 @@ export class DiscordSite {
   return 'https://discord.com/oauth2/authorize?'+q;
  }
  config(){return {available:this.available(),inviteUrl:this.invite()};}
- keyHash(player){return this.store.db.prepare('SELECT token FROM players WHERE id=?').get(player.id)?.token;}
+ keyHash(player){return ownerKey(this.store,player.id);}
  valid(record,player){return record&&record.keyHash&&record.expires>this.store.clock()&&record.player===player.id&&this.keyHash(player)===record.keyHash;}
  sweep(){for(const map of [this.pending,this.sessions,this.recoveryGrants])for(const [k,v]of map)if(v.expires<=this.store.clock())map.delete(k);for(const row of this.store.list('metadata'))if(row.kind==='discord-session'&&row.expires<=this.store.clock())this.store.db.prepare('DELETE FROM metadata WHERE id=?').run(row.id);}
  encryptionKey(){return createHash('sha256').update('monty-discord-session-v1\0'+this.env.DISCORD_CLIENT_SECRET).digest();}
@@ -113,7 +114,7 @@ export class DiscordSite {
   }
   check(!link||link.userId===user.id,'A different Discord account is saved for recovery. Disable recovery while signed in before connecting a different account.',409);
   check(this.sessions.size<2000,'Try connecting again later.',429);
-  if(!link)this.store.put('metadata','discord-recovery:'+p.player,{id:'discord-recovery:'+p.player,kind:'discord-recovery',player:p.player,userId:user.id,name:user.global_name??user.username,binding:randomBytes(24).toString('base64url')});
+  if(!link&&!p.player.startsWith('bot-owner:'))this.store.put('metadata','discord-recovery:'+p.player,{id:'discord-recovery:'+p.player,kind:'discord-recovery',player:p.player,userId:user.id,name:user.global_name??user.username,binding:randomBytes(24).toString('base64url')});
   const value=randomBytes(32).toString('base64url'),seconds=30*24*60*60;
   this.saveSession(hash(value),{player:p.player,keyHash:p.keyHash,accessToken:t.access_token,refreshToken:t.refresh_token??null,accessExpires:this.store.clock()+(Number(t.expires_in)||3600)*1000,userId:user.id,name:user.global_name??user.username,expires:this.store.clock()+seconds*1000});
   return this.cookie('monty_discord',value,'/api/me/discord',seconds);
